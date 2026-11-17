@@ -10,7 +10,10 @@
 import fs from "node:fs";
 
 const RUNS = Number(process.argv[2] ?? 3);
-const BASE = process.argv[3] ?? "https://to2.locallabs-io.workers.dev";
+const BASE = process.argv.slice(3).find((a) => a.startsWith("http")) ?? "https://to2.locallabs-io.workers.dev";
+// --no-gen=blokbek: never trigger TTS for these tutors — ask the server first (check=1, free) and play
+// only lines that are already cached; the rest are logged as "skipped (not cached)"
+const NO_GEN = new Set((process.argv.find((a) => a.startsWith("--no-gen="))?.split("=")[1] ?? "").split(",").filter(Boolean));
 const TUTORS = ["blokbek", "lola", "ziyo"];
 const GREETINGS = {
   blokbek: "Salom! Men Blokbek. Matematikani blokma-blok quramiz!",
@@ -24,6 +27,13 @@ const ttsUrl = (v, text, emotion, lead, prefetch) =>
   `${BASE}/api/tts?voice=${encodeURIComponent(v)}&text=${encodeURIComponent(text)}${emotion && emotion !== "neutral" ? "&emotion=" + emotion : ""}${lead ? "&lead=1" : ""}${prefetch ? "&wait=long" : ""}`;
 
 async function tts(log, step, v, text, emotion, lead = false) {
+  if (NO_GEN.has(v)) {
+    const c = await (await fetch(ttsUrl(v, text, emotion, lead, false) + "&check=1")).json().catch(() => ({ cached: false }));
+    if (!c.cached) {
+      log.audio.push({ step, kind: "skipped-not-cached", ms: 0, text: text.slice(0, 50) });
+      return;
+    }
+  }
   const t0 = Date.now();
   const r = await fetch(ttsUrl(v, text, emotion, lead, false));
   await r.arrayBuffer();
@@ -31,7 +41,7 @@ async function tts(log, step, v, text, emotion, lead = false) {
   const kind = c === "hit" || c === "clips" ? "cached-v2" : c === "miss" || c === "partial" ? "live-v2" : c === "fallback-v1" ? "v1-fallback" : c;
   log.audio.push({ step, kind, ms: Date.now() - t0, text: text.slice(0, 50) });
 }
-const prefetch = (v, text, emotion, lead = false) => fetch(ttsUrl(v, text, emotion, lead, true)).then((r) => r.arrayBuffer()).catch(() => {});
+const prefetch = (v, text, emotion, lead = false) => (NO_GEN.has(v) ? Promise.resolve() : fetch(ttsUrl(v, text, emotion, lead, true)).then((r) => r.arrayBuffer()).catch(() => {}));
 
 function sse(text) {
   const ev = [];
@@ -102,7 +112,7 @@ for (const v of TUTORS)
       const l = await run(v, n);
       logs.push(l);
       const k = (kind) => l.audio.filter((a) => a.kind === kind).length;
-      console.log(`segments ${l.segments.map((s) => `${s.step}=${s.source}`).join(" ")} | audio ${l.audio.length}: cached-v2 ${k("cached-v2")}, live-v2 ${k("live-v2")}, v1-fallback ${k("v1-fallback")}`);
+      console.log(`segments ${l.segments.map((s) => `${s.step}=${s.source}`).join(" ")} | audio ${l.audio.length}: cached-v2 ${k("cached-v2")}, live-v2 ${k("live-v2")}, v1-fallback ${k("v1-fallback")}, skipped ${k("skipped-not-cached")}, max start ${Math.max(0, ...l.audio.map((a) => a.ms))} ms`);
     } catch (e) {
       console.log("FAILED", e.message);
       logs.push({ tutor: v, run: n, error: e.message });

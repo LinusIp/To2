@@ -23,7 +23,7 @@ import { EMOTIONS, type Emotion } from "@/lib/ai/schema";
 import { CHARACTER_BY_ID, DEFAULT_TTS, type CharacterId } from "@/config/characters";
 import { joinWav } from "@/lib/audio/wav";
 import { clientKey, rateLimit, userIdFor } from "@/lib/server/session";
-import { DAILY_CAP, creditsFor, logCredits, todayCredits } from "@/lib/server/credits";
+import { DAILY_CAP, creditsFor, dayOf, logCredits, todayCredits } from "@/lib/server/credits";
 import { cachedExists } from "@/lib/server/exists";
 import { storeGetText, storePut } from "@/lib/server/store";
 import { ENV_STEP_MS, computeEnvelope, encodeEnvelope } from "@/lib/audio/envelope";
@@ -149,7 +149,9 @@ export async function GET(req: Request) {
   // the expressive version, cached as it completes (keeps running if we answer with v1 first)
   const who = { tutor: voice.startsWith("voice_") ? "other" : voice, source };
   // daily cap: new uncached lines go on v1 only (cheaper, fast); fully cached v2 still plays
-  const overCap = model !== "lison" && missing.length > 0 && (await todayCredits()) >= DAILY_CAP;
+  // the team can lift the cap for ONE day's warm-up: WARM_CAP_EXEMPT_DAY = that Tashkent date and src=warm
+  const warmExempt = source === "warm" && !!env.WARM_CAP_EXEMPT_DAY && env.WARM_CAP_EXEMPT_DAY === dayOf();
+  const overCap = model !== "lison" && missing.length > 0 && !warmExempt && (await todayCredits()) >= DAILY_CAP;
   if (overCap) {
     const v1 = prosodyPlan(text, emotion, "lison", 1, { answerLead });
     try {
