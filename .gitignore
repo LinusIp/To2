@@ -22,3 +22,8 @@ public/models/tripo/*.blend1
 e2e/results.json
 test-results/
 playwright-report/
+
+# never commit Blender sources or underscore preview renders, anywhere (deploy.mjs also keeps them out of the assets)
+*.blend
+*.blend1
+public/**/_*.png
