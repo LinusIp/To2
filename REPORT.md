@@ -136,3 +136,14 @@ Team added `src/lib/board/layout.ts` (main-layer auto-layout on the server). Re-
 - Characters unlock: Blokbek + Robo-Rayhon free; Agent Shox 150 XP; Chaqmoq 300 XP (`src/config/characters.ts`).
 - Note layer: the LLM's note drawings are re-laid out by code into a fixed orange panel (bottom-right) so they never cover the main lesson; the LLM may still `highlight` main elements.
 - Extra dev dependency: `esbuild` (only for `scripts/warm-tts.mjs`).
+
+## ✅ Relative board placement (2026-11-18)
+- Drawing commands (write/latex/rect/circle/ellipse/numberline/fractionbar/plot) may carry `place` instead of x/y:
+  `{row:"next"}` (new line under everything), `{row:"same"}`, `{rightOf|leftOf|below|above: "<id>"}`.
+  Parsed in `src/lib/ai/schema.ts` (also accepts `place:"next"` and the keys at top level), resolved to x/y in
+  `mainLayouter()` (`src/lib/board/layout.ts`) before the collision pass, which stays as the safety net.
+  Text rows left-align under text; labels centre on shapes. A full board wraps to the top → layouter wipes (new page).
+- Prompt: BOARD_SPEC in `src/lib/ai/prompts/tutor.uz.ts` asks for `place` (with a rect + labels example). The few-shot lessons still use x/y.
+- Measured (geo-perimeter, aisha-gemma-4, 3 raw lessons): the LLM used `place` on 46/46 placeable drawings.
+  Live after deploy (3 fresh lessons): 0 text-on-chalk collisions; only the triangle's own corners touch (expected).
+- ⚠️ Not measured: how many drawings the safety-net pass still moves after placement. Line/arrow commands keep absolute coordinates.
