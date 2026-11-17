@@ -27,10 +27,45 @@ public class MainActivity extends BridgeActivity {
     private static final int REQ_MIC = 4711;
     private PermissionRequest pendingMic;
 
+    /** Below this Android System WebView major version the site's CSS / 3D may not work well. */
+    private static final int MIN_WEBVIEW_MAJOR = 100;
+
+    /** Installed WebView major version (e.g. 83), or -1 if unknown. */
+    private int webViewMajor() {
+        try {
+            if (android.os.Build.VERSION.SDK_INT < 26) return -1;
+            android.content.pm.PackageInfo pi = WebView.getCurrentWebViewPackage();
+            if (pi == null || pi.versionName == null) return -1;
+            return Integer.parseInt(pi.versionName.split("\\.")[0]);
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
+    /** Old WebView: a native screen asking to update it (Play Store), or continue anyway. */
+    private void warnOldWebView(int major) {
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("Iltimos, Android System WebView ni yangilang")
+            .setMessage("To2 to'g'ri ishlashi uchun yangiroq versiya kerak (hozir: " + major + "). Yangilash bepul va bir daqiqa oladi.")
+            .setCancelable(false)
+            .setPositiveButton("Yangilash", (d, w) -> {
+                String id = "com.google.android.webview";
+                try {
+                    startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=" + id)));
+                } catch (Exception e) {
+                    startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/apps/details?id=" + id)));
+                }
+            })
+            .setNegativeButton("Baribir davom etish", (d, w) -> d.dismiss())
+            .show();
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().setStatusBarColor(Color.parseColor("#2563eb"));
+        int wv = webViewMajor();
+        if (wv > 0 && wv < MIN_WEBVIEW_MAJOR) warnOldWebView(wv);
 
         WebView web = getBridge().getWebView();
         WebSettings s = web.getSettings();

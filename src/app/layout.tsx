@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { brand } from "@/config/brand";
+import OldBrowserBanner from "@/components/ui/OldBrowserBanner";
 import { t } from "@/i18n/uz";
 
 export const metadata: Metadata = {
@@ -25,7 +26,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&family=Nunito:wght@600;700;800;900&display=swap"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <OldBrowserBanner />
+      </body>
     </html>
   );
 }

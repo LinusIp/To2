@@ -26,8 +26,6 @@ export default defineConfig({
       VOICELAB_BASE_URL: bindings.text("https://api.voicelab.uz"),
       VOICELAB_LLM_MODEL: bindings.text("aisha-gemma-4"),
       VOICELAB_LANG: bindings.text("uz"),
-      // one-off: the team approved the Lola + Ziyo re-warm (~15,400 credits) past the 15k/day cap on this day only
-      WARM_CAP_EXEMPT_DAY: bindings.text("2026-11-18"),
       VOICE_IDS: bindings.text(
         JSON.stringify({
           "blokbek": "voice_fa56cecf-9b0b-45ba-9ec3-494efb5b301f",
