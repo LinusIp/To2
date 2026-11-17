@@ -20,12 +20,13 @@ export function voicelabTTS(cfg: VoiceLabConfig): TTS {
         // same key only for an identical body (VoiceLab rejects a reused key with a changed body)
         headers: { "Content-Type": "application/json", "Idempotency-Key": await idem(body) },
         body,
-        timeoutMs: 20_000,
+        timeoutMs: 30_000, // v2 may hold the request a while before answering 202
       });
       if (res.status === 200) return { audio: await res.arrayBuffer(), mime: res.headers.get("content-type") ?? "audio/wav" };
       // 202: long generation → poll the job, then download the signed URL (no auth header)
       const job = (await res.json()) as { id: string; status_url?: string };
-      for (let i = 0; i < 20; i++) {
+      // lison-v2 can take 10–20 s under load: poll up to ~45 s before giving up
+      for (let i = 0; i < 64; i++) {
         await sleep(700);
         const st = (await (await vlFetch(cfg, `/v1/tts/generations/${job.id}`)).json()) as { status: string; audio_url?: string; error?: string };
         if (st.status === "completed" && st.audio_url) {

@@ -24,7 +24,7 @@ import type { TTS } from "@/lib/ai/types";
 // v2 never finished under 4.8 s in our A/B (0/18 clips), so a live request only waits long enough
 // for the all-clips-in-KV path; a miss goes straight to v1 (+ v2 in the background)
 const V2_BUDGET_MS = 350;
-const V2_BUDGET_PREFETCH_MS = 20_000;
+const V2_BUDGET_PREFETCH_MS = 45_000;
 
 const audioResponse = (audio: ArrayBuffer, cache: string, info: { clips?: number; model?: string; final?: boolean } = {}) =>
   new Response(audio, {

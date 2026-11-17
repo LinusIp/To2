@@ -219,7 +219,7 @@ segment is cached too.
 **⚠️ Latency → hybrid**: lison-v2 takes **median 6.9 s, p90 11 s per clip** (v1: 0.67 s; 0 of 18 v2 clips under 4.8 s).
 So a live request waits only 350 ms for v2 (= cached); on a miss it gets the same lines on **v1 at once** (~1–1.5 s,
 `cache-control: no-store`) while v2 finishes in the background (`after()` → waitUntil) and lands in KV. Prefetches of the next
-segment (`wait=long`) hold out up to 20 s for v2, so in a running lesson most segments play expressive. Cost of a live miss:
+segment (`wait=long`) hold out up to 45 s for v2, so in a running lesson most segments play expressive. Cost of a live miss:
 v1 + v2 (2.5 credits/char); warmed phrases cost nothing. `scripts/warm-tts.mjs` now warms with emotions (3 playable tutors).
 
 **Voice cloning** — possible on our plan (`GET /v1/voice-enrollments/capabilities` → eligible, available). `scripts/clone-voice.ts`

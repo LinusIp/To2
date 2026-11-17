@@ -53,7 +53,7 @@ async function get(u, init) {
   }
 }
 const ttsUrl = (v, p) => `${base}/api/tts?voice=${encodeURIComponent(v)}&text=${encodeURIComponent(p.text)}${p.emotion !== "neutral" ? "&emotion=" + p.emotion : ""}${p.lead ? "&lead=1" : ""}&wait=long`; // wait for the expressive (lison-v2) version, not the quick v1 stand-in
-let ok = 0, fail = 0;
+let ok = 0, fail = 0, v1 = 0; // v1 = got the quick v1 stand-in (v2 not ready in time)
 // each tutor's own greeting ("Ovozini eshit" on the choose-tutor screen, spoken "happy")
 const GREETINGS = {
   blokbek: "Salom! Men Blokbek. Matematikani blokma-blok quramiz!",
@@ -66,21 +66,22 @@ for (const v of voices) {
   // Blokbek is the demo character: warm everything. Others: the fractions lesson + common phrases.
   const greet = GREETINGS[v] ? [{ text: GREETINGS[v], emotion: "happy", lead: false }] : [];
   const mine = v === "blokbek" ? [...list, ...greet] : [...greet, ...fracs, ...common];
-  // 4 at a time
+  // 2 at a time (more parallel lison-v2 jobs slow VoiceLab down and get lost)
   const q = [...mine];
-  await Promise.all(Array.from({ length: 4 }, async () => {
+  await Promise.all(Array.from({ length: 2 }, async () => {
     while (q.length) {
       const p = q.shift();
       const { r } = await get(ttsUrl(v, p));
       const c = r.headers.get("x-tts-cache");
       if (r.status === 200) ok++;
       else fail++;
-      process.stdout.write(r.status === 200 ? (c === "hit" ? "." : "+") : "x");
+      if (c === "fallback-v1") v1++;
+      process.stdout.write(r.status === 200 ? (c === "hit" ? "." : c === "fallback-v1" ? "1" : "+") : "x");
     }
   }));
 }
 console.log(`
-ok=${ok} fail=${fail}`);
+ok=${ok} fail=${fail} fallback-v1=${v1}`);
 
 // Warm the LLM answers (KV cache) + their audio for the demo questions (CLAUDE.md §15 step 5).
 const DEMO_QUESTIONS = ["Nega maxrajlarni ko'paytirdik?", "Nega maxrajlarni oltiga keltirdik?", "EKUK nima?"];
