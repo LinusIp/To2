@@ -12,6 +12,7 @@ import SuccessScreen from "@/components/ui/SuccessScreen";
 import { CloseIcon } from "@/components/ui/icons";
 import { useMe } from "@/lib/client/me";
 import { speak, unlockAudio, type Speech } from "@/lib/audio/player";
+import { speakMath } from "@/lib/ai/speakMath";
 import type { Expect } from "@/lib/ai/schema";
 
 interface DProblem {
@@ -53,7 +54,8 @@ export default function Diagnostic() {
   useEffect(() => {
     if (!p) return;
     voice.current?.stop();
-    voice.current = speak(p.q.replace(/\s*=\s*\?$/, " nechaga teng?"), ch.id, { emotion: "encouraging" });
+    // the voice gets the maths as words ("1/2 + 1/4 = ?" → "ikkidan bir qo'shuv to'rtdan bir nechaga teng?")
+    voice.current = speak(speakMath(p.q), ch.id, { emotion: "encouraging" });
     return () => voice.current?.stop();
   }, [p, ch.id]);
 

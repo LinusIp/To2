@@ -5,6 +5,7 @@ import { create } from "zustand";
 import type { Emotion, Expect, LessonSegment } from "@/lib/ai/schema";
 import { applyCommand, describeBoard, emptyBoard, isDraw, scheduleSegment, scheduleLength, type BoardState, type Layer, type Slot } from "@/lib/board/model";
 import { prefetchSpeech, speak, unlockAudio, type Speech } from "@/lib/audio/player";
+import { speakMath } from "@/lib/ai/speakMath";
 import { startRecording, stopRecording, micSupported } from "@/lib/audio/recorder";
 import { initialPlayer, transition, type PlayerEvent, type PlayerState } from "./player";
 import { readTutorStream } from "./sse";
@@ -543,7 +544,8 @@ export function showMe() {
   const say = `To'g'ri javob: ${s.expect.answer}. Keling, davom etamiz!`;
   speech?.stop();
   set({ caption: say, expect: null, feedback: null, emotion: "encouraging" });
-  const sp = speak(say, s.voice, { rate: s.rate, muted: s.muted, emotion: "encouraging" });
+  // the caption shows "5/6"; the voice says "oltidan besh"
+  const sp = speak(speakMath(say), s.voice, { rate: s.rate, muted: s.muted, emotion: "encouraging" });
   speech = sp;
   void sp.ended.then(() => {
     fire({ type: "ANSWER_CORRECT" });

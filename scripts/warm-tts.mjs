@@ -6,10 +6,18 @@ import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
 
-const base = process.argv[2] ?? "https://to2.locallabs-io.workers.dev";
+const base = process.argv.slice(2).find((a) => a.startsWith("http")) ?? "https://to2.locallabs-io.workers.dev";
+const LIST_ONLY = process.argv.includes("--list"); // print the phrases, synthesize nothing
 const out = path.join(os.tmpdir(), "to2-lessons.mjs");
 await build({
-  entryPoints: ["src/lib/ai/mock/lessons.ts"],
+  stdin: {
+    contents: `export { DEMO_LESSONS, mockInterrupt } from "@/lib/ai/mock/lessons";
+      export { nextSkill, DIAG_LENGTH } from "@/lib/learning/diagnostic";
+      export { generateProblem, seeded } from "@/data/problems";
+      export { speakMath } from "@/lib/ai/speakMath";`,
+    resolveDir: path.resolve("."),
+    loader: "ts",
+  },
   bundle: true,
   format: "esm",
   platform: "node",
@@ -17,7 +25,31 @@ await build({
   alias: { "@": path.resolve("src") },
   logLevel: "silent",
 });
-const { DEMO_LESSONS, mockInterrupt } = await import("file://" + out);
+const { DEMO_LESSONS, mockInterrupt, nextSkill, DIAG_LENGTH, generateProblem, seeded, speakMath } = await import("file://" + out);
+
+/**
+ * Every diagnostic question a learner of `grade` can reach: the server picks the next skill from the
+ * answers so far and seeds the problem with (1000 + grade + 31·answered), so walking every
+ * right/wrong path gives the complete set. Spoken through speakMath(), like the diagnostic page does.
+ */
+function diagnosticQuestions(grade) {
+  const out = new Set();
+  const seen = new Set();
+  const walk = (history) => {
+    const key = JSON.stringify(history);
+    if (seen.has(key)) return;
+    seen.add(key);
+    const skill = nextSkill(grade, history);
+    if (!skill || history.length >= DIAG_LENGTH) return;
+    const p = generateProblem(skill, seeded(1000 + grade + history.length * 31));
+    out.add(speakMath(p.q));
+    walk([...history, { skillId: skill, correct: true }]);
+    walk([...history, { skillId: skill, correct: false }]);
+  };
+  walk([]);
+  return [...out];
+}
+const DIAG_GRADES = (process.env.DIAG_GRADES ?? "6").split(",").map(Number); // the demo picks 6-sinf
 // MVP: only the playable tutors (the others are "Tez orada")
 const voices = ["blokbek", "lola", "ziyo"];
 /** phrases carry their emotion: the server picks speed + speech tag per emotion (src/lib/ai/prosody.ts) */
@@ -33,11 +65,16 @@ const COMMON = [
   ["Tushunarli bo'ldimi? Davom etamizmi?", "encouraging"],
   ["Hmm… yaxshi savol! Hozir ko'rsataman.", "thinking"],
   ["Qiziq savol! Qani, o'ylab ko'raylik…", "thinking"],
-  ["To'g'ri javob: 6. Keling, davom etamiz!", "encouraging"],
-  ["To'g'ri javob: 2. Keling, davom etamiz!", "encouraging"],
 ];
+// "Ko'rsatib ber" reveals the answer of each demo-lesson question (spoken via speakMath, as the player does)
+for (const l of Object.values(DEMO_LESSONS))
+  for (const s of l.segments) if (s.expect) COMMON.push([speakMath(`To'g'ri javob: ${s.expect.answer}. Keling, davom etamiz!`), "encouraging"]);
+// spoken diagnostic questions (encouraging, like the diagnostic page)
+for (const g of DIAG_GRADES) for (const q of diagnosticQuestions(g)) COMMON.push([q, "encouraging"]);
 for (const [t, e] of COMMON) add(t, e);
 const list = [...phrases.values()];
+if (LIST_ONLY) {  for (const p of list) console.log(`[${p.emotion}${p.lead ? ", lead" : ""}] ${p.text}`);  console.log(`
+${list.length} phrases (blokbek: all; lola/ziyo: fractions lesson + ${COMMON.length} common incl. diagnostic)`);  process.exit(0);}
 console.log(`${list.length} phrases × ${voices.length} voices → ${base}`);
 /** fetch with 3 retries (the network sometimes resets long runs) */
 async function get(u, init) {
