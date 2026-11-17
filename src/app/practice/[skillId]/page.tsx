@@ -13,6 +13,7 @@ import { t } from "@/i18n/uz";
 import AnswerInput from "@/components/lesson/AnswerInput";
 import SuccessScreen from "@/components/ui/SuccessScreen";
 import TutorPortrait from "@/components/characters/TutorPortrait";
+import QuizThinker from "@/components/lesson/QuizThinker";
 import { Bar } from "@/components/ui/hud";
 import { CloseIcon } from "@/components/ui/icons";
 import { getSkill } from "@/data/skills";
@@ -179,6 +180,13 @@ export default function QuizPage({ params }: { params: Promise<{ skillId: string
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* the tutor thinks along (cheers on a correct answer) — bottom-right, never over the answers */}
+      {!done && (
+        <div className="mt-auto pt-3">
+          <QuizThinker characterId={ch.id} happy={flash} />
         </div>
       )}
 

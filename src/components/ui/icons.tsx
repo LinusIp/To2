@@ -82,6 +82,18 @@ export const SpeakerIcon = ({ size = 22, className }: P) => (
     <path d="M18.5 6.5a7.5 7.5 0 0 1 0 11" />
   </svg>
 );
+// mockup v2 tab icons
+export const CupIcon = ({ size = 24, className }: P) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+    <path d="M7 4h10v5a5 5 0 01-10 0zM4 5h3v3a3 3 0 01-3-3zM20 5h-3v3a3 3 0 003-3zM10 15h4v3h3v3H7v-3h3z" />
+  </svg>
+);
+export const UserIcon = ({ size = 24, className }: P) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21c1-5 5-7 8-7s7 2 8 7z" />
+  </svg>
+);
 export const CheckIcon = ({ size = 16, className, color = "currentColor" }: P & { color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
     <path d="M5 12l5 5 9-10" />

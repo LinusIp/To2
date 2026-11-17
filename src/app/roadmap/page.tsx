@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { t } from "@/i18n/uz";
 import AppShell, { ScreenTop } from "@/components/ui/AppShell";
 import RoadmapList from "@/components/roadmap/RoadmapList";
+import IslandMap from "@/components/roadmap/IslandMap";
 import TutorPortrait from "@/components/characters/TutorPortrait";
 import { useMe } from "@/lib/client/me";
 import { getCharacter } from "@/config/characters";
@@ -34,6 +35,7 @@ export default function RoadmapPage() {
     <AppShell>
       <ScreenTop title={t.roadmap.title} back="/home" />
       <div className="flex flex-col gap-4 px-[18px] pb-8 md:px-2">
+        {roadmap && <IslandMap roadmap={roadmap} />}
         {roadmap && (
           <div className="card flex items-center gap-3 p-3.5">
             <span className="h-12 w-12 flex-none overflow-hidden rounded-full bg-soft2">

@@ -43,22 +43,33 @@ export default function SuccessScreen({
         {a.label}
       </button>
     );
+  // mockup v2 (screen s6): deep blue-violet sky, twinkling stars, the cheering tutor, a white card
   return (
-    <div role="status" className="anim-in fixed inset-0 z-50 flex flex-col items-center overflow-hidden text-white" style={{ background: "linear-gradient(170deg,#3f80ff,#1f4fd0)" }}>
+    <div role="status" className="anim-in fixed inset-0 z-50 overflow-hidden" style={{ background: "radial-gradient(120% 70% at 50% 18%,#6d79d8 0%,#4b55b8 45%,#353d93 100%)" }}>
       <div aria-hidden className="pointer-events-none absolute inset-0">
         {conf.map((c, i) => (
           <div key={i} className="conf" style={{ left: `${c.left}%`, top: -20, background: c.c, animationDelay: `${c.delay}s`, transform: `rotate(${c.rot}deg)`, borderRadius: c.round ? "50%" : 3 }} />
         ))}
+        {[
+          [12, 11],
+          [82, 10],
+          [7, 31],
+          [86, 30],
+          [44, 7],
+        ].map(([x, y], i) => (
+          <span key={i} className="pop absolute" style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${i * 0.15}s` }}>
+            <StarIcon size={i % 2 ? 26 : 34} />
+          </span>
+        ))}
       </div>
-      <div className="pop mt-[9vh]" style={{ filter: "drop-shadow(0 10px 18px rgba(0,0,0,.25))" }}>
-        <StarIcon size={130} />
-      </div>
-      <div className="mt-1 text-[46px] font-black">{title}</div>
-      <div className="text-[19px] font-extrabold opacity-90">{subtitle}</div>
-      <TutorPortrait id={characterId} pose="cheer" frame="full" className="mt-2 h-auto w-[min(300px,70vw)]" />
-      <div className="absolute inset-x-7 bottom-10 mx-auto flex max-w-[420px] flex-col gap-3">
-        {btn(primary, "btn btn-white w-full")}
-        {secondary && btn(secondary, "btn w-full bg-transparent text-white shadow-none")}
+      <TutorPortrait id={characterId} pose="cheer" frame="half" alt="" className="pop absolute top-[7vh] left-1/2 h-[min(310px,40vh)] w-[min(330px,85vw)] -translate-x-1/2" style={{ objectPosition: "50% 100%", filter: "drop-shadow(0 18px 16px rgba(0,0,40,.35))" }} />
+      <div className="absolute inset-x-[18px] bottom-[22px] mx-auto max-w-[460px] rounded-[30px] bg-white px-[22px] pt-[26px] pb-[22px] text-center text-ink shadow-[0_18px_40px_rgba(0,0,40,.35)]">
+        <div className="text-[34px] leading-none font-black tracking-[-.5px]">{title}</div>
+        <div className="mt-2 mb-[18px] text-[17px] leading-snug font-bold text-[#3c4466]">{subtitle}</div>
+        <div className="flex flex-col gap-2.5">
+          {btn(primary, "btn btn-primary w-full")}
+          {secondary && btn(secondary, "btn w-full")}
+        </div>
       </div>
     </div>
   );

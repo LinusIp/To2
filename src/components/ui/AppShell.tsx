@@ -6,14 +6,15 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { t } from "@/i18n/uz";
 import { useMe } from "@/lib/client/me";
-import { BookIcon, ChartIcon, FlameIcon, GearIcon, HomeIcon, Logo } from "./icons";
+import { BookIcon, ChartIcon, CupIcon, FlameIcon, GearIcon, HomeIcon, Logo, UserIcon } from "./icons";
 import TutorPortrait from "@/components/characters/TutorPortrait";
 
 const TABS = [
   { href: "/home", label: t.tabs.home, Icon: HomeIcon, match: ["/home"] },
   { href: "/roadmap", label: t.tabs.lessons, Icon: BookIcon, match: ["/roadmap", "/lesson", "/practice"] },
-  { href: "/progress", label: t.tabs.progress, Icon: ChartIcon, match: ["/progress", "/profile"] },
-  { href: "/settings", label: t.tabs.settings, Icon: GearIcon, match: ["/settings", "/tutors"] },
+  { href: "/progress", label: t.tabs.progress, Icon: ChartIcon, match: ["/progress"] },
+  { href: "/rewards", label: t.tabs.rewards, Icon: CupIcon, match: ["/rewards"] },
+  { href: "/settings", label: t.tabs.profile, Icon: UserIcon, match: ["/settings", "/tutors", "/profile"] },
 ];
 
 export default function AppShell({ children, wide = false, hideTabs = false }: { children: React.ReactNode; wide?: boolean; hideTabs?: boolean }) {
@@ -68,7 +69,7 @@ export default function AppShell({ children, wide = false, hideTabs = false }: {
       {!hideTabs && (
         <nav
           aria-label={t.nav.main}
-          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 bg-white px-1.5 pt-2 shadow-[0_-6px_20px_rgba(31,54,120,.06)] md:hidden"
+          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 bg-white px-1.5 pt-2 shadow-[0_-6px_20px_rgba(31,54,120,.06)] md:hidden"
           style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
         >
           {TABS.map(({ href, label, Icon, match }) => (

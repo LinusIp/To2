@@ -215,7 +215,7 @@ export const t = {
     title: "Maxfiylik siyosati",
   },
   streakToday: (n: number) => `${n} kunlik seriya — bugun ham davom eting`,
-  tabs: { home: "Bosh sahifa", lessons: "Darslar", progress: "Progress", settings: "Sozlamalar" },
+  tabs: { home: "Bosh sahifa", lessons: "Darslar", progress: "Progress", rewards: "Mukofotlar", profile: "Profil", settings: "Sozlamalar" },
   splash: { tagline1: "Matematika endi", tagline2: "yanada qiziqarli!", start: "Boshlash", login: "Kirish", cont: "Davom etish" },
   home: {
     today: "Bugungi dars",
