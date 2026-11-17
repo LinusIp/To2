@@ -6,7 +6,7 @@
 import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Color } from "@/lib/ai/schema";
 import { BOARD_H, BOARD_W, NOTE_PANEL, bbox, type BoardEl, type BoardState } from "@/lib/board/model";
-import { boardTip } from "@/lib/board/tip";
+import { boardFocus, boardTip } from "@/lib/board/tip";
 import { chalkEllipse, pathD, progressOf, rngFrom, strokesFor, type PlotFn, type Stroke } from "./handwriting";
 
 export type BoardTheme = "chalk";
@@ -104,6 +104,13 @@ function Element({ el, p, plot }: { el: BoardEl; p: number; plot: (fn: string) =
 function Highlight({ el }: { el: BoardEl }) {
   const b = bbox(el.cmd);
   const d = useMemo(() => pathD(chalkEllipse(b.x + b.w / 2, b.y + b.h / 2, b.w / 2 + 26, b.h / 2 + 16, rngFrom(hash(el.key + "hl")))), [b.x, b.y, b.w, b.h, el.key]);
+  // the 3D tutor points at what was just circled
+  useEffect(() => {
+    boardFocus.x = b.x + b.w / 2;
+    boardFocus.y = b.y + b.h / 2;
+    boardFocus.count++;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [el.key, el.highlight]);
   return <path d={d} fill="none" stroke={CHALK[el.highlight ?? "yellow"]} strokeWidth={4} strokeLinecap="round" pathLength={1} className="hl-draw" />;
 }
 

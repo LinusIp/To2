@@ -152,3 +152,29 @@ Team added `src/lib/board/layout.ts` (main-layer auto-layout on the server). Re-
 - `public/models/tripo/diyorbek.glb` shows a green-hooded boy with headphones (Ziyo's look), not Diyorbek's
   lab coat + glasses from his card. Until it is re-exported, Diyorbek uses the `makeChar` voxel rig.
 - 🔑 Team: re-export diyorbek.glb, then remove `"diyorbek"` from `DISABLED` in `src/components/characters/glbTutor.ts`.
+  ✅ Resolved: that model was Ziyo (now `ziyo.glb`); MVP playable = Blokbek, Lola, Ziyo; Diyorbek is "Tez orada".
+
+## ✅ Tutor animation: smooth and alive (2026-11-18)
+- `src/components/characters/anim/animator.ts` drives every tutor (GLB and makeChar). States: idle, talk, listen,
+  think, turnToBoard, write, walkAlongBoard, turnToLearner, point, praise; 220 ms ease-in-out crossfades.
+- Every joint follows a TARGET with a critically damped spring (`src/lib/anim/spring.ts`): arms 14, elbows 11
+  (lag the shoulders), head 10 (+ follow-through on turns), body/root 8, writing arm 22. dt clamped to 1/30 s,
+  `renderer.setAnimationLoop`, paused on hidden tabs, nothing allocated per frame (heap flat over 20k frames with forced GC).
+- Periodic motion (breathing 2.6 s, weight shift, walk cycle, turn hop, praise jumps, 3 Hz wave) is layered on top
+  of the springs with smoothed weights — a k=8 spring would flatten a 380 ms hop to nothing.
+- Walk: phase driven by distance moved; stride derived from each rig's hip height so feet don't slide.
+- Praise: Blokbek thumbs-up + 2 bounces, Lola wave + head tilt, Ziyo double jump with squash/stretch.
+  Emotion from the lesson: excited → bigger gestures + bounce; thinking → hand to chin.
+- Lip-sync: envelope 25/90 ms, hysteresis (up .12/.3/.55, down .08/.22/.45), ≥ 60 ms per mouth frame, rest face
+  after 150 ms of silence. Blinks 2.5–5 s, 110 ms, 15% double, forced at the start of a turn. Reduced motion: no hops/bobs, instant mouth.
+- **Walk first, then write:** the tutor raises `tutorGate.hold` (`src/lib/board/tip.ts`) while it turns to the board or
+  walks to a stroke out of reach; the lesson timeline (`engine.ts` tick) freezes until the chalk (forward kinematics)
+  is on the tip — capped at 1.6 s so speech and drawing never drift apart.
+- Highlights: `boardFocus` (set by the board's Highlight) → the tutor points at the circled element for 1.5 s.
+- Measured (headless, `animator.test.ts`, Blokbek rig, scripted lesson at 60 fps), chalk-to-tip while ink is laid:
+  phone p50 19.5 / p90 35 stage px, desktop p50 19.7 / p90 44 (≈ 5 CSS px on a phone). This is the cost of the k≈22
+  smoothing on glyph corners (~2v/k); the IK aims ahead by the tip's relative velocity, which removes the steady lag.
+- `/dev/tutor` (dev only, 404 in production): tutor picker (+ makeChar), a button per state, speed 0.25–1×,
+  "Play lesson script" (talk → turn → write 3 strokes → walk → turn back → praise).
+- ⚠️ Not verified yet: 60 fps / long frames in the Chrome performance panel and screen captures — the in-app browser
+  pane was hidden during this run (requestAnimationFrame stops), so no live frame-time numbers or videos.

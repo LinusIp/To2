@@ -8,6 +8,7 @@ import { prefetchSpeech, speak, unlockAudio, type Speech } from "@/lib/audio/pla
 import { startRecording, stopRecording, micSupported } from "@/lib/audio/recorder";
 import { initialPlayer, transition, type PlayerEvent, type PlayerState } from "./player";
 import { readTutorStream } from "./sse";
+import { tutorGate } from "@/lib/board/tip";
 import { t as T } from "@/i18n/uz";
 
 export interface TranscriptItem {
@@ -124,6 +125,11 @@ const tlTime = (x: Timeline) => x.offset + (x.running ? (now() - x.start) * get(
 function tick() {
   const x = tl;
   if (!x || !x.running || !x.slots) return;
+  // the tutor is still turning / walking to the stroke: hold the chalk where it is
+  if (tutorGate.hold) {
+    x.offset = tlTime(x);
+    x.start = now();
+  }
   const t = tlTime(x);
   let board = get().board;
   let changed = false;

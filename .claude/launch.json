@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "to2-dev", "runtimeExecutable": "pnpm", "runtimeArgs": ["dev", "--port", "5173", "--strictPort"], "port": 5173 }
+    { "name": "to2-dev", "runtimeExecutable": "pnpm", "runtimeArgs": ["dev", "--port", "5173", "--strictPort"], "port": 5173 },
+    { "name": "to2-dev-attach", "url": "http://localhost:5173", "port": 5173 }
   ]
 }
