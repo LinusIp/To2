@@ -28,6 +28,8 @@ jobs:
         with:
           node-version: "20"
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools # the default also asks for the retired "tools" package and fails
       - name: Production site answers (/version)
         run: |
           URL=$(node -p "require('../production.json').url")
@@ -104,6 +106,8 @@ jobs:
           node-version: "20"
       - uses: android-actions/setup-android@v3
         if: env.HAS_KEYSTORE == 'true'
+        with:
+          packages: platform-tools
       - name: Build signed release APK
         if: env.HAS_KEYSTORE == 'true'
         working-directory: mobile
