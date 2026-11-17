@@ -35,7 +35,8 @@ try {
   step("clean checkout of HEAD");
   wt = fs.mkdtempSync(path.join(os.tmpdir(), "to2-release-"));
   run("git", ["worktree", "add", "--detach", wt, head], { capture: true });
-  run("pnpm", ["install", "--frozen-lockfile", "--prefer-offline", "--reporter=silent"], { cwd: wt });
+  // sharp ships prebuilt binaries; its (unapproved) install hook is not needed
+  run("pnpm", ["install", "--frozen-lockfile", "--prefer-offline", "--reporter=silent", "--config.strict-dep-builds=false"], { cwd: wt });
 
   step("tests");
   run("pnpm", ["vitest", "run"], { cwd: wt });
