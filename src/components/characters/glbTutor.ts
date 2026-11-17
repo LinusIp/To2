@@ -13,10 +13,16 @@ import type { VoxelChar } from "./voxel";
 
 const AVAILABLE = new Set<string>(models as string[]);
 const PLAYABLE_IDS = new Set<string>(PLAYABLE.map((c) => c.id));
+/**
+ * Models that exist but must not be used yet. diyorbek.glb currently shows a green-hooded boy
+ * with headphones (Ziyo's look), not Diyorbek's lab coat + glasses from his card, so he uses
+ * the makeChar voxel rig until the model is re-exported. Remove the id here once it's fixed.
+ */
+const DISABLED = new Set<string>(["diyorbek"]);
 
 /** Is there a real 3D model for this (playable) tutor? Listed at build time from public/models/tripo/. */
 export function hasGlb(id: string) {
-  return PLAYABLE_IDS.has(id) && AVAILABLE.has(`${id}.glb`);
+  return PLAYABLE_IDS.has(id) && !DISABLED.has(id) && AVAILABLE.has(`${id}.glb`);
 }
 
 let loader: GLTFLoader | null = null;

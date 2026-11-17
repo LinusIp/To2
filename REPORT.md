@@ -147,3 +147,8 @@ Team added `src/lib/board/layout.ts` (main-layer auto-layout on the server). Re-
 - Measured (geo-perimeter, aisha-gemma-4, 3 raw lessons): the LLM used `place` on 46/46 placeable drawings.
   Live after deploy (3 fresh lessons): 0 text-on-chalk collisions; only the triangle's own corners touch (expected).
 - ⚠️ Not measured: how many drawings the safety-net pass still moves after placement. Line/arrow commands keep absolute coordinates.
+
+## ⚠️ Diyorbek 3D model disabled (2026-11-18)
+- `public/models/tripo/diyorbek.glb` shows a green-hooded boy with headphones (Ziyo's look), not Diyorbek's
+  lab coat + glasses from his card. Until it is re-exported, Diyorbek uses the `makeChar` voxel rig.
+- 🔑 Team: re-export diyorbek.glb, then remove `"diyorbek"` from `DISABLED` in `src/components/characters/glbTutor.ts`.
