@@ -1,0 +1,53 @@
+{
+  "name": "to2",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm",
+  "dependencies": {
+    "@vinext/cloudflare": "latest",
+    "@xyflow/react": "^13.0.1",
+    "dagre": "^0.8.5",
+    "drizzle-orm": "^0.45.4",
+    "katex": "^0.19.1",
+    "lucide-react": "^1.73.0",
+    "mathjs": "^15.2.0",
+    "motion": "^14.14.0",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-server-dom-webpack": "latest",
+    "roughjs": "^4.6.6",
+    "vinext": "latest",
+    "zod": "^4.6.7",
+    "zustand": "^5.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "beta",
+    "@tailwindcss/postcss": "latest",
+    "@types/dagre": "^0.7.54",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
+    "@vitejs/plugin-rsc": "latest",
+    "cf": "1.0.0-beta.32",
+    "drizzle-kit": "^0.31.11",
+    "tailwindcss": "latest",
+    "typescript": "latest",
+    "vite": "8.3.0",
+    "vitest": "^5.1.0",
+    "wrangler": "^4.163.0"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "start": "vite preview",
+    "deploy": "pnpm build && node scripts/deploy.mjs",
+    "deploy:cf": "vinext-cloudflare deploy",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:remote": "wrangler d1 execute to2 --remote --file drizzle/0000_init.sql --yes",
+    "typecheck": "tsc --noEmit",
+    "cf-typegen": "cf workers types"
+  }
+}

@@ -1,0 +1,40 @@
+import { bindings, defineConfig, defineWorker } from "cf/config";
+
+// Cloudflare bindings for To2.
+// NOTE: C3 now scaffolds `cloudflare.config.ts` (the new `cf` config) instead of
+// `wrangler.jsonc`. Same bindings as CLAUDE.md §2 — see REPORT.md.
+export default defineConfig({
+  worker: defineWorker({
+    name: "to2",
+    entrypoint: "vinext/server/fetch-handler",
+    compatibilityDate: "2026-11-17",
+    compatibilityFlags: ["nodejs_compat"],
+    assets: {
+      htmlHandling: "none",
+      notFoundHandling: "none",
+      runWorkerFirst: ["/*", "!/_next/static/*", "!/*/_next/static/*", "!/audio/*", "!/fonts/*"],
+    },
+    env: {
+      ASSETS: bindings.assets(),
+      DB: bindings.d1({ id: "434456ba-b06b-481a-b281-76c4f267f339", name: "to2" }),
+      KV: bindings.kv({ id: "32f5698371d8498483830b87b367c689" }),
+      // R2 is not enabled on the account yet (code 10042). Audio cache falls back to KV.
+      // When R2 is enabled: `pnpm wrangler r2 bucket create to2-audio` and uncomment:
+      // AUDIO: bindings.r2({ name: "to2-audio" }),
+      MOCK_AI: bindings.text("0"),
+      DEFAULT_LOCALE: bindings.text("uz-Latn"),
+      VOICELAB_BASE_URL: bindings.text("https://api.voicelab.uz"),
+      VOICELAB_LLM_MODEL: bindings.text("aisha-gemma-4"),
+      VOICELAB_LANG: bindings.text("uz"),
+      VOICE_IDS: bindings.text(
+        JSON.stringify({
+          blokbek: "voice_fa56cecf-9b0b-45ba-9ec3-494efb5b301f",
+          "agent-shox": "voice_be56058a-8f15-48bb-904b-4fe92531d5b1",
+          "robo-rayhon": "voice_01J9NEUTRAL0000000000000001",
+          chaqmoq: "voice_5e592ada-eca8-42e3-98fa-469c1c8fc999",
+        }),
+      ),
+      VOICELAB_API_KEY: bindings.secret(),
+    },
+  }),
+});

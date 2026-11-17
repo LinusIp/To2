@@ -1,0 +1,6 @@
+VOICELAB_API_KEY=vlk_your_key_here
+VOICELAB_BASE_URL=
+VOICELAB_LLM_MODEL=
+VOICELAB_LANG=uz
+VOICE_IDS={"blokbek":"voice_...","agent-shox":"voice_...","robo-rayhon":"voice_...","chaqmoq":"voice_..."}
+MOCK_AI=1
