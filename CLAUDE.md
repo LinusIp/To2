@@ -51,7 +51,7 @@ Target users (assumption — log it): school students **grades 5–9 (age 10–1
 | Language | **TypeScript** strict | |
 | UI | **Tailwind CSS v4** + **shadcn/ui** (Radix) + **lucide-react** icons | |
 | Animation | **motion** (Framer Motion) for UI + character states; CSS/SVG for board strokes | |
-| Whiteboard | **Custom SVG board** driven by JSON "board commands" (§5) + **rough.js** (hand-drawn look) + **KaTeX** (math) | Do NOT use tldraw/Excalidraw (licence + weight + no scripted playback). |
+| Whiteboard | **Custom SVG board** driven by JSON "board commands" (§5) with a **stroke-by-stroke handwriting engine** (§5b) + **rough.js**-style wobbly shapes. No typeset math on the board. | Do NOT use tldraw/Excalidraw (licence + weight + no scripted playback). |
 | Graphs on board | Own SVG plotter (axes + `y=f(x)` sampled with **mathjs**) | |
 | Math checking | **mathjs** (`evaluate`, `simplify`) to verify learner answers locally — never trust the LLM alone for correctness. | |
 | Roadmap view | **@xyflow/react** (React Flow) + **dagre** for auto layout | roadmap.sh look. |
@@ -207,6 +207,29 @@ type Color = "ink" | "blue" | "red" | "green" | "orange" | "purple";
 
 ---
 
+## 5b. The board must write like a REAL tutor (most important UX in the app)
+
+The #1 thing that makes the app feel real or "AI-generated" is the board. **Never show typeset text that appears all at once.** A real tutor writes stroke by stroke with chalk. Working prototype: `docs/prototypes/board-handwriting.html` (open it in a browser). It contains the handwriting engine, the **tutor who faces the learner while talking, turns his back to the board, walks along it and writes with an IK arm that follows the chalk tip**, bends for low rows, and the **interrupt flow** (pause → turn to learner → listen → answer in orange → resume). Port it to React: `src/components/board/` (engine), `src/components/characters/Tutor.tsx` (front/back views, turn, walk, IK), `src/lib/lesson/player.ts` (sequence + pause/resume). Keep its behaviour and timings; replace the placeholder SVG character with the final art parts (front set + back set) when the team delivers them.
+
+**Handwriting engine**
+- **Single-stroke glyphs** (centre-line paths, not font outlines) for `0–9 x y a b n + − × · ÷ = ( ) [ ] / < > ² ³ √ π %` and the Uzbek words the tutor writes on the board (`yoki`, `demak`, `javob`, `tekshir`). Start from the prototype's glyph table, add the missing ones. (Option: Hershey single-line fonts, which are public domain, for more glyphs.)
+- Each glyph is drawn with `stroke-dashoffset` **at hand speed** (≈ 500 px/s on a 1000-wide board, ×0.85–1.15 random), with 25–70 ms pauses between strokes and longer pauses between tokens, so it looks like real writing.
+- **Human imperfection every time:** per glyph rotate ±3°, scale 0.96–1.04, baseline ±2%. The same lesson never looks identical twice.
+- **Chalk look:** an SVG filter (`feTurbulence` + `feDisplacementMap` for rough edges, plus a noise mask for small gaps in the chalk). Faint smudges on the board. No digital glow.
+- **A chalk piece follows the stroke tip** while writing. The character's arm IK (§6b) points at that same tip.
+- Freehand shapes are slightly wobbly: lines bend a little, circles overshoot their closing point, arrows curve, ticks are quick.
+
+**How a tutor uses the board (the LLM board-command prompt must follow these):**
+1. Work top-left → down, one step per line, aligned on `=` where possible.
+2. Side calculations go in a corner area (right column, behind a faint divider), in yellow.
+3. Arrows connect the side calculation to where it is used.
+4. **Self-correction is allowed and good:** sometimes write a step, say "to'xta, tekshiramiz", cross it out in orange and write the right one. Use it at most once per lesson, on purpose, at a typical student mistake (sign errors, common denominator).
+5. The final answer is in yellow, circled, with a green tick.
+6. Speak while writing: start the TTS audio for a segment, then begin drawing 200–400 ms later. Writing time ≈ audio time (§3 sync rules).
+7. Erasing: a quick wipe animation, never an instant clear.
+
+New board commands for this (add to §5 `BoardCommand`): `{op:"write", text, x, y, size, color}` (now handwritten, not typeset), `{op:"strike", target}`, `{op:"circle", target}`, `{op:"arrow", from:[x,y]|target, to:[x,y]|target, bend}`, `{op:"tick", x, y}`, `{op:"divider", x}`, `{op:"wipe", area|"all"}`. LaTeX/KaTeX is **not** used on the board: everything is handwritten. KaTeX is allowed only in UI captions if needed.
+
 ## 6. Characters (fun layer)
 
 Game-**inspired**, but **100% original** characters — **do not** use Minecraft, Counter-Strike, Roblox, Fortnite etc. names, logos, skins, sounds or assets (trademark/copyright risk, and judges will ask). Keep everything **kid-safe: no weapons, no violence**.
@@ -240,6 +263,8 @@ Implementation: one SVG per character in `src/components/characters/`, each with
 Mobile portrait uses the same layers recomposed: board on top full-width, character smaller bottom-left overlapping, bubble beside it, voice bar at the bottom.
 
 ### Character = cut-out rig, NOT pose swapping
+**Two views are required:** `front` (talking to the learner, pointing at the board) and `back` (facing the board while writing; we see the back of the head and the hoodie, and the right arm is a separate IK arm). Turning = squash scaleX 1→0, swap view, 0→1 (≈250 ms total). While writing the tutor stands about 265 px left of the chalk tip and walks smoothly as the tip moves, bending (scaleY ≥ 0.8) for low rows. Whenever he talks without writing, he turns to face the learner.
+
 Swapping whole images looks choppy. Instead the character is cut into parts (easy for a voxel character — the parts are boxes):
 `torso`, `head`, `hair/hat`, `upperArmL/R`, `foreArmL/R + hand` (right hand holds chalk), `legs`, eyes (`open`, `half`, `closed`), brows, mouths (`closed`, `small`, `open`, `wide`, `smile`, `o`).
 Parts are transparent PNG/WebP (render them from Blender or cut from an AI image) or simple SVG boxes, each with a pivot point in `src/config/characters.ts`. Animate ONLY `transform` and `opacity` (GPU) with **motion** springs:

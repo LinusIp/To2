@@ -390,6 +390,16 @@ export async function ask(question: string, voice = false, simpler = false) {
   abort?.abort();
   abort = new AbortController();
   let first = true;
+  let fillerDone: Promise<void> = Promise.resolve();
+  // Fill the LLM wait with a short, pre-cached phrase so there is no dead air.
+  if (!simpler) {
+    const filler = FILLERS[Math.floor(Math.random() * FILLERS.length)];
+    speech?.stop();
+    const fs = speak(filler, get().voice, { rate: get().rate, muted: get().muted });
+    speech = fs;
+    fillerDone = Promise.race([fs.ended, new Promise<void>((r) => setTimeout(r, 4000))]);
+    set({ caption: filler });
+  }
   try {
     const res = await fetch("/api/tutor", {
       method: "POST",
@@ -403,7 +413,10 @@ export async function ask(question: string, voice = false, simpler = false) {
         if (first) {
           first = false;
           fire({ type: "REPLY_READY" });
-          void playSegment("note", 0);
+          const myGen = gen;
+          void fillerDone.then(() => {
+            if (gen === myGen && get().player.status === "answering") void playSegment("note", 0);
+          });
         } else if (get().waiting && get().track === "note") {
           set({ waiting: false });
           void playSegment("note", get().note.length - 1);
@@ -463,6 +476,8 @@ export function explainAgain() {
   fire({ type: "EXPLAIN_AGAIN" }); // checking → thinking (resume point kept)
   void ask(lastQuestion, false, true);
 }
+
+export const FILLERS = ["Yaxshi savol! Hozir ko'rsataman.", "Qiziq savol! Bir soniya o'ylab olay."];
 
 const ENCOURAGE = ["Deyarli! Yana bir bor o'ylab ko'r.", "Hechqisi yo'q, yana urinib ko'r!", "Yaqin qolding! Doskaga qara."];
 

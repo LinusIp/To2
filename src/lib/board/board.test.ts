@@ -76,3 +76,18 @@ describe("demo lessons", () => {
     }
   });
 });
+
+import { fitToBoard } from "./model";
+describe("fitToBoard", () => {
+  it("shrinks and shifts overflowing text", () => {
+    const c = fitToBoard({ op: "write", id: "t", x: 300, y: 50, text: "EKUK: Eng Kichik Umumiy Karrali", size: "l" });
+    expect(c.op === "write" && c.x).toBeLessThanOrEqual(60); // shifted left to fit
+    const long = fitToBoard({ op: "write", id: "u", x: 0, y: 0, text: "Algoritm: tub ko'paytuvchilarga ajratish va darajalar", size: "l" });
+    expect(long.op === "write" && long.size).not.toBe("l"); // too wide even at x=16 → shrunk
+  });
+  it("clamps shapes into the canvas", () => {
+    const c = fitToBoard({ op: "rect", id: "r", x: 950, y: 600, w: 200, h: 100 });
+    expect(c.op === "rect" && c.x + c.w).toBeLessThanOrEqual(984);
+    expect(c.op === "rect" && c.y + c.h).toBeLessThanOrEqual(609);
+  });
+});

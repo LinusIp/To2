@@ -68,16 +68,16 @@ export function interruptMessages(opts: {
   board: { id: string; op: string; text?: string; x: number; y: number }[];
   history: { role: string; text: string }[];
   simpler: boolean;
-  free: { x: number; y: number };
+  free?: { x: number; y: number };
 }): Msg[] {
-  const { ch, skill, grade, question, segment, board, history, simpler, free } = opts;
+  const { ch, skill, grade, question, segment, board, history, simpler } = opts;
   return [
     {
       role: "system",
       content: `${persona(ch, grade)}
 O'quvchi dars o'rtasida savol berdi. Unga 1–2 ta qisqa segment bilan javob ber, oxirgi segment doim:
 {"id":"chk","type":"check","layer":"note","emotion":"encouraging","say":"Tushunarli bo'ldimi? Davom etamizmi?","board":[]}
-- Barcha segmentlarda "layer":"note". Chizmalarni bo'sh joyga chiz (taxminan x=${free.x}, y=${free.y} atrofida), asosiy chizmalarni o'chirma.
+- Barcha segmentlarda "layer":"note". Izoh uchun faqat qisqa "write" (28 belgigacha) ishlat — u avtomatik ravishda doskaning o'ng pastidagi izoh oynasiga joylanadi (x,y ni 0 qo'ysang bo'ladi). Asosiy chizmalarni o'chirma.
 - Doskadagi elementlarni "highlight" bilan ko'rsatishing mumkin (id bo'yicha).
 - Savol matematikaga aloqasiz bo'lsa: bitta do'stona gap bilan darsga qaytar, keyin check.
 ${simpler ? "- O'quvchi avvalgi tushuntirishni tushunmadi: JUDA oddiyroq, boshqa misol bilan tushuntir." : ""}

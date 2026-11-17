@@ -4,7 +4,7 @@
 import { memo, useEffect, useMemo, useState } from "react";
 import rough from "roughjs";
 import type { Color } from "@/lib/ai/schema";
-import { BOARD_H, BOARD_W, FONT_PX, bbox, type BoardEl, type BoardState } from "@/lib/board/model";
+import { BOARD_H, BOARD_W, FONT_PX, NOTE_PANEL, bbox, type BoardEl, type BoardState } from "@/lib/board/model";
 import { layoutChalkTex, tokenizeTex } from "./chalkTex";
 import { PALETTE, type BoardTheme } from "./palette";
 
@@ -351,6 +351,9 @@ export default function Board({ state, active, theme = "chalk", label, className
           ))}
       </g>
       <g opacity={state.noteDim ? 0.3 : 1} style={{ transition: "opacity 400ms" }}>
+        {state.els.some((e) => e.layer === "note" && (e.cmd.op === "write" || e.cmd.op === "latex")) && (
+          <rect x={NOTE_PANEL.x} y={NOTE_PANEL.y} width={NOTE_PANEL.w} height={NOTE_PANEL.h} rx={14} fill={pal.bg} fillOpacity={0.94} stroke={pal.orange} strokeWidth={3} strokeDasharray="10 8" />
+        )}
         {state.els
           .filter((e) => e.layer === "note")
           .map((el) => (

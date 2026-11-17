@@ -12,7 +12,7 @@ import { demoLessonFor, mockInterrupt } from "@/lib/ai/mock/lessons";
 import { cannedLesson } from "@/lib/ai/canned";
 import { getSkill } from "@/data/skills";
 import { getCharacter } from "@/config/characters";
-import { freeArea, emptyBoard } from "@/lib/board/model";
+import { emptyBoard, fitToBoard, freeArea, noteLayouter } from "@/lib/board/model";
 import { bad, clientKey, rateLimit, userIdFor } from "@/lib/server/session";
 import { getMastery, recentMistakes, startLessonRow } from "@/lib/server/repo";
 import type { Msg } from "@/lib/ai/types";
@@ -68,6 +68,7 @@ async function streamLLM(messages: Msg[], emit: (s: Seg) => Promise<void>, opts:
     if (s.type === "ask" && !s.expect) s = { ...s, type: "explain" };
     if (seen.has(s.id)) s = { ...s, id: `${s.id}_${count}` };
     seen.add(s.id);
+    s = { ...s, board: s.board.map(fitToBoard) };
     if (opts.note) s = { ...s, layer: "note" };
     count++;
     await emit(s);
@@ -143,15 +144,26 @@ export async function POST(req: Request) {
       }
 
       // ── interrupt ──
+      const lay = noteLayouter();
       const question = (b.question ?? "").trim();
       if (!question) {
         await send("segment", CHECK);
         return;
       }
       if (ai.mock || !(await rateLimit(`llm:${clientKey(req, userId)}`, 30))) {
-        for (const s of mockInterrupt(question, skill.id)) await send("segment", s);
+        for (const s of mockInterrupt(question, skill.id)) await send("segment", lay(s));
         return;
       }
+      // Same question on the same skill → instant cached answer (LLM response cache in KV).
+      const qNorm = question.toLowerCase().replace(/[^a-z0-9ʻ's]/g, "").replace(/s+/g, " ").trim();
+      const qHash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(qNorm)))].slice(0, 12).map((x) => x.toString(16).padStart(2, "0")).join("");
+      const intKey = `int:v1:${skill.id}:${ch.id}:${b.simpler ? 1 : 0}:${qHash}`;
+      const cachedInt = await env.KV.get<Seg[]>(intKey, "json");
+      if (cachedInt?.length) {
+        for (const s of cachedInt) await send("segment", s);
+        return;
+      }
+      const sent: Seg[] = [];
       const boardDesc = b.board ?? [];
       const free = freeArea({ ...emptyBoard(), els: [] });
       const msgs = interruptMessages({
@@ -171,15 +183,21 @@ export async function POST(req: Request) {
         if (sawCheck) return;
         n++;
         if (s.type === "check") sawCheck = true;
-        await send("segment", s);
+        const out = lay(s);
+        sent.push(out);
+        await send("segment", out);
       };
       const r = await streamLLM(msgs, emit, { note: true, maxTokens: 900 }).catch((e) => ({ count: 0, raw: "", error: (e as Error).message }));
       if (n === 0) {
         console.warn("[tutor] interrupt LLM failed", r.error);
-        for (const s of mockInterrupt(question, skill.id)) await send("segment", s);
+        for (const s of mockInterrupt(question, skill.id)) await send("segment", lay(s));
         return;
       }
-      if (!sawCheck && n > 0) await send("segment", CHECK);
+      if (!sawCheck && n > 0) {
+        await send("segment", CHECK);
+        sent.push(CHECK);
+      }
+      if (sent.length >= 2) await env.KV.put(intKey, JSON.stringify(sent), { expirationTtl: 60 * 60 * 24 * 7 });
     } catch (e) {
       console.error("[tutor]", (e as Error).message);
       await send("error", { message: "tutor_failed" }).catch(() => {});

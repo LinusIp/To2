@@ -181,3 +181,76 @@ export function freeArea(state: BoardState): { x: number; y: number } {
   const maxY = main.reduce((m, b) => Math.max(m, b.y + b.h), 0);
   return { x: 40, y: Math.min(Math.max(maxY + 30, 420), 540) };
 }
+
+/** The orange "note" panel (bottom-right) where interruption answers are written. */
+export const NOTE_PANEL = { x: 548, y: 506, w: 444, h: 112 } as const;
+const NOTE_ROW_H = 44;
+const NOTE_MAX_ROWS = 2;
+
+/**
+ * Re-lay out note-layer drawings so they never cover the main lesson:
+ * text/latex go to rows inside NOTE_PANEL; other shapes are dropped;
+ * highlight/erase/pause are kept (highlight points at existing main elements).
+ */
+export function noteLayouter() {
+  let row = 0;
+  return <T extends { board: BoardCommand[] }>(s: T): T => ({
+    ...s,
+    board: s.board.flatMap((c): BoardCommand[] => {
+      if (c.op === "highlight" || c.op === "erase" || c.op === "pause") return [c];
+      if (c.op !== "write" && c.op !== "latex") return [];
+      const r = Math.min(row++, NOTE_MAX_ROWS - 1);
+      const y = NOTE_PANEL.y + 10 + r * NOTE_ROW_H;
+      if (c.op === "write") return [{ ...c, x: NOTE_PANEL.x + 16, y, size: "s", text: c.text.length > 30 ? c.text.slice(0, 29) + "…" : c.text }];
+      // fractions are tall; keep latex only if it fits a row, else turn it into plain text
+      if (c.tex.includes("\\frac")) {
+        const text = c.tex
+          .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, "$1/$2")
+          .replace(/\\cdot/g, "·")
+          .replace(/[\\{}]/g, "")
+          .slice(0, 30);
+        return [{ op: "write", id: c.id, x: NOTE_PANEL.x + 16, y, size: "s", color: c.color, text }];
+      }
+      return [{ ...c, x: NOTE_PANEL.x + 16, y, size: "s" }];
+    }),
+  });
+}
+
+export function layoutNoteSegments<T extends { board: BoardCommand[] }>(segs: T[]): T[] {
+  const lay = noteLayouter();
+  return segs.map((s) => lay(s));
+}
+
+const SIZES: ("l" | "m" | "s")[] = ["l", "m", "s"];
+
+/** Keep LLM drawings on the canvas: shrink/shift text that would overflow, clamp shapes. */
+export function fitToBoard(cmd: BoardCommand): BoardCommand {
+  const M = 16;
+  if (cmd.op === "write" || cmd.op === "latex") {
+    let c = { ...cmd };
+    let b = bbox(c);
+    let i = SIZES.indexOf(c.size ?? "m");
+    while (b.w > BOARD_W - 2 * M && i < SIZES.length - 1) {
+      c = { ...c, size: SIZES[++i] };
+      b = bbox(c);
+    }
+    const x = Math.min(Math.max(M, c.x), Math.max(M, BOARD_W - M - b.w));
+    const y = Math.min(Math.max(M, c.y), Math.max(M, BOARD_H - M - b.h));
+    return { ...c, x, y };
+  }
+  if (cmd.op === "rect" || cmd.op === "circle" || cmd.op === "ellipse" || cmd.op === "plot") {
+    const w = Math.min(cmd.w, BOARD_W - 2 * M);
+    const h = Math.min(cmd.h, BOARD_H - 2 * M);
+    return { ...cmd, w, h, x: Math.min(Math.max(M, cmd.x), BOARD_W - M - w), y: Math.min(Math.max(M, cmd.y), BOARD_H - M - h) };
+  }
+  if (cmd.op === "fractionbar" || cmd.op === "numberline") {
+    const w = Math.min(cmd.w, BOARD_W - 2 * M);
+    return { ...cmd, w, x: Math.min(Math.max(M, cmd.x), BOARD_W - M - w), y: Math.min(Math.max(40, cmd.y), BOARD_H - 80) };
+  }
+  if (cmd.op === "line") {
+    const cx = (v: number) => Math.min(Math.max(M, v), BOARD_W - M);
+    const cy = (v: number) => Math.min(Math.max(M, v), BOARD_H - M);
+    return { ...cmd, from: [cx(cmd.from[0]), cy(cmd.from[1])], to: [cx(cmd.to[0]), cy(cmd.to[1])] };
+  }
+  return cmd;
+}
