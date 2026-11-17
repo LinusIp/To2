@@ -35,6 +35,19 @@ for (const p of [
 ]) phrases.add(p);
 const list = [...phrases];
 console.log(`${list.length} phrases × ${voices.length} voices → ${base}`);
+/** fetch with 3 retries (the network sometimes resets long runs) */
+async function get(u, init) {
+  for (let i = 0; ; i++) {
+    try {
+      const r = await fetch(u, init);
+      const body = await r.arrayBuffer();
+      return { r, body };
+    } catch (e) {
+      if (i >= 3) return { r: { status: 0, headers: new Headers() }, body: new ArrayBuffer(0) };
+      await new Promise((res) => setTimeout(res, 1500 * (i + 1)));
+    }
+  }
+}
 let ok = 0, fail = 0;
 // each tutor's own greeting ("Ovozini eshit" on the choose-tutor screen)
 const GREETINGS = {
@@ -53,11 +66,10 @@ for (const v of voices) {
   const mine = v === "blokbek" ? [...list, ...greet] : [...greet, ...DEMO_LESSONS["frac-add-unlike"].segments.map((s) => s.say), "Yaxshi savol! Hozir ko'rsataman.", "Qiziq savol! Bir soniya o'ylab olay.", "Tushunarli bo'ldimi? Davom etamizmi?"];
   for (const text of mine) {
     const u = `${base}/api/tts?voice=${encodeURIComponent(v)}&text=${encodeURIComponent(text)}`;
-    const r = await fetch(u);
+    const { r } = await get(u);
     const c = r.headers.get("x-tts-cache");
     if (r.status === 200) ok++;
     else fail++;
-    await r.arrayBuffer();
     process.stdout.write(r.status === 200 ? (c === "hit" ? "." : "+") : "x");
   }
 }
@@ -66,16 +78,15 @@ console.log(`\nok=${ok} fail=${fail}`);
 // Warm the LLM answers (KV cache) + their audio for the demo questions (CLAUDE.md §15 step 5).
 const DEMO_QUESTIONS = ["Nega maxrajlarni ko'paytirdik?", "Nega maxrajlarni oltiga keltirdik?", "EKUK nima?"];
 for (const question of DEMO_QUESTIONS) {
-  const r = await fetch(`${base}/api/tutor`, {
+  const { body } = await get(`${base}/api/tutor`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ mode: "interrupt", skillId: "frac-add-unlike", characterId: "blokbek", grade: 6, question, segment: "", board: [], history: [] }),
   });
-  const text = await r.text();
+  const text = new TextDecoder().decode(body);
   const says = [...text.matchAll(/^data: (\{.*\})$/gm)].map((m) => JSON.parse(m[1]).say).filter(Boolean);
   for (const say of says) {
-    const a = await fetch(`${base}/api/tts?voice=blokbek&text=${encodeURIComponent(say)}`);
-    await a.arrayBuffer();
+    const { r: a } = await get(`${base}/api/tts?voice=blokbek&text=${encodeURIComponent(say)}`);
     process.stdout.write(a.status === 200 ? "+" : "x");
   }
   console.log(` ${question} → ${says.length} segments`);

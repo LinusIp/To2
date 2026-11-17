@@ -34,7 +34,7 @@ export default function Landing() {
               <SplashCta />
             </div>
           </div>
-          <TutorPortrait id="blokbek" pose="wave" frame="full" alt="Blokbek qo'l silkitmoqda" className="mt-2 h-auto w-[min(330px,82vw)] md:w-[420px]" />
+          <TutorPortrait id="blokbek" pose="wave" frame="full" alt="Blokbek qo'l silkitmoqda" className="mt-2 h-[min(44dvh,420px)] w-auto md:h-[560px]" />
         </div>
         <div className="relative z-10 w-full max-w-[420px] px-6 pb-10 md:hidden">
           <SplashCta />

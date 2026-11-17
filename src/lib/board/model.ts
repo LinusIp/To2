@@ -33,6 +33,10 @@ export function isDraw(cmd: BoardCommand): cmd is DrawCommand {
 export function applyCommand(state: BoardState, cmd: BoardCommand, layer: Layer = "main"): BoardState {
   if (cmd.op === "pause") return state;
   if (cmd.op === "erase") {
+    // An interruption answer (note layer) may only erase its OWN notes — never the main explanation.
+    if (layer === "note") {
+      return { ...state, els: state.els.filter((e) => !(e.layer === "note" && (cmd.target === "all" || cmd.target === "note" || e.id === cmd.target))) };
+    }
     if (cmd.target === "all") return { ...state, els: [] };
     if (cmd.target === "note") return { ...state, els: state.els.filter((e) => e.layer !== "note") };
     return { ...state, els: state.els.filter((e) => e.id !== cmd.target) };

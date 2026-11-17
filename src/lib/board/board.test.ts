@@ -135,3 +135,14 @@ describe("handwriting engine", () => {
     expect(st.els.find((e) => e.cmd.op === "arrow")).toBeTruthy();
   });
 });
+
+describe("note layer safety", () => {
+  it("an interruption answer cannot erase the main explanation", () => {
+    let s = applyCommand(emptyBoard(), { op: "write", id: "q", x: 0, y: 0, text: "1/2+1/3" });
+    s = applyCommand(s, { op: "write", id: "n1", x: 0, y: 0, text: "izoh" }, "note");
+    s = applyCommand(s, { op: "erase", target: "all" }, "note");
+    expect(s.els.map((e) => e.id)).toEqual(["q"]);
+    s = applyCommand(s, { op: "erase", target: "q" }, "note");
+    expect(s.els.map((e) => e.id)).toEqual(["q"]);
+  });
+});
