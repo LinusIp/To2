@@ -93,6 +93,65 @@ describe("main-layer layout", () => {
     }
   });
 
+  // Live geo-perimeter lesson (LLM, 17 Nov): segments p1 and p5 exactly as cached in KV.
+  const GEO_P1: Seg = {
+    board: [
+      { op: "write", id: "title", x: 50, y: 40, text: "Ko'pburchak perimetri", size: "l", color: "ink" },
+      { op: "rect", id: "shape1", x: 400, y: 100, w: 200, h: 150, color: "blue" },
+      { op: "write", id: "p_def", x: 50, y: 120, text: "Perimetr (P) = hamma tomonlar yig'indisi", size: "m", color: "green" },
+    ],
+  };
+  const GEO_P5: Seg = {
+    board: [
+      { op: "erase", target: "all" },
+      { op: "rect", id: "sq", x: 400, y: 100, w: 150, h: 150, color: "purple" },
+      { op: "write", id: "sq_side", x: 450, y: 80, text: "4 sm", size: "s", color: "ink" },
+      { op: "write", id: "sq_note", x: 50, y: 100, text: "Kvadrat: barcha tomonlar teng", size: "m", color: "purple" },
+    ],
+  };
+  /** every drawing (shapes too) against everything already on the board */
+  function anyOverlap(segs: Seg[]) {
+    let on = new Map<string, DrawCommand>();
+    const bad: string[] = [];
+    for (const s of segs)
+      for (const c of s.board) {
+        if (c.op === "erase") {
+          if (c.target === "all") on = new Map();
+          else on.delete(c.target);
+          continue;
+        }
+        if (!isDraw(c)) continue;
+        for (const [id, o] of on) if (id !== c.id && overlaps(measure(c), measure(o))) bad.push(`${c.id}×${id}`);
+        on.set(c.id, c);
+      }
+    return bad;
+  }
+
+  it("shrinks a line that is wider than the board instead of leaving it on top of things", () => {
+    expect(measure(GEO_P1.board[2] as DrawCommand).w).toBeGreaterThan(BOARD_W); // the bug
+    const out = layoutMainSegments([GEO_P1]);
+    expect(anyOverlap(out)).toEqual([]);
+    const def = out[0].board.find((c) => isDraw(c) && c.id === "p_def") as DrawCommand;
+    expect(measure(def).w).toBeLessThanOrEqual(BOARD_W - 32);
+  });
+
+  it("does not glue a full line of text to the shape it overlaps; labels stay with the shape", () => {
+    expect(anyOverlap([GEO_P5]).length).toBeGreaterThan(0); // the bug
+    const out = layoutMainSegments([GEO_P5]);
+    expect(anyOverlap(out)).toEqual([]);
+    const sq = out[0].board.find((c) => isDraw(c) && c.id === "sq") as { x: number; y: number };
+    const lbl = out[0].board.find((c) => isDraw(c) && c.id === "sq_side") as { x: number; y: number };
+    // "4 sm" stays with the square: same x, just above its top edge
+    expect(lbl.x - sq.x).toBe(50);
+    const lb = measure(out[0].board.find((c) => isDraw(c) && c.id === "sq_side") as DrawCommand);
+    expect(lb.y + lb.h).toBeLessThanOrEqual(sq.y);
+    expect(sq.y - (lb.y + lb.h)).toBeLessThan(12);
+  });
+
+  it("geo-perimeter p1 then p5 lays out cleanly as one lesson", () => {
+    expect(anyOverlap(layoutMainSegments([GEO_P1, GEO_P5]))).toEqual([]);
+  });
+
   it("passes note-layer segments through untouched", () => {
     const n: Seg = { layer: "note", board: [{ op: "write", id: "n", x: 600, y: 520, text: "eslatma", size: "s" }] };
     expect(mainLayouter()(n)).toBe(n);

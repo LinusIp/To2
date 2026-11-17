@@ -29,6 +29,25 @@ const CLUSTER_GAP = 34; // drawings closer than this in one segment belong toget
 
 const CONTENT = new Set(["write", "latex", "numberline", "fractionbar", "plot"]);
 const ANNOT = new Set(["rect", "circle", "ellipse", "line", "arrow", "tick"]);
+// a text this small is a label ("5 sm", "a") and belongs to the shape next to it;
+// anything bigger is a line of its own and must never sit on the shape
+const LABEL_W = 160;
+const LABEL_H = 64;
+const SIZES = ["l", "m", "s"] as const;
+
+const isLabel = (op: string, b: Box) => (op === "write" || op === "latex") && b.w <= LABEL_W && b.h <= LABEL_H;
+
+/**
+ * Real handwriting is wider than the model's estimate, so a long line can be wider than the
+ * board and then fits nowhere. Step its size down (l → m → s) until it fits the board width.
+ */
+export function fitWidth(cmd: DrawCommand): DrawCommand {
+  if (cmd.op !== "write" && cmd.op !== "latex") return cmd;
+  let c = cmd;
+  let i = SIZES.indexOf(c.size ?? "m");
+  while (measure(c).w > BOARD_W - 2 * M && i < SIZES.length - 1) c = { ...c, size: SIZES[++i] };
+  return c;
+}
 
 /** Exact-ish box of a drawing from its chalk strokes (falls back to the model estimate). */
 export function measure(cmd: DrawCommand): Box {
@@ -148,14 +167,39 @@ export function mainLayouter() {
     type Item = { i: number; cmd: DrawCommand; box: Box; anchored: boolean };
     const items: Item[] = [];
     const replaced = new Set<string>();
+    const resized = new Map<number, DrawCommand>();
     for (let i = 0; i < cmds.length; i++) {
-      const c = cmds[i];
-      if (!isDraw(c)) continue;
-      if (c.op === "strike" || c.op === "divider" || (c.op === "arrow" && (typeof c.from === "string" || typeof c.to === "string"))) continue;
+      const c0 = cmds[i];
+      if (!isDraw(c0)) continue;
+      if (c0.op === "strike" || c0.op === "divider" || (c0.op === "arrow" && (typeof c0.from === "string" || typeof c0.to === "string"))) continue;
+      const c = fitWidth(c0);
+      if (c !== c0) resized.set(i, c);
       if (placed.has(c.id)) replaced.add(c.id); // same id = rewrite in place
       const box = measure(c);
       const anchored = ANNOT.has(c.op) && [...placed.entries()].some(([id, b]) => !replaced.has(id) && hit(box, b, 4));
       items.push({ i, cmd: c, box, anchored });
+    }
+
+    // 1b) a label that cuts into the shape it labels ("4 sm" written on the square's edge) is
+    //     nudged just outside, along the shortest way out
+    const shapes = items.filter((it) => it.cmd.op === "rect" || it.cmd.op === "circle" || it.cmd.op === "ellipse");
+    for (const it of items) {
+      if (!isLabel(it.cmd.op, it.box)) continue;
+      for (const sh of shapes) {
+        const a = it.box;
+        const b = sh.box;
+        if (!hit(a, b)) continue;
+        const moves: [number, number][] = [
+          [0, b.y - (a.y + a.h) - 4], // up
+          [0, b.y + b.h - a.y + 4], // down
+          [b.x - (a.x + a.w) - 4, 0], // left
+          [b.x + b.w - a.x + 4, 0], // right
+        ];
+        const [dx, dy] = moves.sort((p, q) => Math.abs(p[0]) + Math.abs(p[1]) - (Math.abs(q[0]) + Math.abs(q[1])))[0];
+        it.cmd = shift(it.cmd, dx, dy);
+        it.box = { ...a, x: a.x + dx, y: a.y + dy };
+        resized.set(it.i, it.cmd);
+      }
     }
 
     // 2) cluster the free drawings of this segment (union-find on proximity)
@@ -165,9 +209,12 @@ export function mainLayouter() {
     for (let a = 0; a < free.length; a++)
       for (let b = a + 1; b < free.length; b++) {
         const A = free[a], B = free[b];
-        // two text lines stay independent rows; anything glues to a shape/diagram it labels
-        const bothText = CONTENT.has(A.cmd.op) && CONTENT.has(B.cmd.op);
-        if (hit(A.box, B.box, bothText ? 0 : CLUSTER_GAP)) parent[find(a)] = find(b);
+        // two text lines stay independent rows; shapes stick together, and a shape keeps only
+        // its small labels — a full line of text next to a shape is its own row and gets moved
+        const aC = CONTENT.has(A.cmd.op);
+        const bC = CONTENT.has(B.cmd.op);
+        const glue = (!aC && !bC) || (aC !== bC && (aC ? isLabel(A.cmd.op, A.box) : isLabel(B.cmd.op, B.box)));
+        if (glue && hit(A.box, B.box, CLUSTER_GAP)) parent[find(a)] = find(b);
       }
     const clusters = new Map<number, Item[]>();
     free.forEach((it, k) => {
@@ -218,7 +265,8 @@ export function mainLayouter() {
         continue;
       }
       const o = res.off.get(i);
-      out.push(o ? shift(c, o[0], o[1]) : c);
+      const d = resized.get(i) ?? c;
+      out.push(o ? shift(d, o[0], o[1]) : d);
     }
     return { ...seg, board: out };
   };
