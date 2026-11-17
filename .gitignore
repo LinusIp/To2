@@ -12,3 +12,8 @@ dist/
 next-env.d.ts
 worker-configuration.d.ts
 *.tsbuildinfo
+
+# Tripo raw exports (~60 MB each) — source only, not for the web
+public/models/raw/
+public/models/tripo/*.blend
+public/models/tripo/*.blend1
