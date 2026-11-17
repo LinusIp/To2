@@ -1,0 +1,236 @@
+// Main-layer auto-layout (CLAUDE.md §5b): the LLM picks coordinates, but it can't see the board,
+// so it often writes on top of what is already there. This pass runs on the server for every
+// lesson segment (LLM, KV cache, demo) and moves new drawings into free space before they reach
+// the client, the way a real teacher would write the next line underneath.
+//
+// Rules
+// - Sizes come from the real handwriting strokes, not character-count estimates.
+// - Drawings of one segment that sit close together (a rectangle and its "5 sm" labels) form a
+//   cluster and move together, so the diagram stays intact.
+// - Annotations (rect/circle/ellipse/line/arrow/tick) that touch something already on the board
+//   are deliberate (circle around an answer, underline) and stay where they are.
+// - A cluster that overlaps existing content moves to the nearest free spot, preferring "below".
+// - If the board is full, the board is wiped first (new "page"), like a teacher would.
+// - The bottom-right note panel stays free for interruption answers.
+import type { BoardCommand, DrawCommand } from "@/lib/ai/schema";
+import { strokesFor, rngFrom } from "@/components/board/handwriting";
+import { BOARD_H, BOARD_W, NOTE_PANEL, bbox, isDraw } from "./model";
+
+export interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+const M = 16; // board margin
+const GAP = 14; // min clear space between drawings
+const CLUSTER_GAP = 34; // drawings closer than this in one segment belong together
+
+const CONTENT = new Set(["write", "latex", "numberline", "fractionbar", "plot"]);
+const ANNOT = new Set(["rect", "circle", "ellipse", "line", "arrow", "tick"]);
+
+/** Exact-ish box of a drawing from its chalk strokes (falls back to the model estimate). */
+export function measure(cmd: DrawCommand): Box {
+  if (cmd.op === "divider") return { x: cmd.x - 4, y: 40, w: 10, h: 550 };
+  if ((cmd.op === "arrow" && (typeof cmd.from === "string" || typeof cmd.to === "string")) || cmd.op === "strike") return bbox(cmd);
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  try {
+    for (const s of strokesFor(cmd, rngFrom(7)))
+      for (const [px, py] of s.pts) {
+        if (px < minX) minX = px;
+        if (px > maxX) maxX = px;
+        if (py < minY) minY = py;
+        if (py > maxY) maxY = py;
+      }
+  } catch {
+    /* fall through */
+  }
+  const est = bbox(cmd);
+  if (!Number.isFinite(minX)) return est;
+  // plot strokes depend on the function; its frame is the declared box
+  if (cmd.op === "plot") return est;
+  return { x: minX - 3, y: minY - 3, w: maxX - minX + 6, h: maxY - minY + 6 };
+}
+
+const hit = (a: Box, b: Box, pad = 0) =>
+  a.x < b.x + b.w + pad && b.x < a.x + a.w + pad && a.y < b.y + b.h + pad && b.y < a.y + a.h + pad;
+
+const union = (bs: Box[]): Box => {
+  const x = Math.min(...bs.map((b) => b.x));
+  const y = Math.min(...bs.map((b) => b.y));
+  return { x, y, w: Math.max(...bs.map((b) => b.x + b.w)) - x, h: Math.max(...bs.map((b) => b.y + b.h)) - y };
+};
+
+/** Move a drawing by (dx, dy). Target-relative ops (strike, id arrows) are left alone. */
+export function shift(cmd: DrawCommand, dx: number, dy: number): DrawCommand {
+  if (!dx && !dy) return cmd;
+  const p = (q: [number, number]): [number, number] => [Math.round(q[0] + dx), Math.round(q[1] + dy)];
+  switch (cmd.op) {
+    case "line":
+      return { ...cmd, from: p(cmd.from), to: p(cmd.to) };
+    case "arrow":
+      return { ...cmd, from: typeof cmd.from === "string" ? cmd.from : p(cmd.from), to: typeof cmd.to === "string" ? cmd.to : p(cmd.to) };
+    case "strike":
+      return cmd;
+    case "divider":
+      return { ...cmd, x: Math.round(cmd.x + dx) };
+    default:
+      return { ...cmd, x: Math.round(cmd.x + dx), y: Math.round(cmd.y + dy) } as DrawCommand;
+  }
+}
+
+const NOTE_BOX: Box = { x: NOTE_PANEL.x - 6, y: NOTE_PANEL.y - 6, w: NOTE_PANEL.w + 6, h: NOTE_PANEL.h + 6 };
+
+/**
+ * Stateful layouter for one lesson stream. Call it on every main-layer segment in order.
+ * Note-layer segments are passed through untouched (noteLayouter handles them).
+ */
+export function mainLayouter() {
+  // what is on the board right now (main layer), by element id
+  let placed = new Map<string, Box>();
+  // top of the most recently written content: moved drawings go at or below it
+  let cursor = 0;
+
+  const fits = (boxes: Box[], dx: number, dy: number, obs: Box[]) => {
+    for (const b of boxes) {
+      const m = { x: b.x + dx, y: b.y + dy, w: b.w, h: b.h };
+      if (m.x < M || m.y < M || m.x + m.w > BOARD_W - M || m.y + m.h > BOARD_H - M) return false;
+      for (const o of obs) if (hit(m, o, GAP)) return false;
+    }
+    return true;
+  };
+
+  /** Nearest free offset for a cluster; prefers moving down, then the other column. */
+  const findSpot = (boxes: Box[], obs: Box[], cursor = 0): [number, number] | null => {
+    if (fits(boxes, 0, 0, obs)) return [0, 0];
+    const u = union(boxes);
+    let best: [number, number] | null = null;
+    let bestCost = Infinity;
+    const xs = new Set<number>([u.x]);
+    for (let x = M + 8; x <= BOARD_W - M - u.w; x += 20) xs.add(x);
+    for (const x of xs) {
+      for (let y = M + 8; y <= BOARD_H - M - u.h; y += 8) {
+        const dx = x - u.x;
+        const dy = y - u.y;
+        // reading order: below is cheap, above is expensive, sideways in between
+        // and nothing new goes above the line that was written last
+        const cost = Math.abs(dx) * 1.2 + (dy >= 0 ? dy : -dy * 3) + (y < cursor ? 600 : 0);
+        if (cost >= bestCost) continue;
+        if (fits(boxes, dx, dy, obs)) {
+          best = [dx, dy];
+          bestCost = cost;
+        }
+      }
+    }
+    return best;
+  };
+
+  const forget = (target: string) => {
+    if (target === "all") {
+      placed = new Map();
+      cursor = 0;
+    }
+    else if (target !== "note") placed.delete(target);
+  };
+
+  return <T extends { board: BoardCommand[]; layer?: string }>(seg: T): T => {
+    if (seg.layer === "note") return seg;
+    const cmds = seg.board;
+
+    // erases that come before the first drawing apply first ("erase all" = new page)
+    const firstDraw = cmds.findIndex((c) => isDraw(c));
+    cmds.forEach((c, i) => {
+      if (c.op === "erase" && (firstDraw < 0 || i < firstDraw)) forget(c.target);
+    });
+
+    // 1) drawings we may move
+    type Item = { i: number; cmd: DrawCommand; box: Box; anchored: boolean };
+    const items: Item[] = [];
+    const replaced = new Set<string>();
+    for (let i = 0; i < cmds.length; i++) {
+      const c = cmds[i];
+      if (!isDraw(c)) continue;
+      if (c.op === "strike" || c.op === "divider" || (c.op === "arrow" && (typeof c.from === "string" || typeof c.to === "string"))) continue;
+      if (placed.has(c.id)) replaced.add(c.id); // same id = rewrite in place
+      const box = measure(c);
+      const anchored = ANNOT.has(c.op) && [...placed.entries()].some(([id, b]) => !replaced.has(id) && hit(box, b, 4));
+      items.push({ i, cmd: c, box, anchored });
+    }
+
+    // 2) cluster the free drawings of this segment (union-find on proximity)
+    const free = items.filter((it) => !it.anchored);
+    const parent = free.map((_, k) => k);
+    const find = (k: number): number => (parent[k] === k ? k : (parent[k] = find(parent[k])));
+    for (let a = 0; a < free.length; a++)
+      for (let b = a + 1; b < free.length; b++) {
+        const A = free[a], B = free[b];
+        // two text lines stay independent rows; anything glues to a shape/diagram it labels
+        const bothText = CONTENT.has(A.cmd.op) && CONTENT.has(B.cmd.op);
+        if (hit(A.box, B.box, bothText ? 0 : CLUSTER_GAP)) parent[find(a)] = find(b);
+      }
+    const clusters = new Map<number, Item[]>();
+    free.forEach((it, k) => {
+      const r = find(k);
+      clusters.set(r, [...(clusters.get(r) ?? []), it]);
+    });
+    const ordered = [...clusters.values()].sort((a, b) => a[0].i - b[0].i);
+
+    // 3) place clusters in drawing order; if the board is full, wipe it once and lay the
+    //    whole segment out on a fresh board
+    const place = (base: Map<string, Box>, strict: boolean, cur0: number) => {
+      const board = new Map(base);
+      let cur = cur0;
+      const off = new Map<number, [number, number]>();
+      for (const cl of ordered) {
+        const obs: Box[] = [NOTE_BOX];
+        for (const [id, b] of board) if (!replaced.has(id) || !cl.some((it) => it.cmd.id === id)) obs.push(b);
+        const boxes = cl.map((it) => it.box);
+        const spot = findSpot(boxes, obs, cur) ?? (strict ? null : clampOffset(union(boxes)));
+        if (!spot) return null;
+        if (cl.some((it) => CONTENT.has(it.cmd.op))) cur = Math.max(cur, union(boxes).y + spot[1]);
+        for (const it of cl) {
+          off.set(it.i, spot);
+          board.set(it.cmd.id, { x: it.box.x + spot[0], y: it.box.y + spot[1], w: it.box.w, h: it.box.h });
+        }
+      }
+      return { board, off, cur };
+    };
+    let wipe = false;
+    let res = place(placed, true, cursor);
+    if (!res) {
+      wipe = true;
+      res = place(new Map(), false, 0)!;
+      for (const it of items) if (it.anchored) it.anchored = false; // their targets are gone
+    }
+    placed = res.board;
+    cursor = res.cur;
+    for (const it of items) if (it.anchored) placed.set(it.cmd.id, it.box);
+
+    // 4) emit
+    const out: BoardCommand[] = [];
+    for (let i = 0; i < cmds.length; i++) {
+      const c = cmds[i];
+      if (wipe && i === firstDraw) out.push({ op: "erase", target: "all" });
+      if (c.op === "erase" && firstDraw >= 0 && i > firstDraw) forget(c.target);
+      if (!isDraw(c)) {
+        out.push(c);
+        continue;
+      }
+      const o = res.off.get(i);
+      out.push(o ? shift(c, o[0], o[1]) : c);
+    }
+    return { ...seg, board: out };
+  };
+}
+
+function clampOffset(u: Box): [number, number] {
+  const x = Math.min(Math.max(M, u.x), Math.max(M, BOARD_W - M - u.w));
+  const y = Math.min(Math.max(M, u.y), Math.max(M, BOARD_H - M - u.h));
+  return [x - u.x, y - u.y];
+}
+
+export function layoutMainSegments<T extends { board: BoardCommand[]; layer?: string }>(segs: T[]): T[] {
+  const lay = mainLayouter();
+  return segs.map((s) => lay(s));
+}

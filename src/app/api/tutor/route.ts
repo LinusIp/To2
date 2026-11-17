@@ -13,6 +13,7 @@ import { cannedLesson } from "@/lib/ai/canned";
 import { getSkill } from "@/data/skills";
 import { getCharacter } from "@/config/characters";
 import { emptyBoard, fitToBoard, freeArea, noteLayouter } from "@/lib/board/model";
+import { mainLayouter } from "@/lib/board/layout";
 import { bad, clientKey, rateLimit, userIdFor } from "@/lib/server/session";
 import { getMastery, recentMistakes, startLessonRow } from "@/lib/server/repo";
 import type { Msg } from "@/lib/ai/types";
@@ -90,7 +91,12 @@ export async function POST(req: Request) {
   const userId = await userIdFor(req);
   const env = getEnv();
   const ai = getAI(env);
-  const { res, send, close } = sse();
+  const { res, send: sendRaw, close } = sse();
+  // Every main-layer lesson segment goes through the auto-layout, so nothing is written on top of
+  // what's already on the board (LLM coordinates are only a hint). Covers LLM, KV cache and demo
+  // lessons; note-layer (interrupt) segments pass through and keep using noteLayouter.
+  const layMain = mainLayouter();
+  const send = (ev: string, data: unknown) => sendRaw(ev, ev === "segment" && b.mode === "lesson" ? layMain(data as Seg) : data);
 
   const run = async () => {
     try {
