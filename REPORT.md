@@ -294,3 +294,63 @@ Botir), which re-generates their audio anyway, and a full re-warm costs credits 
 session re-warms (dry-run first) and runs `node scripts/demo-check.mjs 3` after the voice change.
 Limits that remain by design: the diagnostic is warmed for grade 6 only (`DIAG_GRADES=5,6,7` for more); "Yana tushuntir"
 and any non-demo question are live LLM answers.
+
+## 🏁 Final pre-demo list (2026-11-18)
+### Block 0 — VoiceLab budget ✅
+- **Credit log**: every synthesized TTS clip is a row in D1 `credits_log` (day [Tashkent], tutor, source, model, chars,
+  credits = chars × 1.5 on lison-v2, × 1 on lison). Sources: `live`, `prefetch` (wait=long), `answer` (lead=1), `warm`,
+  `speedtest` (added by hand for the direct-API speed tests).
+- **`GET /dev/credits`** (works in production, totals only): today's total, by tutor / source / model, all-time total, cap.
+- **Daily cap 15,000 credits**: above it, NEW uncached lines are made on lison v1 (`x-tts-cache: cap-v1`, not HTTP-cached);
+  cached v2 keeps playing.
+- **Dry run**: `/api/tts?…&check=1` → `{cached, missingClips, chars, credits}` without generating (cheap existence check, no
+  audio decode). `node scripts/warm-tts.mjs --dry-run` prints per-tutor cost; a real run refuses > `--max-credits` (5,000)
+  without `--yes`; `WARM_VOICES=ziyo` limits tutors. Bug found & fixed: check=1 returned audio for fully cached segments.
+- **MVP roster** verified: playable = blokbek, lola, ziyo; everyone else (Diyorbek included) "Tez orada" with sig art, not
+  selectable in onboarding or /tutors; the server refuses locked tutors (403 / falls back to Blokbek).
+### Block 1 — Voices ✅ (re-warm waiting for the OK)
+- Voice ids checked by full name in `GET /v1/voices`: Blokbek "Javohir — Bright presenter" (voice_fa56cecf…) already matched →
+  unchanged (lison-v2, 1.28). **Lola → "Malika — Meme streamer"** (voice_83a39d68…), **Ziyo → "Botir — Bomba streamer"**
+  (voice_5e592ada…), both lison-v2; defaults applied: **Lola 1.1, Ziyo 1.0**.
+- Speed tests (greeting, [happy]): `docs/voice-samples/lola/` (1.0 / 1.1 / 1.2) and `docs/voice-samples/ziyo/speedtest.html`
+  (0.95 / 1.0 / 1.1) — 612 credits. The earlier 6-voice Ziyo audition (`docs/voice-samples/ziyo/index.html`, ~4,000 chars)
+  found Rustam@1.3 slurring ("Doim"→"Boyim", "Qiziq-a"→"Qizig'a"), a clipped "Nega" (15 ms lead-in) and a shrill [happy]
+  pitch (267 Hz); Botir measures clean at 1.0–1.15 (CER 0–3 %) but sits high (220–240 Hz).
+- **Re-warm cost (dry run)**: Lola 75 lines ≈ 7,745 credits, Ziyo 75 lines ≈ 7,703, Blokbek 53 of 98 lines ≈ 4,772 (his
+  D1-cached audio became misses with the base64 fix) → **≈ 20,200 total, over the 15,000/day cap → waiting for the team's OK.**
+### Block 2 — Lip-sync from the playing audio ✅
+- Server: every audio response carries `x-tts-env` = the envelope of exactly those bytes (RMS per 20 ms, ÷ the 95th-percentile
+  RMS of voiced frames, as bytes, base64); stored next to cached segments (`<segKey>:env`), computed on the fly for v1 stand-ins.
+- Player: fetches the WAV (+ header) and plays it from a blob URL; each frame the mouth amplitude = envelope at
+  `audio.currentTime + LEAD_MS`; a live AnalyserNode when there's no envelope; **no timer / text-length mouth** any more
+  (no audio → mouth closed). Attack/release, hysteresis and the 60 ms minimum frame unchanged; rest face after **120 ms**
+  of silence, now measured on the raw level (bug: on the smoothed level it took ~370 ms).
+- **Offset (offline, production greetings, the real mouth logic at 60 fps vs. the WAV's true onsets):** with a 30 ms lead the
+  mouth opened up to +20 ms *after* some onsets (the 25 ms attack smoothing eats the lead) → **LEAD_MS = 45**: onsets
+  Blokbek −45/−45/−65 ms, Lola −55/−65/−10/0 (+3 soft breathy starts at −100), Ziyo −50/+5/−70/−30/0/−100 (− = mouth first);
+  cross-correlation lag 0 / −20 / −10 ms (pulled late by the 90 ms *closing* release, by design). Never more than +5 ms late.
+  Not measured: the browser's own audio-output latency (the pane was hidden) — `/dev/tutor` has the overlay for that (real
+  voice line, audible vs. mouth trace, frame strip, live offset estimate).
+- Tests: normalisation (quiet = loud after ÷p95), base64 round-trip, onset within ±40 ms, rest after 120 ms, ≥ 60 ms frames.
+### Block 3 — Lesson ↔ quiz flow ✅
+**Flow map** (every route and exit):
+| from | action | to |
+|---|---|---|
+| Roadmap / Home | open tile (open = not locked; started-but-unmastered never locks) | `/lesson/<id>` |
+| Roadmap | locked tile | stays; shows "Avval N-darsni tugating" (or «title») |
+| Lesson | ← (Xaritaga qaytish) | `/roadmap` |
+| Lesson | refresh / leave and come back | start button "Davom etish · N-qadam" (+ "Boshidan boshlash") → resumes at that segment |
+| Lesson | app to background / mic question | pauses at the exact spot; back / "Davom et" resumes there |
+| Lesson end | "Mashqqa o'tish" | `/practice/<id>?from=lesson` |
+| Quiz | 2 wrong tries on a question | "Darsni qayta ko'rish" (→ lesson, explanation step) · "Yana urinish" · "Keyingi savol" |
+| Quiz | × | confirm sheet: "Testni davom ettirish" · "Darsga qaytish" · "Xaritaga qaytish" |
+| Quiz | browser back | plain history (lesson or roadmap), no traps |
+| Quiz end ≥ 60 % | "Keyingi dars" | next open unmastered lesson on the path (`nextLesson`), else `/roadmap` |
+| Quiz end < 60 % | tutor: "Keling, yana bir marta ko'rib chiqamiz" | "Darsga qaytish" (explanation) · "Tezkor takrorlash" (3 easier questions from the prerequisites) |
+| Back to lesson | from=lesson | `history.back()` (no duplicate entries); else `replace(/lesson/<id>)` |
+- One rule set, tested: `src/lib/learning/access.ts` (`isOpen`, `lockReason`, `nextLesson`, `quizScore`/`quizPassed`) +
+  `buildRoadmap(…, { started })` (`lockedBy`, `started`) + `src/lib/lesson/resume.ts` (`resolveStart`).
+- **E2E (Playwright, 375×812, TTS stubbed → 0 credits)** — `pnpm e2e`: pass path · fail path → back to lesson → retry → pass ·
+  fail by score → quick review · quit mid-quiz · refresh mid-lesson → **5/5 passed, 3 runs in a row** (~40 s each).
+  Found by the e2e: the lesson re-initialised when the user record arrived → a just-started lesson reset and the "resume at
+  the explanation" flag was lost (fixed: set up once the user is loaded).
