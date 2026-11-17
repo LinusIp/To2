@@ -17,3 +17,8 @@ worker-configuration.d.ts
 public/models/raw/
 public/models/tripo/*.blend
 public/models/tripo/*.blend1
+
+# Playwright
+e2e/results.json
+test-results/
+playwright-report/

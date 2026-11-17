@@ -233,7 +233,7 @@ function Toolbar() {
 
 export default function LessonPlayer({ skillId }: { skillId: string }) {
   const skill = getSkill(skillId);
-  const { user, load, roadmap } = useMe();
+  const { user, load, roadmap, loaded } = useMe();
   const status = useLesson((s) => s.player.status);
   const error = useLesson((s) => s.error);
   const xpGained = useLesson((s) => s.xpGained);
@@ -248,6 +248,9 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
   }, [load]);
 
   useEffect(() => {
+    // set up once the user is known: re-initialising when it arrives would reset a lesson that was
+    // already started (and drop the "resume at the explanation" flag) — e2e "refresh mid-lesson"
+    if (!loaded) return;
     initLesson({ skillId, characterId, grade: user?.grade ?? 6, greeting: ch.hi });
     setMuted(readPref("sound", "1") === "0");
     setDoneSeen(false);
@@ -262,7 +265,7 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
     setStartAt(at);
     return () => disposeLesson();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [skillId, characterId, user?.grade]);
+  }, [skillId, characterId, user?.grade, loaded]);
 
   useEffect(() => {
     if (status === "done") void load(true);
@@ -338,7 +341,11 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
             </div>
           )}
           {started && <Steps />}
-          {!started ? (
+          {!loaded ? (
+            <div className="btn w-full opacity-60" aria-busy="true">
+              {t.common.loading}
+            </div>
+          ) : !started ? (
             <div className="flex flex-col gap-2">
               <button type="button" className="btn btn-primary w-full" onClick={() => void startLesson(startAt)} autoFocus>
                 {startAt === "explain" ? t.lesson.reviewExplain : typeof startAt === "number" && startAt > 0 ? t.lesson.resumeAt(startAt + 1) : t.lesson.start} <ArrowIcon />

@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "beta",
+    "@playwright/test": "1.56.1",
     "@tailwindcss/postcss": "latest",
     "@types/dagre": "^0.7.54",
     "@types/node": "latest",
@@ -54,6 +55,7 @@
     "db:migrate:remote": "wrangler d1 execute to2 --remote --file drizzle/0000_init.sql --yes",
     "typecheck": "tsc --noEmit",
     "cf-typegen": "cf workers types",
-    "glyphs": "node scripts/build-glyphs.mjs"
+    "glyphs": "node scripts/build-glyphs.mjs",
+    "e2e": "playwright test"
   }
 }

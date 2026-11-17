@@ -153,7 +153,7 @@ export default function QuizPage({ params }: { params: Promise<{ skillId: string
         <div className="flex flex-col gap-3">
           <div className="card p-5">
             <div className="text-[19px] font-black">{p?.expect.kind === "choice" ? "To'g'ri javobni tanlang:" : "Misolni yeching:"}</div>
-            <div className="mt-2.5 text-center font-chalk text-[26px] leading-snug" data-testid="quiz-question">
+            <div className="mt-2.5 text-center font-chalk text-[26px] leading-snug" data-testid="quiz-question" data-key={p?.key ?? ""}>
               {p ? p.q : t.common.loading}
             </div>
             {flash && <div className="mt-2 text-center text-[16px] font-black text-green">{t.lesson.correct}</div>}
