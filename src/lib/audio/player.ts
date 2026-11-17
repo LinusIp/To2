@@ -69,7 +69,7 @@ export interface Speech {
 }
 
 /** Speak `text` with the character voice via /api/tts. `fromMs` seeks (resume after interruption). */
-export function speak(text: string, voice: string, opts: { rate?: number; fromMs?: number; muted?: boolean } & Tone = {}): Speech {
+export function speak(text: string, voice: string, opts: { rate?: number; fromMs?: number; muted?: boolean; startTimeoutMs?: number } & Tone = {}): Speech {
   const a = audioEl();
   let rate = opts.rate ?? 1;
   let fallback = false;
@@ -127,12 +127,12 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
     void (async () => {
       try {
         const r = await fetch(ttsUrl(text, voice, { emotion: opts.emotion, lead: opts.lead }), { signal: ctrl.signal });
-        if (done) return;
+        if (done || fallback) return; // too late: this line already went captions-only
         if (r.status !== 200) return startFallback();
         const e = r.headers.get("x-tts-env");
         envelope = e ? decodeEnvelope(e) : null;
         const blob = await r.blob();
-        if (done) return;
+        if (done || fallback) return;
         if (objUrl) URL.revokeObjectURL(objUrl);
         objUrl = URL.createObjectURL(blob);
         a.onloadedmetadata = seek;
@@ -145,7 +145,7 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
     // If nothing plays within 13 s (the server waits up to 11 s for v2), this line goes captions-only.
     setTimeout(() => {
       if (!done && !fallback && a.paused && a.currentTime === 0) startFallback();
-    }, 13_000);
+    }, opts.startTimeoutMs ?? 13_000); // live answers pass 4 s: never a frozen tutor
   }
 
   return {

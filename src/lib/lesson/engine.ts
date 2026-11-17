@@ -204,7 +204,9 @@ async function playSegment(track: "main" | "note", index: number, resume?: { t: 
   const layer: Layer = seg.layer ?? (track === "note" ? "note" : "main");
   tl = { gen: my, track, index, layer, cmds: seg.board, slots: null, applied: resume?.applied ?? 0, offset: resume?.t ?? 0, start: now(), running: false, speechEnded: false };
   // emotion → speed/tags on the server; the first answer to a learner question starts with a short pause
-  const sp = speak(seg.say, s.voice, { rate: s.rate, fromMs: resume?.audioMs, muted: s.muted, emotion: seg.emotion, lead: track === "note" && index === 0 && !resume });
+  // live answers (note track): if the voice isn't playing within 4 s, this segment goes captions-only
+  // (text-paced mouth); its audio keeps generating (prefetched on arrival) for later segments / replays
+  const sp = speak(seg.say, s.voice, { rate: s.rate, fromMs: resume?.audioMs, muted: s.muted, emotion: seg.emotion, lead: track === "note" && index === 0 && !resume, startTimeoutMs: track === "note" ? 4000 : undefined });
   speech = sp;
   const dur = await sp.started;
   if (my !== gen || !tl) return;
@@ -466,6 +468,7 @@ export async function stopListening() {
 export async function ask(question: string, voice = false, simpler = false) {
   const q = question.trim();
   if (!q) return;
+  askedAt = performance.now();
   if (["speaking", "awaiting", "answering", "checking"].includes(get().player.status) && !simpler) bargeIn();
   lastQuestion = q;
   if (get().player.status !== "thinking") fire({ type: "QUESTION_SENT" });
@@ -500,9 +503,15 @@ export async function ask(question: string, voice = false, simpler = false) {
     });
     await readTutorStream(res, {
       onSegment: (seg) => {
+        const idx = get().note.length;
         set((st) => ({ note: [...st.note, { ...seg, layer: "note" }] }));
+        // start its audio right away (server caches it) — the player picks it up when the segment plays
+        prefetchSpeech(seg.say, get().voice, { emotion: seg.emotion, lead: idx === 0 });
         if (first) {
           first = false;
+          // the answer's text goes into the bubble immediately (no waiting for the filler or the audio)
+          set({ caption: seg.say });
+          answerShownAt = performance.now();
           fire({ type: "REPLY_READY" });
           const myGen = gen;
           void fillerDone.then(() => {
@@ -528,6 +537,13 @@ export async function ask(question: string, voice = false, simpler = false) {
     fire({ type: "REPLY_FAILED" });
     resumeAfterInterrupt(true);
   }
+}
+
+/** dev timeline of the last live question (ms): asked → caption → first audio */
+let askedAt = 0;
+let answerShownAt = 0;
+export function lastAnswerTimeline() {
+  return { askedAt, answerShownAt };
 }
 
 function resumeAfterInterrupt(alreadyTransitioned = false) {
