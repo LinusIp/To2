@@ -434,3 +434,25 @@ Source: `docs/prototypes/mobile-app-v2/index.html` + `docs/design/target-ui.png`
   (cascade layers, oklch/color-mix). Phones with an updated WebView (Play Store auto-update, Chrome ≥ 111) render normally.
   Not verified in CI: the 3D tutor writing, audio playback and the mic prompt dialog (no UI automation) — check on a phone:
   install → open → "Boshlash" → lesson → "Darsni boshlash" (tutor talks + writes) → "Savol berish" (mic prompt appears).
+### Follow-ups (2026-11-18 night)
+- **Blokbek's 14 missing demo lines** generated (approved, lison-v2, 25 clips, **1,413 credits**). Spot-check (`check=1`, no
+  generation): **Blokbek 17/17, Lola 17/17, Ziyo 17/17 cached** (8 diagnostic questions as spoken + 9 pinned-answer lines).
+  The one-day cap exemption is removed again.
+- **One voice model per tutor** (team rule): the automatic v1 stand-in and the v1 cap downgrade are gone. Over the warning cap
+  (15,000/day; **40,000 on 18–19 Nov**) generation continues on lison-v2 with a logged warning; over the hard cap (40,000/day)
+  new uncached lines are captions only. A live uncached line waits up to 11 s for v2 (one retry on failure); if it isn't
+  ready, that line is captions only while v2 finishes in the background and is cached. Captions-only lines move the mouth from
+  the caption text (vowels open, pauses at punctuation). `/dev/credits` shows `warnCap`, `hardCap`, `overWarnCap`, `blocked`.
+- **Old browsers / WebViews**: `scripts/css-fallback.mjs` runs after `vite build` — `@layer` flattened
+  (postcss-cascade-layers) + lightningcss (chrome/android ≥ 87, safari ≥ 14: oklch / color-mix / nesting fallbacks). Production
+  CSS has 0 `@layer` left; modern browsers render exactly as before (screenshots compared).
+  - Web: a dismissible banner when `CSS.supports('color','oklch(0 0 0)')` fails ("Brauzeringiz eskirgan — … yangilang").
+  - APK: WebView major < 100 → native "Iltimos, Android System WebView ni yangilang" with **Yangilash** (Play Store) and
+    **Baribir davom etish**.
+  - **Android 11 emulator (WebView 83.0.4103.106), CI run https://github.com/LinusIp/To2/actions/runs/44196473481**: warning
+    shown → "Baribir davom etish" tapped → the site is **styled and readable** (`docs/apk-emulator-android11.png`; before the
+    fallback it was unstyled text). ⚠️ Not proven: interactivity on such an old WebView — the JS bundle targets modern browsers
+    (Vite default ≈ Chrome 107+), so on Chrome 83 parts of the app may not run; the update screen covers this. If needed later:
+    set the client build target to `chrome87` (not done before the demo — risk).
+- ⚠️ One release attempt failed on a single unit test in the clean checkout that passed locally and on the retry (flaky; likely
+  the animator timing/heap test) — TODO: identify and stabilise it.
