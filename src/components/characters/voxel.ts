@@ -139,6 +139,22 @@ export interface Arm {
   chalk: THREE.Mesh | null;
 }
 
+export interface FaceSwap {
+  rest: THREE.Object3D;
+  mouths: THREE.Object3D[];
+  lids: THREE.Object3D[];
+}
+
+export interface Rig {
+  /** |x| of the writing shoulder (at -shX facing the learner, +shX with the back turned) */
+  shX: number;
+  /** shoulder height above the feet */
+  shY: number;
+  /** shoulder → elbow, elbow → chalk tip */
+  L1: number;
+  L2: number;
+}
+
 export interface VoxelChar {
   cfg: VoxelCfg;
   root: THREE.Group;
@@ -150,7 +166,12 @@ export interface VoxelChar {
   armP: Arm;
   /** writing arm, holds the chalk */
   armW: Arm;
-  faceT: THREE.CanvasTexture;
+  /** painted 16×16 face (box rig); null for the real 3D models, which swap mouth/lid meshes */
+  faceT: THREE.CanvasTexture | null;
+  /** real 3D models (public/models/tripo): mouth frames + eyelids to show/hide */
+  faceSwap?: FaceSwap;
+  /** writing-arm measurements for the IK (stage px, at scale 1) */
+  rig: Rig;
   mouth: number;
   blinkOn: boolean;
   lastBlink: boolean;
@@ -410,6 +431,7 @@ export function makeChar(cfg: VoxelCfg, scene: THREE.Scene, silhouette = false):
     armP: arm(117, false),
     armW: arm(-117, !silhouette),
     faceT,
+    rig: { shX: 117, shY: 455, L1: 145, L2: 160 },
     mouth: -1,
     blinkOn: false,
     lastBlink: false,
@@ -426,22 +448,39 @@ export function makeChar(cfg: VoxelCfg, scene: THREE.Scene, silhouette = false):
   };
 }
 
-/** Redraw the face only when something changed (mouth 0–3, blink, look direction). */
+/**
+ * Update the face only when something changed. mouth: -1 = not talking (rest face), 0–3 = talking
+ * frames (closed, small, open, wide). Box rig: repaint the 16×16 texture. 3D models: show one mouth
+ * mesh (mouth_rest when silent) and the eyelids while blinking; `look` isn't supported there.
+ */
 export function updateFace(ch: VoxelChar, mouth: number, blink: boolean, look: Look) {
   if (mouth === ch.mouth && blink === ch.lastBlink && look === ch.look) return;
   ch.mouth = mouth;
   ch.lastBlink = blink;
   ch.look = look;
-  paintFace((ch.faceT.userData as { g: G2D }).g, ch.cfg, mouth, blink, look);
+  if (ch.faceSwap) {
+    const { rest, mouths, lids } = ch.faceSwap;
+    const m = Math.min(3, Math.round(mouth));
+    rest.visible = m < 0;
+    mouths.forEach((o, i) => (o.visible = i === m));
+    lids.forEach((o) => (o.visible = blink));
+    return;
+  }
+  if (!ch.faceT) return;
+  paintFace((ch.faceT.userData as { g: G2D }).g, ch.cfg, Math.max(0, mouth), blink, look);
   ch.faceT.needsUpdate = true;
 }
 
 /** Random blink every 2.5–5 s (120 ms). Returns whether the eyes are closed now. */
 export function blinkState(ch: VoxelChar, now: number): boolean {
-  if (ch.blinkOn && now > ch.blinkAt + 130) {
-    ch.blinkOn = false;
-    ch.blinkAt = now + 2500 + Math.random() * 2500;
-  } else if (now > ch.blinkAt && now < ch.blinkAt + 130) ch.blinkOn = true;
+  // first call: schedule the first blink (blinkAt starts at 0, which used to mean "never")
+  if (!ch.blinkAt) ch.blinkAt = now + 1200 + Math.random() * 2500;
+  if (ch.blinkOn) {
+    if (now > ch.blinkAt + 120) {
+      ch.blinkOn = false;
+      ch.blinkAt = now + 2500 + Math.random() * 2500;
+    }
+  } else if (now >= ch.blinkAt) ch.blinkOn = true;
   return ch.blinkOn;
 }
 
@@ -490,5 +529,6 @@ export function applyPose(ch: VoxelChar, p: Pose) {
   if (armW.chalk) armW.chalk.visible = false;
   const happy = p === "wave" || p === "cheer" || p === "sig";
   ch.mouth = -1;
-  updateFace(ch, happy ? 2 : 0, false, "learner");
+  // the 3D models' rest face already smiles (as on the character sheet)
+  updateFace(ch, ch.faceSwap ? -1 : happy ? 2 : 0, false, "learner");
 }

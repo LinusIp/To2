@@ -69,17 +69,29 @@ export default function TutorCanvas({ characterId, view }: { characterId: string
       const scene = new THREE.Scene();
       V.addLights(scene);
       // real 3D model (public/models/tripo/<id>.glb) when it exists, else the box-built voxel rig
+      // real hinged 3D model (public/models/tripo/<id>.glb) when it exists, else the box-built
+      // voxel rig. Both are a VoxelChar, so everything below drives either one.
+      const cfg = getCharacter(characterId).voxel;
       const G = await import("./glbTutor");
-      let glb: import("./glbTutor").GlbTutor | null = null;
+      let ch: import("./voxel").VoxelChar | null = null;
       if (G.hasGlb(characterId)) {
         try {
-          glb = G.makeGlbTutor(await G.loadGlb(characterId), scene);
+          const model = await G.loadGlb(characterId);
+          if (disposed) return;
+          ch = G.makeGlbChar(model, cfg, scene);
         } catch (e) {
           console.warn("[tutor] GLB failed, using voxel rig", e);
         }
       }
-      if (disposed) return;
-      const ch = glb ? null : V.makeChar(getCharacter(characterId).voxel, scene, false);
+      if (disposed) {
+        ch?.dispose();
+        return;
+      }
+      if (!ch) ch = V.makeChar(cfg, scene, false);
+      const rig = ch.rig;
+      const reach = rig.L1 + rig.L2;
+      // stand so the chalk tip is about half an arm's reach past the shoulder
+      const standOff = rig.shX + reach * 0.45;
 
       const fit = () => {
         const r = canvas.getBoundingClientRect();
@@ -90,7 +102,10 @@ export default function TutorCanvas({ characterId, view }: { characterId: string
       const ro = new ResizeObserver(fit);
       ro.observe(canvas);
 
-      const T = { x: viewRef.current.frontX, tx: viewRef.current.frontX, yaw: FRONT_YAW, sy: 1, want: "front" as "front" | "back", lastTip: 0, amp: 0, wave: performance.now() + 1600, cheerUntil: 0, hop: 0, celebrate: useLesson.getState().celebrate, last: performance.now() };
+      const T = { x: viewRef.current.frontX, tx: viewRef.current.frontX, yaw: FRONT_YAW, sy: 1, want: "front" as "front" | "back", lastTip: 0, amp: 0, wave: performance.now() + 1600, cheerUntil: 0, hop: 0, lift: 0, ws: viewRef.current.s, celebrate: useLesson.getState().celebrate, last: performance.now() };
+
+      // dev only: lets tests read the rig state (mouth/lid frames, chalk vs. tip)
+      if (process.env.NODE_ENV !== "production") (window as unknown as { __tutor?: unknown }).__tutor = { ch, T, boardTip, tip: () => ({ x: BX + boardTip.x * BS, y: 900 - (BY + boardTip.y * BS) }) };
 
       const frame = (now: number) => {
         raf = requestAnimationFrame(frame);
@@ -99,7 +114,9 @@ export default function TutorCanvas({ characterId, view }: { characterId: string
         T.last = now;
         syncCam();
         const V0 = viewRef.current;
-        const S = V0.s;
+        // the tutor's scale: the view's scale (phones: 0.75), eased up toward 1 while writing a
+        // row that the arm can't reach otherwise (the board keeps its size, the tutor doesn't)
+        const S = T.ws;
         const st = useLesson.getState();
         const status = st.player.status;
         const listening = status === "listening" || status === "paused";
@@ -108,7 +125,7 @@ export default function TutorCanvas({ characterId, view }: { characterId: string
           T.celebrate = st.celebrate;
           T.cheerUntil = now + 1300;
           T.hop = now + 600;
-          if (ch) ch.hop = T.hop;
+          ch.hop = T.hop;
         }
 
         // writing → back to the learner; 600 ms hysteresis so he doesn't flip between strokes
@@ -116,55 +133,37 @@ export default function TutorCanvas({ characterId, view }: { characterId: string
         if (tipOn) T.lastTip = now;
         T.want = tipOn || now - T.lastTip < 600 ? "back" : "front";
         const tip = { x: BX + boardTip.x * BS, y: BY + boardTip.y * BS };
-        if (T.want === "back") T.tx = Math.max(V0.x0 + 300 * S, Math.min(V0.x0 + V0.w - 200 * S, tip.x - 265 * S));
+        if (T.want === "back") T.tx = Math.max(V0.x0 + 300 * S, Math.min(V0.x0 + V0.w - 200 * S, tip.x - standOff * S));
         else T.tx = V0.frontX;
         const moving = Math.abs(T.tx - T.x) > 2;
         T.x += (T.tx - T.x) * Math.min(1, (dt / 1000) * 5);
         T.yaw += ((T.want === "back" ? BACK_YAW : FRONT_YAW) - T.yaw) * Math.min(1, dt * 0.012);
         const mode = Math.abs(T.yaw - BACK_YAW) < 0.2 ? "back" : Math.abs(T.yaw - FRONT_YAW) < 0.2 ? "front" : "turning";
+        // low rows: bend (squash down to 0.8); high rows: rise on tiptoe so the short arm reaches
         let wantSy = 1;
-        if (mode === "back" && tipOn) wantSy = Math.max(0.8, Math.min(1, (FLOOR - (tip.y - 230 * S)) / (455 * S)));
+        let wantLift = 0;
+        let wantWs = V0.s;
+        if (mode === "back" && tipOn) {
+          const above = FLOOR - tip.y; // tip height above the floor
+          const need = (above - 45 * V0.s) / (rig.shY + reach * 0.95);
+          wantWs = Math.max(V0.s, Math.min(1, need));
+          wantSy = Math.max(0.8, Math.min(1, (above + reach * 0.75 * S) / (rig.shY * S)));
+          wantLift = Math.max(0, Math.min(45 * S, above - (rig.shY + reach * 0.8) * S));
+        }
         T.sy += (wantSy - T.sy) * Math.min(1, (dt / 1000) * 6);
+        T.lift += (wantLift - T.lift) * Math.min(1, (dt / 1000) * 6);
+        T.ws += (wantWs - T.ws) * Math.min(1, (dt / 1000) * 4);
 
         // lip-sync: smoothed amplitude (fast attack, slower release)
         const target = mouth.speaking ? mouth.amp : 0;
         T.amp += (target - T.amp) * (target > T.amp ? Math.min(1, dt / 30) : Math.min(1, dt / 90));
         const talking = mouth.speaking;
 
-        if (glb) {
-          const turnK = Math.max(0, Math.min(1, (T.yaw - FRONT_YAW) / (BACK_YAW - FRONT_YAW)));
-          G.poseGlb(glb, {
-            now,
-            x: T.x,
-            floorY: 900 - FLOOR,
-            yaw: T.yaw,
-            mode,
-            turnK: T.want === "back" ? turnK : 1 - turnK,
-            s: S,
-            sy: T.sy,
-            moving,
-            talking,
-            amp: T.amp,
-            listening,
-            thinking,
-            cheerUntil: T.cheerUntil - 400,
-            writing: mode !== "front" && tipOn,
-            tip: tipOn ? { x: tip.x, y: 900 - tip.y } : null,
-          });
-          if (shadowRef.current) {
-            shadowRef.current.style.left = `${((T.x - V0.x0) / V0.w) * 100}%`;
-            shadowRef.current.style.top = `${((FLOOR - V0.y0) / V0.h) * 100}%`;
-            shadowRef.current.style.width = `${((240 * S) / V0.w) * 100}%`;
-          }
-          ren.clear();
-          ren.render(scene, cam);
-          return;
-        }
         if (!ch) return;
 
         const bob = (moving ? Math.abs(Math.sin(now / 110)) * 8 : Math.sin(now / 900) * 2) * S;
         const hop = ch.hop > now ? Math.sin(((ch.hop - now) / 600) * Math.PI) * 26 * S : 0;
-        ch.root.position.set(T.x, 900 - FLOOR + bob + hop, 0);
+        ch.root.position.set(T.x, 900 - FLOOR + bob + hop + T.lift, 0);
         ch.root.scale.set(S, T.sy * S, S);
         ch.body.rotation.y = T.yaw;
         ch.root.rotation.z = listening ? 0.035 : 0; // lean toward the learner while listening
@@ -199,10 +198,10 @@ export default function TutorCanvas({ characterId, view }: { characterId: string
           ch.armW.el.rotation.z = -0.3;
         } else if (mode === "back" && tipOn) {
           // 2-bone IK: shoulder → elbow → chalk tip
-          const Sh = { x: T.x + 117 * S, y: 900 - FLOOR + bob + 455 * S * T.sy * Math.cos(0.12) };
+          const Sh = { x: T.x + rig.shX * S, y: 900 - FLOOR + bob + T.lift + rig.shY * S * T.sy * Math.cos(0.12) };
           const tgt = { x: tip.x + 2, y: 900 - tip.y - 4 };
-          const L1 = 145 * S;
-          const L2 = 160 * S;
+          const L1 = rig.L1 * S;
+          const L2 = rig.L2 * S;
           let dx = tgt.x - Sh.x;
           let dy = tgt.y - Sh.y;
           let d = Math.hypot(dx, dy);
@@ -226,7 +225,8 @@ export default function TutorCanvas({ characterId, view }: { characterId: string
         if (ch.armW.chalk) ch.armW.chalk.visible = mode !== "front";
 
         // face: mouth from amplitude (only visible when facing us), blink, look direction
-        let m = 0;
+        // -1 = silent (rest face); 0–3 = talking frames
+        let m = -1;
         if (talking && mode !== "back") m = T.amp > 0.55 ? 3 : T.amp > 0.3 ? 2 : T.amp > 0.08 ? 1 : 0;
         if (cheering) m = 2;
         const blink = V.blinkState(ch, now);
@@ -246,7 +246,6 @@ export default function TutorCanvas({ characterId, view }: { characterId: string
         cancelAnimationFrame(raf);
         ro.disconnect();
         ch?.dispose();
-        glb?.dispose();
         ren.dispose();
       };
     })();
