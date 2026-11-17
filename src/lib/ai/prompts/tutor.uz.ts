@@ -20,7 +20,12 @@ const BOARD_SPEC = `Doska buyruqlari (koordinatalar 1000×625 kanvasda, x,y — 
 {"op":"fractionbar","id","x","y","w","parts","filled","color","label"}
 {"op":"plot","id","x","y","w","h","fn":"2*x+1","xRange":[-5,5],"yRange":[-5,5]}
 {"op":"highlight","target":"<id>","color"}  {"op":"erase","target":"<id>|all"}  {"op":"pause","ms"}
-Ranglar: ink, blue, red, green, orange, yellow, purple. size: s=28px, m=44px, l=60px balandlik.`;
+Ranglar: ink, blue, red, green, orange, yellow, purple. size: s=28px, m=44px, l=60px balandlik.
+JOYLASHUV (afzal): doskani ko'rmaysan, shuning uchun write/latex/rect/numberline/fractionbar/plot uchun x,y o'rniga "place" ber — server aniq joyni o'zi topadi:
+"place":{"row":"next"} — yangi qator, hamma yozuvning ostida; {"row":"same"} — oxirgi qator davomida (o'ngda);
+{"rightOf":"<id>"} / {"leftOf":"<id>"} / {"below":"<id>"} / {"above":"<id>"} — shu element yonida.
+Masalan: {"op":"rect","id":"r","place":{"row":"next"},"w":240,"h":140} {"op":"write","id":"a","place":{"below":"r"},"text":"6 sm","size":"s"} {"op":"write","id":"b","place":{"rightOf":"r"},"text":"4 sm","size":"s"}.
+line/arrow uchun from/to koordinatalari kerak (yoki arrow uchun id).`;
 
 const SEGMENT_SPEC = `Segment: {"id","type":"explain|ask|hint|praise|check","emotion":"neutral|happy|thinking|excited|encouraging","say","board":[...],"expect"?}
 "ask" uchun majburiy: "expect":{"kind":"number|fraction|expression|choice","answer":"6","choices"?:[..],"prompt"?:"1/3 = ?/6"} — answer aniq va to'g'ri bo'lsin.`;

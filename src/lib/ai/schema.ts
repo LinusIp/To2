@@ -17,13 +17,27 @@ const num = z.coerce.number().refine(Number.isFinite, "not a number");
 const point = z.tuple([num, num]);
 const size = z.enum(["s", "m", "l"]).optional().catch(undefined);
 const id = z.coerce.string().min(1).max(64);
+/** Relative placement (resolved by src/lib/board/layout.ts) — the LLM can say WHERE in words instead of guessing x/y. */
+export const Place = z
+  .object({
+    row: z.enum(["next", "same"]).optional().catch(undefined),
+    rightOf: z.coerce.string().max(64).optional().catch(undefined),
+    leftOf: z.coerce.string().max(64).optional().catch(undefined),
+    below: z.coerce.string().max(64).optional().catch(undefined),
+    above: z.coerce.string().max(64).optional().catch(undefined),
+  })
+  .optional()
+  .catch(undefined);
+export type Place = z.infer<typeof Place>;
+const place = Place;
 
-export const WriteCmd = z.object({ op: z.literal("write"), id, x: num, y: num, text: z.coerce.string().max(200), size, color });
-export const LatexCmd = z.object({ op: z.literal("latex"), id, x: num, y: num, tex: z.coerce.string().max(300), size, color });
+export const WriteCmd = z.object({ op: z.literal("write"), id, place, x: num, y: num, text: z.coerce.string().max(200), size, color });
+export const LatexCmd = z.object({ op: z.literal("latex"), id, place, x: num, y: num, tex: z.coerce.string().max(300), size, color });
 export const LineCmd = z.object({ op: z.literal("line"), id, from: point, to: point, color, arrow: z.boolean().optional().catch(undefined) });
 export const ShapeCmd = z.object({
   op: z.enum(["rect", "circle", "ellipse"]),
   id,
+  place,
   x: num,
   y: num,
   w: num,
@@ -34,6 +48,7 @@ export const ShapeCmd = z.object({
 export const NumberLineCmd = z.object({
   op: z.literal("numberline"),
   id,
+  place,
   x: num,
   y: num,
   w: num,
@@ -44,6 +59,7 @@ export const NumberLineCmd = z.object({
 export const FractionBarCmd = z.object({
   op: z.literal("fractionbar"),
   id,
+  place,
   x: num,
   y: num,
   w: num,
@@ -56,6 +72,7 @@ export const FractionBarCmd = z.object({
 export const PlotCmd = z.object({
   op: z.literal("plot"),
   id,
+  place,
   x: num,
   y: num,
   w: num,
@@ -99,6 +116,7 @@ const KNOWN_OPS = new Set([
   "arrow", "tick", "divider", "strike",
 ]);
 
+const PLACE_OPS = new Set(["write", "latex", "rect", "circle", "ellipse", "numberline", "fractionbar", "plot"]);
 let autoId = 0;
 /** Normalise aliases before validation: wipe→erase, circle{target}→highlight, auto ids. */
 function normalize(c: unknown): unknown {
@@ -108,6 +126,18 @@ function normalize(c: unknown): unknown {
   if (o.op === "circle" && typeof o.target === "string" && o.w === undefined) return { op: "highlight", target: o.target, color: o.color };
   if ((o.op === "tick" || o.op === "divider" || o.op === "arrow") && o.id === undefined) o.id = `${o.op}${++autoId}`;
   if (o.op === "strike" && o.id === undefined) o.id = `strike-${String(o.target)}`;
+  // relative placement: accept place:"next", or the keys at the top level; x/y then become placeholders
+  if (typeof o.place === "string") o.place = o.place === "same" ? { row: "same" } : { row: "next" };
+  for (const k of ["row", "rightOf", "leftOf", "below", "above"] as const) {
+    if (o[k] !== undefined && PLACE_OPS.has(String(o.op))) {
+      o.place = { ...((o.place as object) ?? {}), [k]: o[k] };
+      delete o[k];
+    }
+  }
+  if (o.place && typeof o.place === "object" && PLACE_OPS.has(String(o.op))) {
+    if (o.x === undefined) o.x = 0;
+    if (o.y === undefined) o.y = 0;
+  } else delete o.place;
   return o;
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BoardCommand, DrawCommand } from "@/lib/ai/schema";
+import { parseBoard, type BoardCommand, type DrawCommand } from "@/lib/ai/schema";
 import { DEMO_LESSONS } from "@/lib/ai/mock/lessons";
 import { layoutMainSegments, measure, mainLayouter, segBoxDist } from "./layout";
 import { BOARD_H, BOARD_W, NOTE_PANEL, applyCommand, emptyBoard, fitToBoard, isDraw } from "./model";
@@ -264,5 +264,82 @@ describe("main-layer layout", () => {
   it("passes note-layer segments through untouched", () => {
     const n: Seg = { layer: "note", board: [{ op: "write", id: "n", x: 600, y: 520, text: "eslatma", size: "s" }] };
     expect(mainLayouter()(n)).toBe(n);
+  });
+});
+
+describe("relative placement (place)", () => {
+  const seg = (board: unknown[]) => ({ id: "s", type: "explain" as const, say: "x", emotion: "neutral" as const, board: parseBoard(board) });
+  const boxes = (segs: { board: BoardCommand[] }[]) => {
+    const all: { id: string; b: ReturnType<typeof measure> }[] = [];
+    for (const s of segs) for (const c of s.board) if (isDraw(c) && c.op !== "strike") all.push({ id: c.id, b: measure(c as DrawCommand) });
+    return all;
+  };
+  const overlap = (a: ReturnType<typeof measure>, b: ReturnType<typeof measure>) =>
+    a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+  it("parses place (object, string shorthand, top-level keys) and fills x/y placeholders", () => {
+    const b = parseBoard([
+      { op: "write", id: "a", text: "2+3", place: { row: "next" } },
+      { op: "write", id: "b", text: "=5", place: "same" },
+      { op: "write", id: "c", text: "6 sm", below: "a" },
+      { op: "line", id: "l", from: [0, 0], to: [10, 10], place: { row: "next" } },
+    ]) as (DrawCommand & { place?: unknown })[];
+    expect(b).toHaveLength(4);
+    expect(b[0].place).toEqual({ row: "next" });
+    expect(b[1].place).toEqual({ row: "same" });
+    expect(b[2].place).toEqual({ below: "a" });
+    expect(b[3].place).toBeUndefined();
+  });
+
+  it("row:next stacks lines top-down and nothing overlaps", () => {
+    const segs = layoutMainSegments([
+      seg([{ op: "write", id: "t", text: "P = 2(a + b)", place: { row: "next" } }]),
+      seg([{ op: "write", id: "s1", text: "a = 6, b = 4", place: { row: "next" } }]),
+      seg([{ op: "write", id: "s2", text: "P = 2(6 + 4) = 20", place: { row: "next" } }]),
+    ]);
+    const all = boxes(segs);
+    expect(all.map((x) => x.id)).toEqual(["t", "s1", "s2"]);
+    for (let i = 1; i < all.length; i++) expect(all[i].b.y).toBeGreaterThan(all[i - 1].b.y + all[i - 1].b.h - 1);
+    for (const c of segs.flatMap((s) => s.board)) expect((c as { place?: unknown }).place).toBeUndefined();
+  });
+
+  it("labels go beside/below their shape, without touching it", () => {
+    const [s] = layoutMainSegments([
+      seg([
+        { op: "rect", id: "r", place: { row: "next" }, w: 240, h: 140 },
+        { op: "write", id: "w", place: { below: "r" }, text: "6 sm", size: "s" },
+        { op: "write", id: "h", place: { rightOf: "r" }, text: "4 sm", size: "s" },
+      ]),
+    ]);
+    const [r, w, h] = boxes([s]).map((x) => x.b);
+    expect(overlap(r, w)).toBe(false);
+    expect(overlap(r, h)).toBe(false);
+    expect(w.y).toBeGreaterThanOrEqual(r.y + r.h);
+    expect(h.x).toBeGreaterThanOrEqual(r.x + r.w);
+    // centred under / beside it
+    expect(Math.abs(w.x + w.w / 2 - (r.x + r.w / 2))).toBeLessThan(12);
+    expect(Math.abs(h.y + h.h / 2 - (r.y + r.h / 2))).toBeLessThan(12);
+  });
+
+  it("a full board starts a new page instead of writing over old lines", () => {
+    const segs = layoutMainSegments(
+      Array.from({ length: 12 }, (_, i) => seg([{ op: "write", id: `l${i}`, text: `${i} + ${i} = ${2 * i}`, place: { row: "next" } }])),
+    );
+    // replay on a model board and check no two visible main drawings overlap
+    let board = emptyBoard();
+    for (const s of segs) for (const c of s.board) board = applyCommand(board, c, "main");
+    const vis = board.els.map((e) => measure(e.cmd));
+    for (let i = 0; i < vis.length; i++) for (let j = i + 1; j < vis.length; j++) expect(overlap(vis[i], vis[j])).toBe(false);
+  });
+
+  it("unknown target falls back to the next row", () => {
+    const [s] = layoutMainSegments([
+      seg([
+        { op: "write", id: "a", text: "x + 2 = 5", place: { row: "next" } },
+        { op: "write", id: "b", text: "x = 3", place: { below: "nope" } },
+      ]),
+    ]);
+    const [a, b] = boxes([s]).map((x) => x.b);
+    expect(b.y).toBeGreaterThanOrEqual(a.y + a.h);
   });
 });

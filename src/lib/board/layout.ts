@@ -12,7 +12,7 @@
 // - A cluster that overlaps existing content moves to the nearest free spot, preferring "below".
 // - If the board is full, the board is wiped first (new "page"), like a teacher would.
 // - The bottom-right note panel stays free for interruption answers.
-import type { BoardCommand, DrawCommand } from "@/lib/ai/schema";
+import type { BoardCommand, DrawCommand, Place } from "@/lib/ai/schema";
 import { strokesFor, rngFrom } from "@/components/board/handwriting";
 import { BOARD_H, BOARD_W, NOTE_PANEL, bbox, isDraw } from "./model";
 
@@ -178,9 +178,74 @@ export function mainLayouter() {
     }
   };
 
+  // the last content drawn on the main layer ("row: same" continues it)
+  let lastId: string | null = null;
+
+  /**
+   * Relative placement → absolute x/y. The LLM can't see the board, so instead of guessing
+   * coordinates it may say `place: { row: "next" }` (new line under everything), `row: "same"`
+   * (continue the last line), or `rightOf / leftOf / below / above: <id>`. Collision checks
+   * still run afterwards as the safety net.
+   */
+  const resolvePlace = (cmds: BoardCommand[]): BoardCommand[] => {
+    const local = new Map<string, Box>();
+    const boxOf = (tid: string | undefined) => (tid ? (local.get(tid) ?? placed.get(tid)) : undefined);
+    const bottom = () => Math.max(0, ...[...placed.values(), ...local.values()].map((b) => b.y + b.h));
+    return cmds.map((c0) => {
+      if (c0.op === "erase") {
+        if (c0.target === "all") {
+          local.clear();
+          lastId = null;
+        } else local.delete(c0.target);
+      }
+      if (!isDraw(c0)) return c0;
+      const c1 = c0 as DrawCommand & { place?: Place };
+      let c: DrawCommand = c1;
+      const p = c1.place;
+      if (p && "x" in c1 && "y" in c1) {
+        const { place: _drop, ...rest } = c1;
+        c = fitWidth(rest as DrawCommand);
+        // measure at the origin to know the drawing's size and where its box sits relative to x/y
+        const b = measure({ ...c, x: 0, y: 0 } as DrawCommand);
+        const at = (left: number, top: number) => {
+          c = { ...c, x: Math.round(left - b.x), y: Math.round(top - b.y) } as DrawCommand;
+        };
+        const textual = (tid: string) => CONTENT.has(opOf.get(tid) ?? localOp.get(tid) ?? "");
+        const t =
+          (p.rightOf && boxOf(p.rightOf) && (["rightOf", p.rightOf] as const)) ||
+          (p.leftOf && boxOf(p.leftOf) && (["leftOf", p.leftOf] as const)) ||
+          (p.below && boxOf(p.below) && (["below", p.below] as const)) ||
+          (p.above && boxOf(p.above) && (["above", p.above] as const)) ||
+          null;
+        const last = boxOf(lastId ?? undefined);
+        if (t) {
+          const tb = boxOf(t[1])!;
+          const midY = tb.y + tb.h / 2 - b.h / 2;
+          const alignX = textual(t[1]) ? tb.x : tb.x + tb.w / 2 - b.w / 2; // text rows left-align, shapes centre
+          if (t[0] === "rightOf") at(tb.x + tb.w + 24, midY);
+          else if (t[0] === "leftOf") at(tb.x - b.w - 24, midY);
+          else if (t[0] === "below") at(alignX, tb.y + tb.h + 18);
+          else at(alignX, tb.y - b.h - 18);
+        } else if (p.row === "same" && last) {
+          at(last.x + last.w + 24, last.y + last.h / 2 - b.h / 2);
+        } else {
+          const y = bottom();
+          // board full → start again at the top (the layouter then wipes for a new page)
+          at(50, y === 0 || y + 22 + b.h > BOARD_H - M ? 40 : y + 22);
+        }
+      }
+      const box = measure(c);
+      local.set(c.id, box);
+      localOp.set(c.id, c.op);
+      if (CONTENT.has(c.op)) lastId = c.id;
+      return c;
+    });
+  };
+  const localOp = new Map<string, string>();
+
   return <T extends { board: BoardCommand[]; layer?: string }>(seg: T): T => {
     if (seg.layer === "note") return seg;
-    const cmds = seg.board;
+    const cmds = resolvePlace(seg.board);
 
     // erases that come before the first drawing apply first ("erase all" = new page)
     const firstDraw = cmds.findIndex((c) => isDraw(c));
