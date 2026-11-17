@@ -5,6 +5,8 @@
 // whether the chalk stays on the line.
 import { useCallback, useEffect, useRef, useState } from "react";
 import TutorCanvas from "@/components/characters/TutorCanvas";
+import LipsyncDebug from "./LipsyncDebug";
+import { mouth } from "@/lib/audio/lipsync";
 import { BOARD_S, BOARD_X, BOARD_Y, COMPACT_VIEW, FULL_VIEW, Room, type StageView } from "@/components/lesson/ClassroomStage";
 import type { AnimInput, AnimState, Emotion, TutorAnimator } from "@/components/characters/anim/animator";
 
@@ -49,6 +51,7 @@ const newSim = (): Sim => ({
 
 export default function DevTutor() {
   const [tutor, setTutor] = useState("blokbek");
+  const realVoice = useRef(false);
   const [view, setView] = useState<StageView>(FULL_VIEW);
   const [speed, setSpeed] = useState(1);
   const [state, setState] = useState<AnimState>("idle");
@@ -127,11 +130,17 @@ export default function DevTutor() {
 
   const driver = useCallback((inp: AnimInput) => {
     const s = sim.current;
-    inp.talking = s.talking;
-    // synthetic voice: syllable-like bursts with short gaps
-    const ph = s.t / 1000;
-    const syl = Math.abs(Math.sin(ph * 9.5)) * (0.55 + 0.45 * Math.abs(Math.sin(ph * 2.3 + 1)));
-    inp.amp = s.talking ? (Math.sin(ph * 1.7) > -0.85 ? syl : 0) : 0;
+    if (realVoice.current) {
+      // a real voice line is playing (lip-sync overlay): the mouth follows its audio
+      inp.talking = mouth.speaking;
+      inp.amp = mouth.amp;
+    } else {
+      inp.talking = s.talking;
+      // synthetic voice: syllable-like bursts with short gaps
+      const ph = s.t / 1000;
+      const syl = Math.abs(Math.sin(ph * 9.5)) * (0.55 + 0.45 * Math.abs(Math.sin(ph * 2.3 + 1)));
+      inp.amp = s.talking ? (Math.sin(ph * 1.7) > -0.85 ? syl : 0) : 0;
+    }
     inp.listening = s.listening;
     inp.thinking = s.thinking;
     inp.emotion = s.emotion;
@@ -266,6 +275,7 @@ export default function DevTutor() {
         <button type="button" className={btn} onClick={() => (s.emotion = s.emotion === "excited" ? "neutral" : "excited")}>excited</button>
         <button type="button" className={btn} onClick={clearInk}>clear board</button>
       </div>
+      <LipsyncDebug tutor={tutor} onVoice={(on) => (realVoice.current = on)} />
       <label className="mt-3 flex items-center gap-3 text-[14px] font-bold">
         Speed {speed.toFixed(2)}×
         <input type="range" min={0.25} max={1} step={0.05} value={speed} onChange={(e) => setSpd(Number(e.target.value))} />

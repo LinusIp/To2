@@ -98,7 +98,7 @@ describe("mouth hysteresis", () => {
     }
   });
 
-  it("goes to the rest face after 150 ms of silence, not before", () => {
+  it("goes to the rest face after 120 ms of silence, not before", () => {
     const m = newMouth();
     let t = 0;
     for (; t < 500; t += 16) stepMouth(m, t, 16, true, 0.7);
@@ -109,7 +109,7 @@ describe("mouth hysteresis", () => {
       if (stepMouth(m, t, 16, false, 0) === -1 && restAt < 0) restAt = t;
     }
     expect(restAt - stop).toBeGreaterThanOrEqual(REST_AFTER_MS);
-    expect(restAt - stop).toBeLessThan(REST_AFTER_MS + 40);
+    expect(restAt - stop).toBeLessThan(REST_AFTER_MS + MIN_HOLD_MS + 1); // may wait out the last frame's 60 ms hold
   });
 
   it("reduced motion: instant frames (no hold)", () => {

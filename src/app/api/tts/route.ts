@@ -25,6 +25,8 @@ import { joinWav } from "@/lib/audio/wav";
 import { clientKey, rateLimit, userIdFor } from "@/lib/server/session";
 import { DAILY_CAP, creditsFor, logCredits, todayCredits } from "@/lib/server/credits";
 import { cachedExists } from "@/lib/server/exists";
+import { storeGetText, storePut } from "@/lib/server/store";
+import { ENV_STEP_MS, computeEnvelope, encodeEnvelope } from "@/lib/audio/envelope";
 import type { AppEnv } from "@/lib/env";
 import type { TTS } from "@/lib/ai/types";
 
@@ -33,10 +35,31 @@ import type { TTS } from "@/lib/ai/types";
 const V2_BUDGET_MS = 350;
 const V2_BUDGET_PREFETCH_MS = 45_000;
 
-const audioResponse = (audio: ArrayBuffer, cache: string, info: { clips?: number; model?: string; final?: boolean } = {}) =>
+/**
+ * Lip-sync envelope of exactly the audio we serve (one byte per 20 ms, see src/lib/audio/envelope.ts),
+ * sent as the x-tts-env header. For cached segments it's stored next to the audio (envKey); the
+ * v1 stand-ins get it computed on the fly.
+ */
+async function envelopeFor(audio: ArrayBuffer, envKey?: string): Promise<string> {
+  if (envKey) {
+    const s = await storeGetText(envKey);
+    if (s) return s;
+  }
+  try {
+    const e = encodeEnvelope(computeEnvelope(audio));
+    if (envKey) await storePut(envKey, e, { ttlSec: 60 * 60 * 24 * 60 });
+    return e;
+  } catch {
+    return "";
+  }
+}
+
+const audioResponse = async (audio: ArrayBuffer, cache: string, info: { clips?: number; model?: string; final?: boolean; envKey?: string } = {}) =>
   new Response(audio, {
     headers: {
       "content-type": "audio/wav",
+      "x-tts-env": await envelopeFor(audio, info.envKey),
+      "x-tts-env-step": String(ENV_STEP_MS),
       // a v1 stand-in must not stick in the browser cache: the expressive version is on its way
       "cache-control": info.final === false ? "no-store" : "public, max-age=31536000, immutable",
       "x-tts-cache": cache,
@@ -101,7 +124,7 @@ export async function GET(req: Request) {
   }
   try {
     const cached = dryRun ? null : await getCachedAudio(env, segKey);
-    if (cached) return audioResponse(cached.audio, "hit", { model });
+    if (cached) return audioResponse(cached.audio, "hit", { model, envKey: segKey + ":env" });
   } catch (e) {
     console.warn("[tts] cache read failed", (e as Error).message);
   }
@@ -151,11 +174,11 @@ export async function GET(req: Request) {
   try {
     if (model === "lison") {
       const r = await full;
-      return audioResponse(r.audio, r.fromCache === plan.clips.length ? "clips" : r.fromCache ? "partial" : "miss", { clips: plan.clips.length, model });
+      return audioResponse(r.audio, r.fromCache === plan.clips.length ? "clips" : r.fromCache ? "partial" : "miss", { clips: plan.clips.length, model, envKey: segKey + ":env" });
     }
     const timeout = new Promise<null>((res) => setTimeout(() => res(null), budget));
     const r = await Promise.race([full, timeout]);
-    if (r) return audioResponse(r.audio, r.fromCache === plan.clips.length ? "clips" : r.fromCache ? "partial" : "miss", { clips: plan.clips.length, model });
+    if (r) return audioResponse(r.audio, r.fromCache === plan.clips.length ? "clips" : r.fromCache ? "partial" : "miss", { clips: plan.clips.length, model, envKey: segKey + ":env" });
 
     // too slow: let v2 finish in the background, answer now with the same lines on v1
     after(full.catch((e) => console.warn("[tts] background v2 failed", (e as Error).message)));

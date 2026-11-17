@@ -1,12 +1,12 @@
 // Lip-sync: voice amplitude → mouth frame (-1 = rest face, 0..3 = closed, small, open, wide).
 // Envelope (attack 25 ms / release 90 ms) → thresholds with hysteresis → each frame held ≥ 60 ms
-// → rest face after 150 ms of silence. Pure + unit-tested (mouth.test.ts).
+// → rest face after 120 ms of silence (raw level). Pure + unit-tested (anim.test.ts, envelope.test.ts).
 import { envelope } from "./spring";
 
 const UP = [0.12, 0.3, 0.55]; // go up to frame i+1 when the envelope passes UP[i]
 const DOWN = [0.08, 0.22, 0.45]; // come down below frame i+1 when it drops under DOWN[i]
 export const MIN_HOLD_MS = 60;
-export const REST_AFTER_MS = 150;
+export const REST_AFTER_MS = 120; // silences over 120 ms show the rest face
 
 export interface MouthState {
   env: number;
@@ -32,7 +32,9 @@ export function levelFor(env: number, cur: number): number {
 export function stepMouth(m: MouthState, now: number, dtMs: number, speaking: boolean, amp: number, instant = false): number {
   m.env = instant ? (speaking ? amp : 0) : envelope(m.env, speaking ? amp : 0, dtMs, 25, 90);
   // silence = no audio, or a pause between words
-  const quiet = !speaking || m.env < 0.04;
+  // silence is measured on the raw audio level (the smoothed one decays slowly), so the rest face
+  // shows ~120 ms after the voice really stops
+  const quiet = !speaking || amp < 0.04;
   if (!quiet) m.silentSince = -1;
   else if (m.silentSince < 0) m.silentSince = now;
 

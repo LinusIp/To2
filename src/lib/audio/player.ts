@@ -1,6 +1,10 @@
 // One shared <audio> element for all tutor speech (so the Web Audio analyser is wired once).
 // Falls back to a silent timer (captions still show) if TTS audio fails.
 import { attachAnalyser, resumeAudioContext, startMouth, stopMouth } from "./lipsync";
+import { decodeEnvelope } from "./envelope";
+
+/** blob URL of the clip playing now (revoked when the next one starts) */
+let objUrl: string | null = null;
 
 let el: HTMLAudioElement | null = null;
 
@@ -75,6 +79,9 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
   let fbTimer: ReturnType<typeof setTimeout> | null = null;
   let fbDuration = estimateMs(text);
   let done = false;
+  /** lip-sync envelope of exactly this audio (x-tts-env header), null → live analyser */
+  let envelope: Uint8Array | null = null;
+  const ctrl = new AbortController();
   let resolveEnded!: () => void;
   let resolveStarted!: (ms: number) => void;
   const ended = new Promise<void>((r) => (resolveEnded = r));
@@ -95,7 +102,7 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
     fbDuration = estimateMs(text, 1);
     fbStart = performance.now();
     fbRunning = true;
-    startMouth(true);
+    startMouth(null); // no audio → the mouth stays closed (never animated from a timer)
     resolveStarted(fbDuration);
     const left = (fbDuration - fbOffset) / rate;
     fbTimer = setTimeout(finish, Math.max(0, left));
@@ -107,18 +114,34 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
     a.onerror = () => startFallback();
     a.onplaying = () => {
       if (done) return;
-      startMouth(false);
+      startMouth(a, envelope);
       const d = Number.isFinite(a.duration) ? a.duration * 1000 : estimateMs(text);
       resolveStarted(d);
     };
     a.onended = () => finish();
     a.playbackRate = rate;
-    a.src = ttsUrl(text, voice, { emotion: opts.emotion, lead: opts.lead });
     const seek = () => {
       if (opts.fromMs) a.currentTime = opts.fromMs / 1000;
     };
-    a.onloadedmetadata = seek;
-    a.play().catch(() => startFallback());
+    // fetch (not <audio src>) so we can read the envelope header that belongs to exactly these bytes
+    void (async () => {
+      try {
+        const r = await fetch(ttsUrl(text, voice, { emotion: opts.emotion, lead: opts.lead }), { signal: ctrl.signal });
+        if (done) return;
+        if (r.status !== 200) return startFallback();
+        const e = r.headers.get("x-tts-env");
+        envelope = e ? decodeEnvelope(e) : null;
+        const blob = await r.blob();
+        if (done) return;
+        if (objUrl) URL.revokeObjectURL(objUrl);
+        objUrl = URL.createObjectURL(blob);
+        a.onloadedmetadata = seek;
+        a.src = objUrl;
+        await a.play();
+      } catch {
+        if (!done) startFallback();
+      }
+    })();
     // If nothing happens within 8s (slow network / TTS down), go silent so the lesson continues.
     setTimeout(() => {
       if (!done && !fallback && a.paused && a.currentTime === 0) startFallback();
@@ -145,16 +168,17 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
         if (!fbRunning) {
           fbRunning = true;
           fbStart = performance.now();
-          startMouth(true);
+          startMouth(null);
           fbTimer = setTimeout(finish, Math.max(0, (fbDuration - fbOffset) / rate));
         }
       } else {
-        startMouth(false);
+        startMouth(a, envelope);
         void a.play().catch(() => startFallback());
       }
     },
     stop() {
       if (fbTimer) clearTimeout(fbTimer);
+      ctrl.abort();
       if (!fallback) a.pause();
       finish();
     },
