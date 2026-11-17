@@ -8,10 +8,10 @@ with swappable mouth frames for lip-sync and eyelids for blinking.
 |---|---|---|
 | blokbek | `public/models/tripo/blokbek.glb` (1.1 MB) | ✅ |
 | lola | `public/models/tripo/lola.glb` (1.3 MB) | ✅ |
-| diyorbek | `public/models/tripo/diyorbek.glb` (1.2 MB) | ✅ |
+| ziyo (green hood) | `public/models/tripo/ziyo.glb` (1.2 MB) | ✅ |
 | the other 5 | — | MVP: locked ("Tez orada"), keep `makeChar` / sig art |
 
-Test renders: `public/models/raw/_B_*.png`, `_L_*.png`, `_d_*.png` (talk, write, wave, walk, faces).
+Test renders: `public/models/raw/_B_*.png`, `_L_*.png`, `_d_*.png` (Ziyo) (talk, write, wave, walk, faces).
 Source: `tools/blender/tripo_pipeline.py` (decimate and bake) + `tools/blender/tripo_hinged.py` (cut,
 hinge, faces, export). Per-character measurements are in `P` there.
 

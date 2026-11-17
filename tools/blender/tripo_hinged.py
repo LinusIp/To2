@@ -23,7 +23,7 @@ PLANES = []  # metres → stage px (matches makeChar proportions: shoulder ≈ 4
 P = {
     "lola": dict(sw=0.14, arm=(0.55, 0.68), crotch=0.24, neck=0.688, tip=0.468, hood_to_body=False, hair_to_head=True, hair_x=0.30, dark_is_hair=0.24, hair_zmin=0.445,
                  mouth=(-0.034, 0.033, 0.711, 0.744), eyes=(-0.085, 0.088, 0.764, 0.814)),
-    "diyorbek": dict(sw=0.14, arm=(0.54, 0.68), crotch=0.37, neck=0.668, tip=0.49, head_x=0.215, hood_to_body=False, hair_to_head=False,
+    "ziyo": dict(sw=0.14, arm=(0.54, 0.68), crotch=0.37, neck=0.668, tip=0.49, head_x=0.215, hood_to_body=False, hair_to_head=False,
                      mouth=(-0.036, 0.032, 0.712, 0.743), eyes=(-0.084, 0.084, 0.756, 0.803),
                      mouth_dark=(0.20, 0.10, 0.06), mouth_red=(0.80, 0.33, 0.28)),
     "blokbek": dict(sw=0.152, arm=(0.56, 0.69), crotch=0.29, neck=0.685, hood_to_body=True, hair_to_head=False,
