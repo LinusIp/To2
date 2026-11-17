@@ -8,6 +8,7 @@ import dagre from "dagre";
 import { Check, Lock, Play } from "lucide-react";
 import type { Roadmap, RoadmapNode } from "@/lib/learning/roadmap";
 import { t } from "@/i18n/uz";
+import { isOpen, lockReason } from "@/lib/learning/access";
 
 const W = 210;
 const H = 64;
@@ -20,7 +21,7 @@ const STYLE: Record<RoadmapNode["status"], { bg: string; border: string; dashed?
   locked: { bg: "#e9edf7", border: "#dfe4f1", text: "#8a92b0" },
 };
 
-function SkillNode({ data }: NodeProps<Node<{ n: RoadmapNode }>>) {
+function SkillNode({ data }: NodeProps<Node<{ n: RoadmapNode; reason: string | null }>>) {
   const n = data.n;
   const s = STYLE[n.status];
   return (
@@ -46,6 +47,7 @@ function SkillNode({ data }: NodeProps<Node<{ n: RoadmapNode }>>) {
         {n.weak && <span style={{ marginLeft: "auto", fontSize: 10, borderRadius: 8, padding: "0 6px", background: "#fff4e8", color: "#c2410c" }}>{t.roadmap.weak}</span>}
       </div>
       <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.2 }}>{n.title}</div>
+      {data.reason && <div style={{ fontSize: 11, fontWeight: 800, marginTop: 2 }}>{data.reason}</div>}
       <Handle type="source" position={Position.Bottom} />
     </div>
   );
@@ -76,7 +78,7 @@ export default function RoadmapGraph({ roadmap }: { roadmap: Roadmap }) {
     dagre.layout(g);
     const out: Node<{ n: RoadmapNode }>[] = ns.map((n) => {
       const p = g.node(n.id);
-      return { id: n.id, type: "skill", position: { x: p.x - W / 2, y: p.y - H / 2 }, data: { n }, draggable: false, connectable: false };
+      return { id: n.id, type: "skill", position: { x: p.x - W / 2, y: p.y - H / 2 }, data: { n, reason: lockReason(roadmap, n) }, draggable: false, connectable: false };
     });
     return { nodes: out, edges: es };
   }, [roadmap]);
@@ -97,7 +99,7 @@ export default function RoadmapGraph({ roadmap }: { roadmap: Roadmap }) {
         nodesConnectable={false}
         onNodeClick={(_, n) => {
           const rn = (n.data as { n: RoadmapNode }).n;
-          if (rn.status !== "locked") router.push(`/lesson/${rn.id}`);
+          if (isOpen(rn)) router.push(`/lesson/${rn.id}`);
         }}
         proOptions={{ hideAttribution: true }}
       >

@@ -6,6 +6,7 @@ import type { Emotion, Expect, LessonSegment } from "@/lib/ai/schema";
 import { applyCommand, describeBoard, emptyBoard, isDraw, scheduleSegment, scheduleLength, type BoardState, type Layer, type Slot } from "@/lib/board/model";
 import { prefetchSpeech, speak, unlockAudio, type Speech } from "@/lib/audio/player";
 import { speakMath } from "@/lib/ai/speakMath";
+import { resolveStart, type StartAt } from "./resume";
 import { startRecording, stopRecording, micSupported } from "@/lib/audio/recorder";
 import { initialPlayer, transition, type PlayerEvent, type PlayerState } from "./player";
 import { readTutorStream } from "./sse";
@@ -184,6 +185,7 @@ async function playSegment(track: "main" | "note", index: number, resume?: { t: 
   const my = ++gen;
   speech?.stop();
   cancelAnimationFrame(raf);
+  if (track === "main") saveProgress(s.skillId, s.characterId, index);
 
   set({
     track,
@@ -246,10 +248,80 @@ function nextMain() {
   else if (!s.mainDone) set({ waiting: true, mainIndex: i });
   else {
     fire({ type: "FINISH" });
+    clearProgress(s.skillId, s.characterId);
     set({ caption: T.lesson.finished, emotion: "excited", celebrate: get().celebrate + 1 });
     void fetch("/api/lesson", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ skillId: s.skillId, finished: true }) }).catch(() => {});
   }
 }
+
+// ── resume after a refresh / leaving the page ────────────────────────────────
+// The segment being played is saved per (skill, tutor) on the device; the next visit offers
+// "Davom etish" and starts there (earlier boards are re-applied instantly). Cleared at the end.
+const PROGRESS_TTL = 7 * 24 * 3600_000;
+const progKey = (skillId: string, characterId: string) => `to2:lesson:${skillId}:${characterId}`;
+function saveProgress(skillId: string, characterId: string, index: number) {
+  try {
+    localStorage.setItem(progKey(skillId, characterId), JSON.stringify({ i: index, at: Date.now() }));
+  } catch {
+    /* private mode / storage off: resume just isn't offered */
+  }
+}
+function clearProgress(skillId: string, characterId: string) {
+  try {
+    localStorage.removeItem(progKey(skillId, characterId));
+  } catch {
+    /* ignore */
+  }
+}
+/** Saved segment index for this lesson (0 = start from the beginning). */
+export function savedProgress(skillId: string, characterId: string): number {
+  try {
+    const v = JSON.parse(localStorage.getItem(progKey(skillId, characterId)) ?? "null") as { i: number; at: number } | null;
+    return v && Date.now() - v.at < PROGRESS_TTL && v.i > 0 ? v.i : 0;
+  } catch {
+    return 0;
+  }
+}
+export function forgetProgress(skillId: string, characterId: string) {
+  clearProgress(skillId, characterId);
+}
+
+let startAt: StartAt = 0;
+let began = false;
+
+function begin(streamDone: boolean) {
+  const s = get();
+  if (began || !s.waiting || s.player.status !== "speaking") return;
+  const i = resolveStart(s.main, startAt, streamDone);
+  if (i === null) return;
+  began = true;
+  set({ waiting: false });
+  if (i > 0) {
+    // fast-forward: re-draw the earlier boards instantly, keep their lines in the transcript
+    let board = emptyBoard();
+    for (const seg of s.main.slice(0, i)) for (const c of seg.board) board = applyCommand(board, c, seg.layer === "note" ? "note" : "main");
+    set({ board, transcript: s.main.slice(0, i).map((x) => ({ who: "tutor" as const, text: x.say })) });
+  }
+  void playSegment("main", i);
+}
+
+/** The page went to the background: pause exactly where we are (like a barge-in, without the mic). */
+export function pauseForBackground() {
+  const st = get().player.status;
+  if (st === "speaking" || st === "awaiting") {
+    bargeIn();
+    pausedInBackground = true;
+  }
+}
+/** Back in front: continue from the same spot. */
+export function resumeFromBackground() {
+  if (!pausedInBackground) return;
+  pausedInBackground = false;
+  if (get().player.status !== "paused") return;
+  fire({ type: "CANCEL" });
+  resumeAfterInterrupt(true);
+}
+let pausedInBackground = false;
 
 // ── public API ───────────────────────────────────────────────────────────────
 export function initLesson(opts: { skillId: string; characterId: string; grade: number; greeting?: string }) {
@@ -285,9 +357,11 @@ function context() {
 }
 
 /** Start the lesson: unlock audio (user gesture), stream segments. */
-export async function startLesson() {
+export async function startLesson(at: StartAt = 0) {
   unlockAudio();
   const s = get();
+  startAt = at;
+  began = false;
   fire({ type: "START" });
   set({ caption: T.common.loading, waiting: true });
   abort = new AbortController();
@@ -301,6 +375,7 @@ export async function startLesson() {
     await readTutorStream(res, {
       onSegment: (seg) => {
         set((st) => ({ main: [...st.main, seg] }));
+        if (!began) return begin(false);
         const st = get();
         if (st.waiting && st.player.status === "speaking") {
           set({ waiting: false });
@@ -313,6 +388,7 @@ export async function startLesson() {
     set({ error: T.lesson.tutorFailed });
   }
   set({ mainDone: true });
+  if (!began) begin(true);
   const st = get();
   if (st.waiting && st.player.status === "speaking" && st.mainIndex >= st.main.length) {
     set({ waiting: false });

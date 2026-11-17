@@ -14,7 +14,11 @@ import {
   continueLesson,
   disposeLesson,
   explainAgain,
+  forgetProgress,
   initLesson,
+  pauseForBackground,
+  resumeFromBackground,
+  savedProgress,
   replayStep,
   setMuted,
   setRate,
@@ -28,6 +32,7 @@ import {
 import { StepPips, StreakChip, Wave } from "@/components/ui/hud";
 import { ArrowIcon, BackIcon, KeyboardIcon, ReplayIcon, SpeakerIcon } from "@/components/ui/icons";
 import SuccessScreen from "@/components/ui/SuccessScreen";
+import type { StartAt } from "@/lib/lesson/resume";
 import AnswerInput from "./AnswerInput";
 import MicButton from "./MicButton";
 
@@ -235,6 +240,8 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
   const characterId = getCharacter(user?.characterId).id;
   const ch = getCharacter(characterId);
   const [doneSeen, setDoneSeen] = useState(false);
+  // where Start begins: saved segment after a refresh, or the explanation step when coming back from the quiz
+  const [startAt, setStartAt] = useState<StartAt>(0);
 
   useEffect(() => {
     void load();
@@ -244,6 +251,15 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
     initLesson({ skillId, characterId, grade: user?.grade ?? 6, greeting: ch.hi });
     setMuted(readPref("sound", "1") === "0");
     setDoneSeen(false);
+    let at: StartAt = savedProgress(skillId, characterId);
+    try {
+      const flag = `to2:lesson-at:${skillId}`;
+      if (new URLSearchParams(window.location.search).get("at") === "explain" || sessionStorage.getItem(flag) === "explain") at = "explain";
+      sessionStorage.removeItem(flag);
+    } catch {
+      /* no storage: start normally */
+    }
+    setStartAt(at);
     return () => disposeLesson();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [skillId, characterId, user?.grade]);
@@ -251,6 +267,13 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
   useEffect(() => {
     if (status === "done") void load(true);
   }, [status, load]);
+
+  // leaving the app (tab switch, phone lock) pauses the lesson at the same spot; coming back resumes it
+  useEffect(() => {
+    const onVis = () => (document.hidden ? pauseForBackground() : resumeFromBackground());
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
 
   const lessonNo = useMemo(() => {
     const o = roadmap?.nodes.find((n) => n.id === skillId)?.order;
@@ -316,9 +339,23 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
           )}
           {started && <Steps />}
           {!started ? (
-            <button type="button" className="btn btn-primary w-full" onClick={() => void startLesson()} autoFocus>
-              {t.lesson.start} <ArrowIcon />
-            </button>
+            <div className="flex flex-col gap-2">
+              <button type="button" className="btn btn-primary w-full" onClick={() => void startLesson(startAt)} autoFocus>
+                {startAt === "explain" ? t.lesson.reviewExplain : typeof startAt === "number" && startAt > 0 ? t.lesson.resumeAt(startAt + 1) : t.lesson.start} <ArrowIcon />
+              </button>
+              {startAt !== 0 && (
+                <button
+                  type="button"
+                  className="btn w-full"
+                  onClick={() => {
+                    forgetProgress(skillId, characterId);
+                    void startLesson(0);
+                  }}
+                >
+                  {t.lesson.fromStart}
+                </button>
+              )}
+            </div>
           ) : status !== "done" ? (
             <Actions />
           ) : null}
@@ -331,13 +368,13 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
           title={t.success.title}
           subtitle={`${t.success.lessonDone} ${t.lesson.xpGained(xpGained + 20)}`}
           characterId={characterId}
-          primary={{ label: t.lesson.toPractice, href: `/practice/${skillId}` }}
+          primary={{ label: t.lesson.toPractice, href: `/practice/${skillId}?from=lesson` }}
           secondary={{ label: t.lesson.toMap, onClick: () => setDoneSeen(true) }}
         />
       )}
       {status === "done" && doneSeen && (
         <div className="flex gap-3 px-4 pb-6 md:px-0">
-          <Link href={`/practice/${skillId}`} className="btn btn-primary flex-1">
+          <Link href={`/practice/${skillId}?from=lesson`} className="btn btn-primary flex-1">
             {t.lesson.toPractice}
           </Link>
           <Link href="/roadmap" className="btn flex-1">

@@ -7,8 +7,9 @@ import TutorPortrait from "@/components/characters/TutorPortrait";
 import { ArrowIcon, CheckIcon, LockIcon } from "@/components/ui/icons";
 import { Bar } from "@/components/ui/hud";
 import { subjectOfSection } from "@/config/subjects";
+import { lockReason } from "@/lib/learning/access";
 
-function Tile({ n }: { n: RoadmapNode }) {
+function Tile({ n, roadmap }: { n: RoadmapNode; roadmap: Roadmap }) {
   if (n.status === "mastered")
     return (
       <Link href={`/practice/${n.id}`} className="card flex w-full items-center gap-3 px-3.5 py-3 no-underline">
@@ -19,22 +20,28 @@ function Tile({ n }: { n: RoadmapNode }) {
         <span className="text-[12px] font-black text-green">{t.roadmap.status.mastered}</span>
       </Link>
     );
-  if (n.status === "locked")
+  if (n.status === "locked") {
+    // say WHY it is locked (same rule as everywhere: src/lib/learning/access.ts)
+    const why = lockReason(roadmap, n);
     return (
-      <div className="flex w-full items-center gap-3 rounded-[22px] bg-[#e9edf7] px-3.5 py-3 text-[#8a92b0]" aria-disabled>
+      <div className="flex w-full items-center gap-3 rounded-[22px] bg-[#e9edf7] px-3.5 py-3 text-[#6b7392]" aria-disabled aria-label={`${n.title}, ${t.roadmap.status.locked}: ${why}`}>
         <span className="grid h-9 w-9 flex-none place-items-center rounded-xl bg-[#dfe4f1]">
           <LockIcon size={16} />
         </span>
-        <span className="flex-1 text-[15px] font-extrabold">{n.title}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-extrabold">{n.title}</span>
+          <span className="block text-[12px] font-extrabold">{why}</span>
+        </span>
         <span className="text-[12px] font-black">{t.roadmap.status.locked}</span>
       </div>
     );
+  }
   const optional = n.status === "optional";
   return (
     <Link href={`/lesson/${n.id}`} className="card flex w-full items-center gap-3 px-3.5 py-3 no-underline">
       <span className={`grid h-9 w-9 flex-none place-items-center rounded-xl text-[15px] font-black ${optional ? "bg-soft text-mut" : "bg-[#fff3d1] text-gold-dark"}`}>{n.order || "+"}</span>
       <span className="flex-1 text-[15px] font-extrabold">{n.title}</span>
-      <span className={`text-[12px] font-black ${optional ? "text-mut" : "text-gold-dark"}`}>{optional ? t.roadmap.status.optional : t.roadmap.status.next}</span>
+      <span className={`text-[12px] font-black ${optional ? "text-mut" : "text-gold-dark"}`}>{n.started ? t.roadmap.resume : optional ? t.roadmap.status.optional : t.roadmap.status.next}</span>
     </Link>
   );
 }
@@ -89,7 +96,7 @@ export default function RoadmapList({ roadmap, characterId, subjectSections }: {
                 {m}/{nodes.length}
               </span>
             </div>
-            {shown.map((n) => (n.status === "current" ? <CurrentTile key={n.id} n={n} characterId={characterId} /> : <Tile key={n.id} n={n} />))}
+            {shown.map((n) => (n.status === "current" ? <CurrentTile key={n.id} n={n} characterId={characterId} /> : <Tile key={n.id} n={n} roadmap={roadmap} />))}
           </section>
         );
       })}

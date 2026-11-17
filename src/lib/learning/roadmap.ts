@@ -18,6 +18,10 @@ export interface RoadmapNode {
   /** order on the path (1-based), 0 = not on path */
   order: number;
   prereqs: string[];
+  /** the learner opened this lesson before (it stays open until mastered) */
+  started: boolean;
+  /** locked nodes: the unmastered prerequisite that blocks it (the one to finish first) */
+  lockedBy: string | null;
 }
 
 export interface Roadmap {
@@ -36,8 +40,9 @@ const pOf = (m: MasteryMap, id: string) => m[id] ?? P_START;
  * 2. add all transitive unmastered prereqs
  * 3. topological order; among available skills prefer lowest mastery and most-blocking
  */
-export function buildRoadmap(mastery: MasteryMap, grade: number, opts: { touched?: string[] } = {}): Roadmap {
+export function buildRoadmap(mastery: MasteryMap, grade: number, opts: { touched?: string[]; started?: string[] } = {}): Roadmap {
   const touched = new Set(opts.touched ?? Object.keys(mastery));
+  const started = new Set(opts.started ?? []);
   const isMastered = (id: string) => pOf(mastery, id) >= MASTERED;
   // Does the learner still need to learn this skill? Unmeasured skills BELOW the learner's
   // grade are assumed known (otherwise every grade-6 roadmap would start at grade-5 basics).
@@ -87,12 +92,20 @@ export function buildRoadmap(mastery: MasteryMap, grade: number, opts: { touched
   const order = new Map(path.map((id, i) => [id, i + 1]));
   const available = (s: Skill) => s.prereqs.every((p) => !onPath.has(p) || isMastered(p));
 
+  // the prerequisite to finish first: on-path ones in path order, then any other unmastered one
+  const blocker = (s: Skill): string | null => {
+    const open = s.prereqs.filter((p) => (onPath.has(p) ? !isMastered(p) : needs(p)));
+    open.sort((a, b) => (order.get(a) ?? 999) - (order.get(b) ?? 999));
+    return open[0] ?? null;
+  };
   const nodes: RoadmapNode[] = SKILLS.filter((s) => s.grade <= Math.max(grade, 6) + 1).map((s) => {
     let status: NodeStatus;
     if (isMastered(s.id)) status = "mastered";
     else if (s.id === currentId) status = "current";
     else if (onPath.has(s.id)) status = available(s) ? "next" : "locked";
     else status = s.prereqs.every((p) => !needs(p)) ? "optional" : "locked";
+    // a lesson the learner already started never locks again (they can always go back to it)
+    if (status === "locked" && started.has(s.id)) status = onPath.has(s.id) ? "next" : "optional";
     return {
       id: s.id,
       title: s.title_uz,
@@ -104,6 +117,8 @@ export function buildRoadmap(mastery: MasteryMap, grade: number, opts: { touched
       weak: weak.has(s.id),
       order: order.get(s.id) ?? 0,
       prereqs: s.prereqs,
+      started: started.has(s.id),
+      lockedBy: status === "locked" ? blocker(s) : null,
     };
   });
 

@@ -138,7 +138,14 @@ export async function recentMistakes(userId: string, skillId: string): Promise<s
 
 export async function roadmapFor(user: UserRow): Promise<Roadmap> {
   const m = await getMastery(user.id);
-  return buildRoadmap(m, user.grade, { touched: Object.keys(m) });
+  return buildRoadmap(m, user.grade, { touched: Object.keys(m), started: await startedSkills(user.id) });
+}
+
+/** Skills whose lesson the learner has opened (they stay re-enterable on the roadmap). */
+export async function startedSkills(userId: string): Promise<string[]> {
+  const db = await getDb();
+  const rows = await db.selectDistinct({ skillId: schema.lessons.skillId }).from(schema.lessons).where(eq(schema.lessons.userId, userId));
+  return rows.map((r) => r.skillId);
 }
 
 export async function saveRoadmap(userId: string, rm: Roadmap) {
