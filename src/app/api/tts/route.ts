@@ -95,8 +95,12 @@ export async function GET(req: Request) {
 
   // whole-segment cache (fast path)
   const segKey = await audioKey(voiceId, `seg2|${model}|${cfg.speed}|${emotion}|${answerLead ? 1 : 0}|${text}`);
+  const dryRun = url.searchParams.get("check") === "1";
+  if (dryRun && (await cachedExists(segKey))) {
+    return Response.json({ cached: true, clips: plan.clips.length, missingClips: 0, chars: 0, credits: 0, model }, { headers: { "cache-control": "no-store" } });
+  }
   try {
-    const cached = await getCachedAudio(env, segKey);
+    const cached = dryRun ? null : await getCachedAudio(env, segKey);
     if (cached) return audioResponse(cached.audio, "hit", { model });
   } catch (e) {
     console.warn("[tts] cache read failed", (e as Error).message);
@@ -110,7 +114,7 @@ export async function GET(req: Request) {
   }
 
   // dry run: is it cached, and what would generating it cost?
-  if (url.searchParams.get("check") === "1") {
+  if (dryRun) {
     const chars = missing.reduce((n, i) => n + clipText(plan.clips[i]).length, 0);
     return Response.json({ cached: missing.length === 0, clips: plan.clips.length, missingClips: missing.length, chars, credits: creditsFor(model, chars), model }, { headers: { "cache-control": "no-store" } });
   }
