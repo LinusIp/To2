@@ -1,5 +1,7 @@
 // Pre-generate TTS for the demo lessons + common phrases, so the live demo never waits on TTS.
-// Usage: node scripts/warm-tts.mjs [baseUrl]   (default: the production URL)
+// Usage: node scripts/warm-tts.mjs [baseUrl] [--dry-run] [--max-credits=5000] [--yes] [--list]
+//   --dry-run prints what is uncached + its cost and generates nothing; a real run refuses to spend
+//   more than --max-credits (default 5,000) without --yes. WARM_VOICES=ziyo limits the tutors.
 // It calls our own /api/tts, which caches every phrase (KV now, R2 later).
 import { build } from "esbuild";
 import path from "node:path";
@@ -51,7 +53,8 @@ function diagnosticQuestions(grade) {
 }
 const DIAG_GRADES = (process.env.DIAG_GRADES ?? "6").split(",").map(Number); // the demo picks 6-sinf
 // MVP: only the playable tutors (the others are "Tez orada")
-const voices = ["blokbek", "lola", "ziyo"];
+// WARM_VOICES=ziyo,lola → only those tutors
+const voices = (process.env.WARM_VOICES ?? "blokbek,lola,ziyo").split(",").map((v) => v.trim()).filter(Boolean);
 /** phrases carry their emotion: the server picks speed + speech tag per emotion (src/lib/ai/prosody.ts) */
 const phrases = new Map(); // key → { text, emotion, lead }
 const add = (text, emotion = "neutral", lead = false) => phrases.set(`${emotion}|${lead}|${text}`, { text, emotion, lead });
@@ -75,7 +78,6 @@ for (const [t, e] of COMMON) add(t, e);
 const list = [...phrases.values()];
 if (LIST_ONLY) {  for (const p of list) console.log(`[${p.emotion}${p.lead ? ", lead" : ""}] ${p.text}`);  console.log(`
 ${list.length} phrases (blokbek: all; lola/ziyo: fractions lesson + ${COMMON.length} common incl. diagnostic)`);  process.exit(0);}
-console.log(`${list.length} phrases × ${voices.length} voices → ${base}`);
 /** fetch with 3 retries (the network sometimes resets long runs) */
 async function get(u, init) {
   for (let i = 0; ; i++) {
@@ -89,8 +91,8 @@ async function get(u, init) {
     }
   }
 }
-const ttsUrl = (v, p) => `${base}/api/tts?voice=${encodeURIComponent(v)}&text=${encodeURIComponent(p.text)}${p.emotion !== "neutral" ? "&emotion=" + p.emotion : ""}${p.lead ? "&lead=1" : ""}&wait=long`; // wait for the expressive (lison-v2) version, not the quick v1 stand-in
-let ok = 0, fail = 0, v1 = 0; // v1 = got the quick v1 stand-in (v2 not ready in time)
+// wait=long: wait for the expressive (lison-v2) version, not the quick v1 stand-in; src=warm labels the spend
+const ttsUrl = (v, p) => `${base}/api/tts?voice=${encodeURIComponent(v)}&text=${encodeURIComponent(p.text)}${p.emotion !== "neutral" ? "&emotion=" + p.emotion : ""}${p.lead ? "&lead=1" : ""}&wait=long&src=warm`;
 // each tutor's own greeting ("Ovozini eshit" on the choose-tutor screen, spoken "happy")
 const GREETINGS = {
   blokbek: "Salom! Men Blokbek. Matematikani blokma-blok quramiz!",
@@ -99,31 +101,17 @@ const GREETINGS = {
 };
 const fracs = DEMO_LESSONS["frac-add-unlike"].segments.map((s) => ({ text: s.say, emotion: s.emotion, lead: false }));
 const common = COMMON.map(([text, emotion]) => ({ text, emotion, lead: false }));
-for (const v of voices) {
-  // Blokbek is the demo character: warm everything. Others: the fractions lesson + common phrases.
-  const greet = GREETINGS[v] ? [{ text: GREETINGS[v], emotion: "happy", lead: false }] : [];
-  const mine = v === "blokbek" ? [...list, ...greet] : [...greet, ...fracs, ...common];
-  // 2 at a time (more parallel lison-v2 jobs slow VoiceLab down and get lost)
-  const q = [...mine];
-  await Promise.all(Array.from({ length: 2 }, async () => {
-    while (q.length) {
-      const p = q.shift();
-      const { r } = await get(ttsUrl(v, p));
-      const c = r.headers.get("x-tts-cache");
-      if (r.status === 200) ok++;
-      else fail++;
-      if (c === "fallback-v1") v1++;
-      process.stdout.write(r.status === 200 ? (c === "hit" ? "." : c === "fallback-v1" ? "1" : "+") : "x");
-    }
-  }));
-}
-console.log(`
-ok=${ok} fail=${fail} fallback-v1=${v1}`);
 
-// Pinned demo answers (src/lib/ai/pinned.ts) for every playable tutor: ask through /api/tutor (which also
-// stores them in KV under the interrupt cache key), then warm their audio exactly as the player asks for it.
-const DEMO_QUESTIONS = ["Nega maxrajlarni ko'paytirdik?", "Nega maxrajlarni oltiga keltirdik?", "EKUK nima?"];
+// 1. every line to warm, per tutor (Blokbek: everything; others: fractions lesson + common + diagnostic)
+const jobs = [];
 for (const v of voices) {
+  const greet = GREETINGS[v] ? [{ text: GREETINGS[v], emotion: "happy", lead: false }] : [];
+  for (const p of v === "blokbek" ? [...list, ...greet] : [...greet, ...fracs, ...common]) jobs.push({ v, p, kind: "demo" });
+}
+// pinned demo answers (src/lib/ai/pinned.ts): asking through /api/tutor costs no TTS and stores them
+// under the interrupt cache key; then their audio exactly as the player asks for it
+const DEMO_QUESTIONS = ["Nega maxrajlarni ko'paytirdik?", "Nega maxrajlarni oltiga keltirdik?", "EKUK nima?"];
+for (const v of voices)
   for (const question of DEMO_QUESTIONS) {
     const { body } = await get(`${base}/api/tutor`, {
       method: "POST",
@@ -132,16 +120,62 @@ for (const v of voices) {
     });
     const text = new TextDecoder().decode(body);
     const src = [...text.matchAll(/event: meta\r?\ndata: (.*)/g)].map((m) => JSON.parse(m[1]).source).join(",");
+    if (src !== "pinned") console.warn(`! ${v} · ${question}: source=${src} (expected pinned)`);
     const says = [...text.matchAll(/^data: (\{.*\})$/gm)].map((m) => JSON.parse(m[1])).filter((j) => j.say);
-    for (const [i, j] of says.entries()) {
-      // same URL the lesson player uses: emotion + the short pause before the first answer segment
-      const { r: a } = await get(ttsUrl(v, { text: j.say, emotion: j.emotion ?? "neutral", lead: i === 0 }));
-      const c = a.headers.get("x-tts-cache");
-      if (c === "fallback-v1") v1++;
-      process.stdout.write(a.status === 200 ? (c === "hit" ? "." : c === "fallback-v1" ? "1" : "+") : "x");
-    }
-    console.log(` ${v} · ${question} → ${says.length} segments (source=${src})`);
+    says.forEach((j, i) => jobs.push({ v, p: { text: j.say, emotion: j.emotion ?? "neutral", lead: i === 0 }, kind: "pinned" }));
   }
+
+// 2. dry run: what is not cached yet, and what would it cost (server prices it: chars × 1.5 on lison-v2)
+let credits = 0;
+const todo = [];
+const per = {};
+{
+  const q = [...jobs];
+  await Promise.all(Array.from({ length: 6 }, async () => {
+    while (q.length) {
+      const j = q.shift();
+      const { r, body } = await get(ttsUrl(j.v, j.p) + "&check=1");
+      if (r.status !== 200) continue;
+      const c = JSON.parse(new TextDecoder().decode(body));
+      if (!c.cached) {
+        todo.push(j);
+        credits += c.credits;
+        per[j.v] ??= { lines: 0, chars: 0, credits: 0 };
+        per[j.v].lines++;
+        per[j.v].chars += c.chars;
+        per[j.v].credits += c.credits;
+      }
+    }
+  }));
 }
-console.log(`fallback-v1 total=${v1}`);
+console.log(`${jobs.length} lines × tutors → ${todo.length} not cached, ≈ ${Math.round(credits)} credits`);
+for (const [v, x] of Object.entries(per)) console.log(`  ${v}: ${x.lines} lines, ${x.chars} chars, ≈ ${Math.round(x.credits)} credits`);
+const MAX = Number(process.argv.find((a) => a.startsWith("--max-credits="))?.split("=")[1] ?? 5000);
+if (process.argv.includes("--dry-run")) {
+  fs.rmSync(out, { force: true });
+  process.exit(0);
+}
+if (credits > MAX && !process.argv.includes("--yes")) {
+  console.error(`✘ ${Math.round(credits)} credits is over --max-credits=${MAX}: ask first, then re-run with --yes`);
+  fs.rmSync(out, { force: true });
+  process.exit(2);
+}
+
+// 3. generate the missing ones, 2 at a time (more parallel lison-v2 jobs slow VoiceLab down and get lost)
+let ok = 0, fail = 0, v1 = 0; // v1 = got a v1 stand-in (v2 not ready in time, or over the daily cap)
+{
+  const q = [...todo];
+  await Promise.all(Array.from({ length: 2 }, async () => {
+    while (q.length) {
+      const j = q.shift();
+      const { r } = await get(ttsUrl(j.v, j.p));
+      const c = r.headers.get("x-tts-cache");
+      if (r.status === 200) ok++;
+      else fail++;
+      if (c === "fallback-v1" || c === "cap-v1") v1++;
+      process.stdout.write(r.status === 200 ? (c === "hit" ? "." : c === "fallback-v1" || c === "cap-v1" ? "1" : "+") : "x");
+    }
+  }));
+}
+console.log(`\nok=${ok} fail=${fail} fallback-v1=${v1}`);
 fs.rmSync(out, { force: true });
