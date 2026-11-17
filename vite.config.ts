@@ -14,7 +14,8 @@ const git = (cmd: string) => {
 };
 const BUILD = {
   commit: git("rev-parse HEAD") || "unknown",
-  dirty: git("status --porcelain --untracked-files=no") !== "",
+  // the build regenerates the character manifests first (scripts/characters-manifest.mjs): not "dirty"
+  dirty: git('status --porcelain --untracked-files=no -- . ":(exclude)src/config/characterModels.json" ":(exclude)src/config/characterRenders.json"') !== "",
   builtAt: new Date().toISOString(),
 };
 
