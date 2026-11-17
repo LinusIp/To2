@@ -354,3 +354,42 @@ and any non-demo question are live LLM answers.
   fail by score → quick review · quit mid-quiz · refresh mid-lesson → **5/5 passed, 3 runs in a row** (~40 s each).
   Found by the e2e: the lesson re-initialised when the user record arrived → a just-started lesson reset and the "resume at
   the explanation" flag was lost (fixed: set up once the user is loaded).
+### Block 4 — UI re-skin to mockup v2 ✅ (live 8b1c6f4)
+Source: `docs/prototypes/mobile-app-v2/index.html` + `docs/design/target-ui.png` (both now in git). Images copied to `public/ui/`.
+- **Tab bar**: Bosh sahifa · Darslar · Progress · **Mukofotlar** (new `/rewards`: badges with what each needs + the tutor
+  collection with lock reasons) · **Profil** (the settings/profile page).
+- **Splash**: To2 logo, tagline, floating maths symbols, pointing Blokbek (`point_full`), "Boshlash".
+- **Home**: avatar · streak + settings, big "Salom, {name}!" with the thumbs-up tutor, "Bugungi dars" card with the button
+  inside, subject tiles, progress card.
+- **Roadmap**: the learner's current section as the **island** (`public/ui/island.webp`) with lesson badges on the prototype's
+  NODES / dotted ROUTE (done ✓ / current ★ pulsing / open number / locked number + lock, trophy at the end; locked badges
+  carry the lock reason) + the unit card ("N/M dars"); list / graph views kept below.
+- **Lesson stage**: cinematic light layers in stage coordinates — warm window key from the left, cool fill from the right,
+  warm spot on the board, vignette over everything (the three.js key/fill/rim already come from the same directions).
+  Tablet: the stage is full width (side-by-side layout only from 1024 px — before, the 3D classroom shrank to a 200 px
+  thumbnail at 820 px). ⚠️ **Not done (timebox)**: the Blender render of the empty classroom — `classroom.blend` is not in the
+  repo and `tools/blender/classroom_scene.py` needs a Blender run; `public/ui/classroom.webp` in the mockup is a flat placeholder,
+  so the SVG classroom stays, with the light layers on top.
+- **Quiz**: the selected tutor bottom-right in a thinking idle (`think1`/`think2` alternate, gentle sway, floating "?" / "x?",
+  "Hmm…" bubble); correct → cheer hop with `cheer_half`; wrong → keeps thinking while the hint shows. Placed below the answers
+  (never over an option on a small phone).
+- **Success**: violet sky, twinkling stars, cheering tutor (`cheer_half`), white card with the result and "Keyingi dars".
+- **Character art**: the new renders in `public/characters/` (incl. `think1`/`think2`) committed; the manifest now accepts
+  digits in pose names → 153 renders, WebP copies regenerated.
+- Checked with Playwright screenshots at **375×812** and **820×1180** (splash, home, roadmap, lesson, quiz, progress, rewards,
+  heroes). Heroes keep the existing grid + hero card (the mockup's carousel arrows were not added).
+### Block 5 — Repo hygiene ✅
+- `git log --format="%an <%ae>"` on `main` and on GitHub: only `LinusIp`. The 12 old-author commits exist only in the local,
+  never-pushed safety branch `backup/pre-author-rewrite` (delete with `git branch -D backup/pre-author-rewrite` when no longer
+  wanted). No rewrite / force-push was needed.
+- `.gitignore`: `*.blend`, `*.blend1`, `public/**/_*.png`, `public/models/raw/` everywhere; `deploy.mjs` keeps the same out of the
+  deployed assets (verified: `_face_tmp.png` and `blokbek.blend` → 404 on production). Releases build from a clean checkout of
+  a commit, so uncommitted files never ship anyway.
+### Block 6 — Final check ⏸ waiting for the credit OK
+- Today's spend so far: **1,523 credits** (live 764, speed tests 612, prefetch 147). Remaining on the plan ≈ 250,000 − ~54,000 −
+  today's ≈ **194,000** (TODO(team): confirm on voicelab.uz — the API has no balance endpoint we found).
+- Re-warm needed after the voice change + the base64 fix: ≈ 20,200 credits (Lola 7,745 · Ziyo 7,703 · Blokbek 4,772), over the
+  15,000/day cap. The 3× demo check itself would spend ≈ 6,500 on its first run (uncached demo lines generate in the background).
+- **Expected cost of one judge session once warmed**: demo path ≈ 0 (all cached); each extra free question ≈ 2–3 segments ×
+  ~60 chars × (1 v1 + 1.5 v2) ≈ 300–450 credits; a fresh LLM lesson on another skill ≈ 8 segments ≈ 1,200–1,800. A typical
+  10-minute judge session with 2 own questions ≈ **0.6–1k credits**.
