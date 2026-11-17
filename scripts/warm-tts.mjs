@@ -83,21 +83,28 @@ for (const v of voices) {
 console.log(`
 ok=${ok} fail=${fail} fallback-v1=${v1}`);
 
-// Warm the LLM answers (KV cache) + their audio for the demo questions (CLAUDE.md §15 step 5).
+// Pinned demo answers (src/lib/ai/pinned.ts) for every playable tutor: ask through /api/tutor (which also
+// stores them in KV under the interrupt cache key), then warm their audio exactly as the player asks for it.
 const DEMO_QUESTIONS = ["Nega maxrajlarni ko'paytirdik?", "Nega maxrajlarni oltiga keltirdik?", "EKUK nima?"];
-for (const question of DEMO_QUESTIONS) {
-  const { body } = await get(`${base}/api/tutor`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ mode: "interrupt", skillId: "frac-add-unlike", characterId: "blokbek", grade: 6, question, segment: "", board: [], history: [] }),
-  });
-  const text = new TextDecoder().decode(body);
-  const says = [...text.matchAll(/^data: (\{.*\})$/gm)].map((m) => JSON.parse(m[1])).filter((j) => j.say);
-  for (const [i, j] of says.entries()) {
-    // same URL the lesson player uses: emotion + the short pause before the first answer segment
-    const { r: a } = await get(ttsUrl("blokbek", { text: j.say, emotion: j.emotion ?? "neutral", lead: i === 0 }));
-    process.stdout.write(a.status === 200 ? "+" : "x");
+for (const v of voices) {
+  for (const question of DEMO_QUESTIONS) {
+    const { body } = await get(`${base}/api/tutor`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ mode: "interrupt", skillId: "frac-add-unlike", characterId: v, grade: 6, question, segment: "", board: [], history: [] }),
+    });
+    const text = new TextDecoder().decode(body);
+    const src = [...text.matchAll(/event: meta\r?\ndata: (.*)/g)].map((m) => JSON.parse(m[1]).source).join(",");
+    const says = [...text.matchAll(/^data: (\{.*\})$/gm)].map((m) => JSON.parse(m[1])).filter((j) => j.say);
+    for (const [i, j] of says.entries()) {
+      // same URL the lesson player uses: emotion + the short pause before the first answer segment
+      const { r: a } = await get(ttsUrl(v, { text: j.say, emotion: j.emotion ?? "neutral", lead: i === 0 }));
+      const c = a.headers.get("x-tts-cache");
+      if (c === "fallback-v1") v1++;
+      process.stdout.write(a.status === 200 ? (c === "hit" ? "." : c === "fallback-v1" ? "1" : "+") : "x");
+    }
+    console.log(` ${v} · ${question} → ${says.length} segments (source=${src})`);
   }
-  console.log(` ${question} → ${says.length} segments`);
 }
+console.log(`fallback-v1 total=${v1}`);
 fs.rmSync(out, { force: true });

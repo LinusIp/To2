@@ -12,6 +12,7 @@ import { demoLessonFor, mockInterrupt } from "@/lib/ai/mock/lessons";
 import { cannedLesson } from "@/lib/ai/canned";
 import { getSkill } from "@/data/skills";
 import { getCharacter } from "@/config/characters";
+import { CANONICAL, matchPinned, normalizeQuestion, pinnedAnswer } from "@/lib/ai/pinned";
 import { emptyBoard, fitToBoard, freeArea, noteLayouter } from "@/lib/board/model";
 import { mainLayouter } from "@/lib/board/layout";
 import { bad, clientKey, rateLimit, userIdFor } from "@/lib/server/session";
@@ -156,19 +157,36 @@ export async function POST(req: Request) {
         await send("segment", CHECK);
         return;
       }
+      // KV key of an interrupt answer: skill + tutor + simpler + hash of the normalized question
+      const intKeyFor = async (q: string) => {
+        const h = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(normalizeQuestion(q))))].slice(0, 12).map((x) => x.toString(16).padStart(2, "0")).join("");
+        return `int:v2:${skill.id}:${ch.id}:${b.simpler ? 1 : 0}:${h}`;
+      };
+      // Demo questions (and close variants) → the pinned, reviewed answer for this tutor; never the LLM.
+      const pin = b.simpler ? null : matchPinned(skill.id, question);
+      if (pin) {
+        const segs = pinnedAnswer(pin, ch.id).map((s) => lay(s));
+        await send("meta", { source: "pinned", id: pin });
+        for (const s of segs) await send("segment", s);
+        const key = await intKeyFor(CANONICAL[pin]);
+        const json = JSON.stringify(segs);
+        if ((await env.KV.get(key)) !== json) await env.KV.put(key, json); // no TTL: pinned
+        return;
+      }
       if (ai.mock || !(await rateLimit(`llm:${clientKey(req, userId)}`, 30))) {
+        await send("meta", { source: "mock" });
         for (const s of mockInterrupt(question, skill.id)) await send("segment", lay(s));
         return;
       }
       // Same question on the same skill → instant cached answer (LLM response cache in KV).
-      const qNorm = question.toLowerCase().replace(/[^a-z0-9ʻ's]/g, "").replace(/s+/g, " ").trim();
-      const qHash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(qNorm)))].slice(0, 12).map((x) => x.toString(16).padStart(2, "0")).join("");
-      const intKey = `int:v1:${skill.id}:${ch.id}:${b.simpler ? 1 : 0}:${qHash}`;
+      const intKey = await intKeyFor(question);
       const cachedInt = await env.KV.get<Seg[]>(intKey, "json");
       if (cachedInt?.length) {
+        await send("meta", { source: "cache" });
         for (const s of cachedInt) await send("segment", s);
         return;
       }
+      await send("meta", { source: "llm" });
       const sent: Seg[] = [];
       const boardDesc = b.board ?? [];
       const free = freeArea({ ...emptyBoard(), els: [] });
@@ -196,6 +214,7 @@ export async function POST(req: Request) {
       const r = await streamLLM(msgs, emit, { note: true, maxTokens: 900 }).catch((e) => ({ count: 0, raw: "", error: (e as Error).message }));
       if (n === 0) {
         console.warn("[tutor] interrupt LLM failed", r.error);
+        await send("meta", { source: "mock" });
         for (const s of mockInterrupt(question, skill.id)) await send("segment", lay(s));
         return;
       }
