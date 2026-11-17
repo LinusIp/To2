@@ -50,7 +50,7 @@ Target users (assumption — log it): school students **grades 5–9 (age 10–1
 | Runtime / hosting | **Cloudflare Workers** (+ static assets) | Deploy with `npx @vinext/cloudflare deploy` (or `npm run deploy` if scaffolded with C3). |
 | Language | **TypeScript** strict | |
 | UI | **Tailwind CSS v4** + **shadcn/ui** (Radix) + **lucide-react** icons | |
-| Animation | **motion** (Framer Motion) for UI + character states; CSS/SVG for board strokes | |
+| Animation | **motion** (Framer Motion) for UI; **three.js** for the 3D voxel tutor (§6b); SVG stroke animation for the board | |
 | Whiteboard | **Custom SVG board** driven by JSON "board commands" (§5) with a **stroke-by-stroke handwriting engine** (§5b) + **rough.js**-style wobbly shapes. No typeset math on the board. | Do NOT use tldraw/Excalidraw (licence + weight + no scripted playback). |
 | Graphs on board | Own SVG plotter (axes + `y=f(x)` sampled with **mathjs**) | |
 | Math checking | **mathjs** (`evaluate`, `simplify`) to verify learner answers locally — never trust the LLM alone for correctness. | |
@@ -246,13 +246,29 @@ Game-**inspired**, but **100% original** characters — **do not** use Minecraft
 - **Agent Shox** — tactical jacket + vest, gloves, cyan visor, headset with mic; calm, serious; turns problems into "missions".
 - **Robo-Rayhon**, **Chaqmoq** — shown as locked silhouettes in the MVP (unlock by XP).
 
+### Character roster (team design — choose-tutor screen)
+All tutors use the **same 3D voxel rig** (§6b); a character is just a config in `src/config/characters.ts`: colours, hair style blocks, outfit textures, one accessory, face details, VoiceLab voice id, personality/teaching style for the LLM prompt, unlock cost.
+
+| id | Name | Tagline (UI) | Look | Teaching style (prompt) | Unlock |
+|---|---|---|---|---|---|
+| `blokbek` | **Blokbek** | Matematika ustasi | black [To2 hoodie, ikat hem, messy dark hair, teal headphones | friendly, builds solutions "block by block" | free (default) |
+| `agent-shox` | **Agent Shox** | Aqlli strateg | dark jacket, dark sunglasses, slicked hair | calm, problems are missions, plans steps first | free |
+| `ziyo` | **Ziyo** | Bilimga chanqoq | green hoodie with hood up, big headphones | curious, asks "nega?" a lot, explores | 200 XP |
+| `lola` | **Lola** | Mehribon tutor | long dark hair, flower clip, white top + pink vest | warm, patient, encourages after mistakes | free |
+| `sardor` | **Sardor** | Mantiq ustasi | black cap, dark jacket, arms crossed | logic-first, short and precise | 300 XP |
+| `ravshan` | **Ravshan** | Hisobchi | red/auburn hair, headphones, light jacket | fast mental math, tricks and shortcuts | 400 XP |
+| `diyorbek` | **Diyorbek** | Ilmiy yordamchi | glasses, white lab coat | explains the "why", real-world science examples | 500 XP |
+| `shadow` | **Shadow** | Maxfiy qahramon | dark purple hood, face hidden, glowing violet eyes | mysterious, riddles; secret reward | hidden: unlock by a 7-day streak |
+
+Rules: keep at least two free characters with different voices, and at least one free female tutor (Lola). **Shadow must not look like any existing game mob** (no tall black body with purple particle eyes, no Enderman look): keep him clearly a hooded teenager. Each character needs its own VoiceLab voice (Lola = female voice). The choose-tutor screen shows the selected tutor large and in 3D (idle animation, waves on select) with name, tagline and a "Ovozini eshit" (hear voice) button; the grid shows the others, with locked ones as silhouettes plus their unlock condition.
+
 Implementation: one SVG per character in `src/components/characters/`, each with states `idle | talking | thinking | happy | celebrate`, driven by `emotion` + an `isSpeaking` amplitude value (0–1) for the mouth. Character config (`name`, `voiceId`, `catchphrases_uz[]`, colours) in `src/config/characters.ts`. Unlocks: Blokbek & Robo-Rayhon free; others unlocked by XP.
 
 ---
 
 ## 6b. Scene & animation (2D, must feel smooth and alive)
 
-**Decision:** layered 2D scene (no real-time 3D). Target look = the team's reference render: voxel teen tutor in a cosy classroom, big chalkboard, speech bubble, step list, bottom voice bar. Target performance: **60 fps on a mid-range Android, ≤ 2 s first load on 4G**.
+**Decision (updated):** 2D scene layers (SVG room + SVG chalk board) **+ the tutor as a real-time 3D voxel model in three.js** on a transparent canvas above the board (orthographic camera mapped 1:1 to the 1600×900 scene, so chalk-tip coordinates feed the arm IK directly). The character is ~20 boxes with canvas pixel-textures (face, hoodie print, hair), warm key light + cool fill + rim, ACES tone mapping, colours converted sRGB→linear. Turning to the board is a real Y-rotation; mouth/blink are redrawn on the 16×16 face texture. See `docs/prototypes/board-handwriting.html` — it already runs at 60 fps. Add `three` (r128+ or current) to the stack; render the canvas only while the lesson screen is visible. Target look = the team's reference render: voxel teen tutor in a cosy classroom, big chalkboard, speech bubble, step list, bottom voice bar. Target performance: **60 fps on a mid-range Android, ≤ 2 s first load on 4G**.
 
 ### Scene layers (back → front), all absolutely positioned in one 16:9 stage that scales to fit
 1. `bg` — painted classroom per character world (WebP ≤ 200 KB, plus a blurred 20 KB placeholder).

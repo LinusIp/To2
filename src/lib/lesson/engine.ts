@@ -244,7 +244,7 @@ function nextMain() {
 }
 
 // ── public API ───────────────────────────────────────────────────────────────
-export function initLesson(opts: { skillId: string; characterId: string; grade: number }) {
+export function initLesson(opts: { skillId: string; characterId: string; grade: number; greeting?: string }) {
   gen++;
   speech?.stop();
   speech = null;
@@ -252,7 +252,14 @@ export function initLesson(opts: { skillId: string; characterId: string; grade: 
   mainResume = null;
   abort?.abort();
   cancelAnimationFrame(raf);
-  set({ ...initial(), skillId: opts.skillId, characterId: opts.characterId, voice: opts.characterId, grade: opts.grade });
+  set({
+    ...initial(),
+    skillId: opts.skillId,
+    characterId: opts.characterId,
+    voice: opts.characterId,
+    grade: opts.grade,
+    caption: opts.greeting ?? "",
+  });
 }
 
 export function disposeLesson() {

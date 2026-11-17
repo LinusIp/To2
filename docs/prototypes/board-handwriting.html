@@ -6,23 +6,36 @@
 <title>To2 — doska prototipi: ustoz qo'lda yozadi</title>
 <style>
   * { box-sizing: border-box; }
-  body { margin:0; min-height:100vh; background:#16181c; color:#efece4;
-         font: 500 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-         display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0; padding:16px 10px; }
-  .stage { width:min(1400px,100%); position:relative; border-radius:10px; overflow:hidden; box-shadow:0 30px 70px rgba(0,0,0,.55); }
+  body { margin:0; min-height:100vh; background:#1b1713; color:#f3ede2;
+         font: 500 16px/1.45 "Nunito Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         display:flex; flex-direction:column; align-items:center; justify-content:center; padding:18px 12px; }
+  .stage { width:min(1400px,100%); position:relative; border-radius:14px; overflow:hidden; box-shadow:0 30px 70px rgba(0,0,0,.5); }
   svg#scene { display:block; width:100%; height:auto; }
-  .bar { width:min(1400px,100%); display:flex; align-items:center; gap:16px; padding:16px 6px 0; }
-  .who { flex:none; font-size:12px; font-weight:800; letter-spacing:1.2px; color:#f2b84b; }
-  #cap { flex:1; min-height:52px; display:flex; align-items:center; font-size:21px; font-weight:600; transition:opacity .2s; }
-  #me { display:none; font-size:15px; font-weight:700; color:#16181c; background:#efece4; border-radius:14px 14px 4px 14px; padding:8px 12px; }
+  .bar { width:min(1400px,100%); display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:18px; padding:18px 4px 6px; }
+  .who { display:flex; align-items:center; gap:10px; }
+  .ava { width:40px; height:40px; border-radius:10px; background:#c98b5e; position:relative; overflow:hidden; box-shadow: inset 0 -4px 0 rgba(0,0,0,.15); }
+  .ava::before { content:""; position:absolute; left:0; right:0; top:0; height:12px; background:#2b1d14; }
+  .ava::after { content:""; position:absolute; left:9px; top:18px; width:6px; height:6px; background:#17181d; box-shadow:16px 0 0 #17181d, 7px 11px 0 2px #5a2318; }
+  .name { font-size:13px; font-weight:800; letter-spacing:.6px; color:#f2b84b; }
+  .state { font-size:12px; font-weight:600; color:#b5ab9b; }
+  #cap { min-height:56px; display:flex; align-items:center; font-size:22px; font-weight:700; line-height:1.3; transition:opacity .2s; }
+  .right { display:flex; align-items:center; gap:6px; }
+  #me { display:none; font-size:15px; font-weight:700; color:#1b1713; background:#f3ede2; border-radius:16px 16px 4px 16px; padding:9px 14px; margin-right:6px; }
   button { font:inherit; border:0; cursor:pointer; }
-  .ghost { font-size:14px; font-weight:700; color:#cfcac0; background:transparent; padding:10px 12px; border-radius:8px; }
-  .ghost:hover { background:#24272d; color:#fff; }
-  .ghost[aria-pressed="true"] { color:#16181c; background:#efece4; }
-  .ask { display:flex; align-items:center; gap:10px; height:52px; padding:0 20px 0 16px; border-radius:26px;
-         background:#f2b84b; color:#1c1a14; font-weight:800; font-size:16px; }
-  .ask:hover { background:#ffc95f; }
-  .ask[disabled] { opacity:.45; cursor:default; }
+  .ghost { width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:#d9d0c1; background:#2a241e; border-radius:12px; font-size:13px; font-weight:800; }
+  .ghost:hover { background:#3a3229; color:#fff; }
+  .ghost[aria-pressed="true"] { color:#1b1713; background:#f3ede2; }
+  .ask { display:flex; align-items:center; gap:10px; height:52px; padding:0 22px 0 18px; margin-left:6px; border-radius:26px;
+         background:#f2b84b; color:#241a08; font-weight:800; font-size:16px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.15); }
+  .ask:hover { background:#ffc65e; }
+  .ask[disabled] { opacity:.4; cursor:default; }
+  .steps { width:min(1400px,100%); display:flex; align-items:center; gap:14px; padding:8px 4px 0; }
+  .segs { display:flex; gap:6px; }
+  .seg { width:46px; height:6px; border-radius:3px; background:#3a3229; transition:background .3s; }
+  .seg.done { background:#2fb6c4; }
+  .seg.now { background:#f2b84b; }
+  #stepLbl { font-size:14px; font-weight:700; color:#b5ab9b; }
+  @media (max-width:760px){ .bar{ grid-template-columns:1fr; } #cap{ font-size:18px; } }
 </style>
 </head>
 <body>
@@ -36,39 +49,54 @@
       <feColorMatrix in="n2" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -1.6 1.25" result="holes"/>
       <feComposite in="d" in2="holes" operator="in"/>
     </filter>
+    <filter id="soft" x="-2%" y="-2%" width="104%" height="104%"><feGaussianBlur stdDeviation="2.2"/></filter>
     <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="5"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .06 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
-    <radialGradient id="sun" cx=".1" cy=".2" r=".9"><stop offset="0" stop-color="#ffd9a0" stop-opacity=".22"/><stop offset=".6" stop-color="#ffd9a0" stop-opacity="0"/></radialGradient>
+    <radialGradient id="sun" cx=".1" cy=".25" r=".9"><stop offset="0" stop-color="#ffe2b0" stop-opacity=".35"/><stop offset=".6" stop-color="#ffe2b0" stop-opacity="0"/></radialGradient>
+    <linearGradient id="plaster" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f3e8d3" stop-opacity=".0"/><stop offset="1" stop-color="#b9a582" stop-opacity=".35"/></linearGradient>
     <radialGradient id="smudge" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".05"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
-    <linearGradient id="vig" x1="0" y1="0" x2="0" y2="1"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient>
+    <linearGradient id="vig" x1="0" y1="0" x2="0" y2="1"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>
   </defs>
 
+  <g filter="url(#soft)">
   <!-- room -->
-  <rect width="1600" height="900" fill="#3d4352"/>
-  <g fill="#363b49"><rect x="0" y="0" width="1600" height="6"/><rect x="0" y="770" width="1600" height="90"/></g>
-  <rect x="0" y="770" width="1600" height="6" fill="#2f3340"/>
-  <rect x="0" y="856" width="1600" height="44" fill="#5a3f2b"/>
-  <g fill="#4d3524"><rect x="0" y="856" width="1600" height="4"/><rect x="0" y="878" width="1600" height="2"/><rect x="210" y="860" width="2" height="18"/><rect x="620" y="880" width="2" height="20"/><rect x="1010" y="860" width="2" height="18"/><rect x="1380" y="880" width="2" height="20"/></g>
-  <!-- window -->
-  <rect x="44" y="96" width="292" height="330" fill="#2c303b"/>
-  <rect x="56" y="108" width="268" height="306" fill="#9fd3f3"/>
-  <rect x="56" y="300" width="268" height="114" fill="#c2e5f8"/>
+  <rect width="1600" height="900" fill="#e6dac3"/>
+  <rect width="1600" height="900" fill="url(#plaster)"/>
+  <!-- Samarkand-blue wainscot + tile frieze -->
+  <rect x="0" y="606" width="1600" height="250" fill="#1d4a73"/>
+  <g fill="#173d61"><rect x="0" y="606" width="1600" height="6"/><rect x="120" y="640" width="4" height="216"/><rect x="380" y="640" width="4" height="216"/><rect x="1540" y="640" width="4" height="216"/></g>
+  <rect x="0" y="578" width="1600" height="30" fill="#f1e8d6"/>
+  <g id="frieze"></g>
+  <rect x="0" y="576" width="1600" height="3" fill="#c9973f"/><rect x="0" y="606" width="1600" height="3" fill="#c9973f"/>
+  <!-- floor -->
+  <rect x="0" y="856" width="1600" height="44" fill="#8a5a35"/>
+  <rect x="0" y="852" width="1600" height="6" fill="#5e3b20"/>
+  <g fill="#74492a"><rect x="0" y="876" width="1600" height="2"/><rect x="210" y="858" width="2" height="18"/><rect x="620" y="878" width="2" height="22"/><rect x="1010" y="858" width="2" height="18"/><rect x="1380" y="878" width="2" height="22"/></g>
+  <!-- window (wood) -->
+  <rect x="40" y="92" width="300" height="338" fill="#7a4f2c"/>
+  <rect x="54" y="106" width="272" height="310" fill="#a8d8f2"/>
+  <rect x="54" y="300" width="272" height="116" fill="#cbe9f8"/>
   <g fill="#fff"><rect x="86" y="150" width="64" height="14"/><rect x="100" y="138" width="34" height="14"/><rect x="226" y="196" width="70" height="12"/></g>
-  <rect x="56" y="352" width="268" height="62" fill="#6aa646"/>
-  <g fill="#57913a"><rect x="150" y="214" width="44" height="44"/><rect x="194" y="200" width="44" height="44"/><rect x="236" y="222" width="40" height="40"/><rect x="170" y="252" width="44" height="40"/></g>
+  <rect x="54" y="352" width="272" height="64" fill="#7ab24f"/>
+  <g fill="#5f9a3f"><rect x="150" y="214" width="44" height="44"/><rect x="194" y="200" width="44" height="44"/><rect x="236" y="222" width="40" height="40"/><rect x="170" y="252" width="44" height="40"/></g>
   <rect x="204" y="280" width="20" height="74" fill="#6b4421"/>
-  <rect x="186" y="108" width="8" height="306" fill="#2c303b"/><rect x="56" y="254" width="268" height="8" fill="#2c303b"/>
-  <rect x="34" y="424" width="312" height="14" fill="#2c303b"/>
-  <polygon points="56,414 324,414 760,860 300,860" fill="#ffe2b0" opacity=".05"/>
+  <rect x="186" y="106" width="8" height="310" fill="#7a4f2c"/><rect x="54" y="254" width="272" height="8" fill="#7a4f2c"/>
+  <rect x="28" y="428" width="324" height="16" fill="#6a4326"/><rect x="28" y="428" width="324" height="4" fill="#8c6038"/>
+  <polygon points="54,416 326,416 820,856 330,856" fill="#fff3d6" opacity=".22"/>
   <rect width="1600" height="900" fill="url(#sun)"/>
-  <!-- plant -->
-  <rect x="1530" y="786" width="56" height="70" fill="#9c5a34"/><rect x="1530" y="786" width="56" height="8" fill="#b06a40"/>
-  <g fill="#5d9a3e"><rect x="1536" y="726" width="16" height="60"/><rect x="1554" y="700" width="16" height="86"/><rect x="1572" y="736" width="14" height="50"/></g>
+  <!-- plants -->
+  <rect x="1528" y="786" width="58" height="70" fill="#b5653a"/><rect x="1528" y="786" width="58" height="8" fill="#c97a4c"/>
+  <g fill="#4f8f36"><rect x="1534" y="722" width="16" height="64"/><rect x="1552" y="696" width="16" height="90"/><rect x="1570" y="734" width="14" height="52"/></g>
+  <rect x="58" y="790" width="54" height="66" fill="#2fa3b0"/><rect x="58" y="790" width="54" height="8" fill="#47bcc8"/>
+  <g fill="#4f8f36"><rect x="64" y="740" width="14" height="50"/><rect x="80" y="716" width="14" height="74"/><rect x="96" y="746" width="12" height="44"/></g>
+  </g>
+  <!-- board drop shadow -->
+  <rect x="408" y="94" width="1150" height="740" fill="#000" opacity=".16"/>
 
   <!-- board: content uses a 1000x625 coordinate system -->
   <g id="boardG" transform="translate(420,100) scale(1.104)">
-    <rect x="-18" y="-18" width="1036" height="661" fill="#6f4a2c"/>
+    <rect x="-18" y="-18" width="1036" height="661" fill="#7a4f2c"/>
     <rect x="-18" y="-18" width="1036" height="6" fill="#86603d"/>
-    <rect x="0" y="0" width="1000" height="625" fill="#26322b"/>
+    <rect x="0" y="0" width="1000" height="625" fill="#253a30"/>
     <ellipse cx="300" cy="300" rx="380" ry="200" fill="url(#smudge)"/>
     <ellipse cx="760" cy="470" rx="260" ry="140" fill="url(#smudge)"/>
     <rect x="0" y="0" width="1000" height="625" filter="url(#grain)"/>
@@ -80,94 +108,29 @@
     <rect x="880" y="628" width="70" height="16" fill="#3a3f4a"/><rect x="880" y="628" width="70" height="6" fill="#c9b79a"/>
   </g>
 
-  <!-- tutor -->
-  <g id="tutor">
-    <ellipse id="shadow" cx="0" cy="860" rx="130" ry="14" fill="#000" opacity=".28"/>
-    <g id="body">
-      <g id="flip">
-        <!-- shared legs -->
-        <rect x="-80" y="-240" width="76" height="216" fill="#34446a"/>
-        <rect x="4" y="-240" width="76" height="216" fill="#3d5080"/>
-        <rect x="-84" y="-30" width="82" height="30" fill="#f2f2f2"/><rect x="2" y="-30" width="82" height="30" fill="#ffffff"/>
-        <rect x="-84" y="-8" width="82" height="8" fill="#3b6fd9"/><rect x="2" y="-8" width="82" height="8" fill="#3b6fd9"/>
-        <!-- FRONT -->
-        <g id="front">
-          <rect x="-142" y="-462" width="52" height="214" fill="#1c1e24"/>
-          <rect x="-142" y="-300" width="52" height="16" fill="#e0873a"/>
-          <rect x="-142" y="-248" width="52" height="42" fill="#c98b5e"/>
-          <rect x="-92" y="-470" width="184" height="242" fill="#24262d"/>
-          <rect x="62" y="-470" width="30" height="242" fill="#1b1d22"/>
-          <rect x="-24" y="-466" width="5" height="54" fill="#e8e6e0"/><rect x="19" y="-466" width="5" height="54" fill="#e8e6e0"/>
-          <text x="0" y="-338" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="800" font-size="40" fill="#efece4">To2</text>
-          <g id="hemF"></g>
-          <g id="pointArm" transform="rotate(-62 112 -452)">
-            <rect x="88" y="-462" width="52" height="200" fill="#24262d"/>
-            <rect x="88" y="-300" width="52" height="16" fill="#e0873a"/>
-            <rect x="88" y="-262" width="52" height="40" fill="#c98b5e"/>
-            <rect x="100" y="-226" width="16" height="30" fill="#c98b5e"/>
-          </g>
-          <rect x="-80" y="-482" width="160" height="16" fill="#1aa3b8"/>
-          <rect x="-96" y="-494" width="24" height="34" fill="#0e6f80"/><rect x="72" y="-494" width="24" height="34" fill="#0e6f80"/>
-          <rect x="-76" y="-622" width="152" height="152" fill="#c98b5e"/>
-          <rect x="56" y="-622" width="20" height="152" fill="#b07a4f"/>
-          <g fill="#2b1d14">
-            <rect x="-82" y="-642" width="164" height="40"/><rect x="-86" y="-656" width="46" height="32"/><rect x="-30" y="-668" width="54" height="34"/><rect x="26" y="-656" width="50" height="28"/>
-            <rect x="-76" y="-604" width="48" height="24"/><rect x="-28" y="-604" width="26" height="14"/><rect x="32" y="-604" width="44" height="20"/>
-            <rect x="-76" y="-604" width="14" height="44"/><rect x="62" y="-604" width="14" height="44"/>
-          </g>
-          <rect id="browL" x="-52" y="-570" width="36" height="9" fill="#2b1d14"/>
-          <rect id="browR" x="14" y="-574" width="36" height="9" fill="#2b1d14"/>
-          <g id="eyes">
-            <rect x="-50" y="-552" width="30" height="20" fill="#fff"/><rect x="16" y="-552" width="30" height="20" fill="#fff"/>
-            <rect id="pupL" x="-36" y="-552" width="14" height="20" fill="#17181d"/><rect id="pupR" x="30" y="-552" width="14" height="20" fill="#17181d"/>
-          </g>
-          <rect x="-6" y="-528" width="12" height="20" fill="#a8703f"/>
-          <rect id="mouth" x="-28" y="-502" width="56" height="10" fill="#5a2318"/>
-          <rect id="teeth" x="-24" y="-502" width="48" height="5" fill="#fff"/>
-        </g>
-        <!-- BACK (facing the board) -->
-        <g id="back" style="display:none">
-          <rect x="88" y="-462" width="50" height="16" fill="#24262d"/>
-          <rect x="-142" y="-462" width="52" height="214" fill="#1c1e24"/>
-          <rect x="-142" y="-248" width="52" height="42" fill="#c98b5e"/>
-          <rect x="-92" y="-470" width="184" height="242" fill="#24262d"/>
-          <rect x="-92" y="-470" width="30" height="242" fill="#1b1d22"/>
-          <rect x="-62" y="-470" width="124" height="80" fill="#2c2e36"/><rect x="-62" y="-470" width="124" height="12" fill="#1f2127"/>
-          <g id="hemB"></g>
-          <rect x="-80" y="-482" width="160" height="16" fill="#1aa3b8"/>
-          <rect x="-52" y="-494" width="104" height="20" fill="#c98b5e"/>
-          <rect x="-88" y="-566" width="14" height="30" fill="#c98b5e"/><rect x="74" y="-566" width="14" height="30" fill="#c98b5e"/>
-          <rect x="-76" y="-622" width="152" height="130" fill="#2b1d14"/>
-          <g fill="#33231a"><rect x="-86" y="-656" width="46" height="32"/><rect x="-30" y="-668" width="54" height="34"/><rect x="26" y="-656" width="50" height="28"/><rect x="-82" y="-642" width="164" height="40"/></g>
-          <g fill="#241810"><rect x="-60" y="-520" width="20" height="26"/><rect x="0" y="-516" width="26" height="22"/><rect x="40" y="-524" width="18" height="30"/></g>
-        </g>
-      </g>
-    </g>
-    <!-- writing arm (IK, scene coordinates) -->
-    <g id="arm" style="display:none">
-      <line id="aU" stroke="#24262d" stroke-width="50" stroke-linecap="square"/>
-      <line id="aF" stroke="#24262d" stroke-width="46" stroke-linecap="square"/>
-      <line id="cuff" stroke="#e0873a" stroke-width="46"/>
-      <rect id="hand" width="44" height="44" fill="#c98b5e"/>
-      <line id="stick" stroke="#f4f1e8" stroke-width="10" stroke-linecap="round"/>
-    </g>
-  </g>
+  <!-- tutor is rendered in 3D (canvas#gl) -->
+  <ellipse id="shadow" cx="280" cy="860" rx="120" ry="13" fill="#000" opacity=".3"/>
   <rect width="1600" height="900" fill="url(#vig)" pointer-events="none"/>
 </svg>
+<canvas id="gl" aria-hidden="true" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none"></canvas>
 </div>
 
 <div class="bar">
-  <span class="who">BLOKBEK</span>
-  <span id="cap" aria-live="polite"></span>
-  <span id="me"></span>
-  <button class="ghost" id="replay" type="button">Qayta</button>
-  <button class="ghost" id="fast" type="button" aria-pressed="false">2×</button>
-  <button class="ask" id="ask" type="button" aria-label="Savol berish">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
-    Savol berish
-  </button>
+  <div class="who"><div class="ava" aria-hidden="true"></div><div><div class="name">BLOKBEK</div><div class="state" id="state">gapirmoqda</div></div></div>
+  <div id="cap" aria-live="polite"></div>
+  <div class="right">
+    <span id="me"></span>
+    <button class="ghost" id="replay" type="button" aria-label="Qayta boshlash"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v5h5"/></svg></button>
+    <button class="ghost" id="fast" type="button" aria-pressed="false" aria-label="Tezlik 2x">2×</button>
+    <button class="ask" id="ask" type="button">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+      Savol berish
+    </button>
+  </div>
 </div>
+<div class="steps"><div class="segs" id="segs" role="img" aria-label="Dars qadamlari"></div><span id="stepLbl"></span></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (() => {
   const NS = 'http://www.w3.org/2000/svg';
@@ -176,16 +139,13 @@
   const cap = $('cap'), me = $('me'), askBtn = $('ask');
   let speed = 1, runId = 0, paused = false, interrupting = false;
 
-  // ikat hem pattern on the hoodie (front + back)
-  for (const id of ['hemF', 'hemB']) {
-    const g = $(id), cols = ['#e0873a', '#f2c94c', '#a8411a', '#e0873a'];
-    for (let i = 0; i < 12; i++) {
-      const r = document.createElementNS(NS, 'rect');
-      r.setAttribute('x', -92 + i * 15.33); r.setAttribute('y', -262); r.setAttribute('width', 15.4); r.setAttribute('height', 22);
-      r.setAttribute('fill', cols[i % 4]); g.appendChild(r);
-    }
-  }
-
+  // Samarkand tile frieze
+  { const f = $('frieze'), c = ['#1e5fa8', '#2fb6c4', '#1e5fa8', '#f1e8d6'];
+    for (let x = 0, i = 0; x < 1600; x += 22, i++) {
+      const d = document.createElementNS(NS, 'rect');
+      d.setAttribute('x', x + 5); d.setAttribute('y', 586); d.setAttribute('width', 12); d.setAttribute('height', 12);
+      d.setAttribute('fill', c[i % 4]); d.setAttribute('transform', `rotate(45 ${x + 11} 592)`); f.appendChild(d);
+    } }
   // ---------- handwriting ----------
   const G = {
     '0': { w: 60, s: ['M30,2 C10,2 4,30 4,52 C4,78 14,98 30,98 C46,98 56,78 56,50 C56,24 48,2 30,2'] },
@@ -246,58 +206,168 @@
   const tick = (x, y, c) => [P(`M${x},${y} L${x + 14},${y + 18} L${x + 44},${y - 26}`, c, 6)];
 
   // ---------- tutor state ----------
-  const T = { sy: 1, x: 280, tx: 280, mode: 'front', want: 'front', flip: 1, tip: null, talk: false, t0: performance.now(), blink: 0 };
-  const FLOOR = 860, FRONT_X = 280;
+  const T = { sy: 1, x: 280, tx: 280, yaw: -0.38, mode: 'front', want: 'front', tip: null, talk: false, blink: 0 };
+  const FLOOR = 860, FRONT_X = 280, FRONT_YAW = -0.38, BACK_YAW = Math.PI;
   const toScene = (p, len) => { const pt = p.getPointAtLength(len), sp = svg.createSVGPoint(); sp.x = pt.x; sp.y = pt.y; return sp.matrixTransform(p.getScreenCTM()).matrixTransform(svg.getScreenCTM().inverse()); };
-
   function face(mode) { T.want = mode; return new Promise(r => setTimeout(r, 420 / speed)); }
+
+  // ---------- 3D voxel tutor (three.js) ----------
+  const R3 = {};
+  function canvasTex(w, h, paint) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d'); g.imageSmoothingEnabled = false; paint(g);
+    const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.encoding = THREE.sRGBEncoding;
+    t.userData = { c, g }; return t;
+  }
+  const px = (g, col, x, y, w = 1, h = 1) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  function paintFace(g, mouth, blink, look) {
+    px(g, '#c98b5e', 0, 0, 16, 16);
+    px(g, '#d39a6c', 1, 6, 14, 1);
+    // hair fringe
+    px(g, '#2b1d14', 0, 0, 16, 3); px(g, '#2b1d14', 0, 3, 5, 2); px(g, '#2b1d14', 7, 3, 3, 1); px(g, '#2b1d14', 11, 3, 5, 2); px(g, '#2b1d14', 0, 5, 1, 4); px(g, '#2b1d14', 15, 5, 1, 4);
+    px(g, '#3a2719', 3, 1, 2, 1); px(g, '#3a2719', 10, 1, 3, 1);
+    // brows
+    px(g, '#2b1d14', 3, 5, 3, 1); px(g, '#2b1d14', 10, 5 - (look === 'listen' ? 1 : 0), 3, 1);
+    // eyes
+    if (blink) { px(g, '#7a4c2e', 3, 7, 3, 1); px(g, '#7a4c2e', 10, 7, 3, 1); }
+    else {
+      px(g, '#ffffff', 3, 6, 3, 3); px(g, '#ffffff', 10, 6, 3, 3);
+      const o = look === 'board' ? 1 : 0;
+      px(g, '#1d1a1a', 4 + o, 6, 2, 3); px(g, '#1d1a1a', 11 + o, 6, 2, 3);
+      px(g, '#ffffff', 4 + o, 6, 1, 1); px(g, '#ffffff', 11 + o, 6, 1, 1);
+    }
+    px(g, '#b07a4f', 7, 9, 2, 2);
+    // mouth: 0 closed smile, 1 small, 2 open, 3 wide
+    if (mouth === 0) { px(g, '#5a2318', 5, 12, 6, 1); px(g, '#5a2318', 4, 11, 1, 1); px(g, '#5a2318', 11, 11, 1, 1); }
+    else { const h = [0, 2, 3, 3][mouth], w = [0, 5, 6, 8][mouth], x = 8 - w / 2; px(g, '#5a2318', x, 11, w, h); px(g, '#ffffff', x, 11, w, 1); if (mouth > 1) px(g, '#c0504a', x + 1, 11 + h - 1, w - 2, 1); }
+  }
+  function build3D() {
+    if (!window.THREE) return false;
+    const canvas = $('gl');
+    const ren = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    ren.outputEncoding = THREE.sRGBEncoding; ren.toneMapping = THREE.ACESFilmicToneMapping; ren.toneMappingExposure = 1.05;
+    const cam = new THREE.OrthographicCamera(0, 1600, 900, 0, -3000, 3000); cam.position.set(0, 0, 1000);
+    const scene = new THREE.Scene();
+    scene.add(new THREE.HemisphereLight(0xfff1dc, 0x6a5440, 0.95));
+    const key = new THREE.DirectionalLight(0xffe0b5, 1.25); key.position.set(-700, 900, 900); scene.add(key);
+    const fill = new THREE.DirectionalLight(0x9fc3ff, 0.32); fill.position.set(900, 200, 600); scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xffffff, 0.35); rim.position.set(300, 600, -900); scene.add(rim);
+    const M = c => new THREE.MeshLambertMaterial({ color: new THREE.Color(c).convertSRGBToLinear() });
+    const box = (w, h, d, m, x, y, z, parent) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, z); parent.add(b); return b; };
+
+    const root = new THREE.Group(); scene.add(root);
+    const lean = new THREE.Group(); lean.rotation.x = 0.12; root.add(lean);
+    const body = new THREE.Group(); lean.add(body);
+    // legs + shoes
+    const legL = new THREE.Group(); legL.position.set(-38, 232, 0); body.add(legL);
+    const legR = new THREE.Group(); legR.position.set(38, 232, 0); body.add(legR);
+    for (const [lg, col] of [[legL, 0x34446a], [legR, 0x3d5080]]) {
+      box(72, 204, 72, M(col), 0, -102, 0, lg);
+      box(78, 28, 90, M(0xf2f2f2), 0, -216, 6, lg);
+      box(80, 8, 92, M(0x3b6fd9), 0, -228, 6, lg);
+    }
+    // torso with textures
+    const hoodFront = canvasTex(32, 48, g => {
+      px(g, '#24262d', 0, 0, 32, 48); px(g, '#2c2f37', 0, 0, 32, 3);
+      px(g, '#e8e6e0', 12, 2, 1, 9); px(g, '#e8e6e0', 19, 2, 1, 9);
+      px(g, '#efece4', 9, 20, 1, 6); px(g, '#efece4', 9, 20, 2, 1); px(g, '#efece4', 9, 25, 2, 1);
+      g.fillStyle = '#efece4'; g.font = 'bold 8px monospace'; g.textBaseline = 'top'; g.fillText('To2', 12, 19);
+      px(g, '#1d1f25', 6, 34, 20, 6);
+    });
+    const hoodBack = canvasTex(32, 48, g => { px(g, '#24262d', 0, 0, 32, 48); px(g, '#2c2f37', 4, 0, 24, 14); px(g, '#1f2127', 4, 0, 24, 2); });
+    const hoodSide = M(0x1f2127);
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(184, 238, 104), [hoodSide, hoodSide, M(0x2c2f37), M(0x24262d), new THREE.MeshLambertMaterial({ map: hoodFront }), new THREE.MeshLambertMaterial({ map: hoodBack })]);
+    torso.position.set(0, 350, 0); body.add(torso);
+    const hemT = canvasTex(24, 2, g => { const c = ['#e0873a', '#f2c94c', '#a8411a', '#e0873a']; for (let i = 0; i < 24; i++) px(g, c[i % 4], i, 0, 1, 2); });
+    box(188, 24, 108, new THREE.MeshLambertMaterial({ map: hemT }), 0, 243, 0, body);
+    // headphones
+    box(162, 16, 112, M(0x1aa3b8), 0, 478, 0, body);
+    box(24, 36, 40, M(0x0e6f80), -88, 488, 0, body); box(24, 36, 40, M(0x0e6f80), 88, 488, 0, body);
+    // head
+    const head = new THREE.Group(); head.position.set(0, 548, 0); body.add(head);
+    const faceT = canvasTex(16, 16, g => paintFace(g, 0, false, 'learner'));
+    const sideT = canvasTex(16, 16, g => { px(g, '#c98b5e', 0, 0, 16, 16); px(g, '#2b1d14', 0, 0, 16, 5); px(g, '#2b1d14', 0, 5, 9, 3); px(g, '#2b1d14', 0, 8, 4, 4); px(g, '#c98b5e', 6, 7, 3, 4); px(g, '#b07a4f', 7, 8, 1, 2); });
+    const backT = canvasTex(16, 16, g => { px(g, '#2b1d14', 0, 0, 16, 16); px(g, '#3a2719', 2, 3, 3, 1); px(g, '#3a2719', 9, 6, 4, 1); px(g, '#241810', 5, 12, 2, 4); px(g, '#241810', 11, 11, 2, 5); px(g, '#c98b5e', 3, 15, 10, 1); });
+    const topT = canvasTex(16, 16, g => { px(g, '#2b1d14', 0, 0, 16, 16); px(g, '#3a2719', 3, 3, 4, 2); px(g, '#3a2719', 9, 9, 4, 2); });
+    const sideM = new THREE.MeshLambertMaterial({ map: sideT });
+    const headMesh = new THREE.Mesh(new THREE.BoxGeometry(150, 150, 150), [sideM, sideM, new THREE.MeshLambertMaterial({ map: topT }), M(0xb07a4f), new THREE.MeshLambertMaterial({ map: faceT }), new THREE.MeshLambertMaterial({ map: backT })]);
+    head.add(headMesh);
+    const hair = M(0x2b1d14), hair2 = M(0x3a2719);
+    box(52, 30, 60, hair, -46, 84, 30, head); box(58, 40, 70, hair2, 6, 92, 0, head); box(50, 28, 60, hair, 50, 84, -20, head);
+    box(48, 26, 50, hair2, -30, 86, -46, head); box(40, 24, 40, hair, 34, 80, 50, head);
+    // arms: shoulder pivots. +x arm = points at board when facing learner; -x arm = writes when facing board
+    function arm(xs, withChalk) {
+      const sh = new THREE.Group(); sh.position.set(xs, 455, 0); body.add(sh);
+      box(54, 150, 64, M(0x24262d), 0, -70, 0, sh);
+      const el = new THREE.Group(); el.position.set(0, -145, 0); sh.add(el);
+      box(50, 112, 60, M(0x24262d), 0, -52, 0, el);
+      box(52, 16, 62, M(0xe0873a), 0, -96, 0, el);
+      box(50, 44, 56, M(0xc98b5e), 0, -128, 0, el);
+      let chalk = null;
+      if (withChalk) { chalk = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 36, 8), M(0xf4f1e8)); chalk.position.set(0, -158, 12); el.add(chalk); }
+      return { sh, el, chalk };
+    }
+    const armP = arm(117, false), armW = arm(-117, true);
+    Object.assign(R3, { ren, cam, scene, root, body, head, legL, legR, armP, armW, faceT, mouth: -1, blinkOn: false, look: '' });
+    const fit = () => { const r = canvas.getBoundingClientRect(); ren.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); ren.setSize(r.width, r.height, false); };
+    fit(); window.addEventListener('resize', fit);
+    return true;
+  }
+  const has3D = build3D();
+
   function frame(now) {
     const dt = Math.min(50, now - (frame.last || now)); frame.last = now;
-    // where to stand
     if (T.want === 'back' && T.tip) T.tx = Math.max(300, Math.min(1400, T.tip.x - 265));
     if (T.want === 'front') T.tx = FRONT_X;
     const moving = Math.abs(T.tx - T.x) > 2;
     T.x += (T.tx - T.x) * Math.min(1, dt / 1000 * 5 * speed);
-    // turn: squash the body horizontally, swap view at the middle
-    if (T.mode !== T.want) { T.flip -= dt / 110 * speed; if (T.flip <= 0) { T.mode = T.want; $('front').style.display = T.mode === 'front' ? '' : 'none'; $('back').style.display = T.mode === 'back' ? '' : 'none'; } }
-    else if (T.flip < 1) T.flip = Math.min(1, T.flip + dt / 130 * speed);
-    const sx = Math.max(.04, Math.abs(T.flip < 0 ? -T.flip : T.flip));
-    const bob = moving ? -Math.abs(Math.sin(now / 110)) * 9 : Math.sin(now / 900) * 2.5;
-    // bend down (squash) when writing low on the board
+    const ty = T.want === 'back' ? BACK_YAW : FRONT_YAW;
+    T.yaw += (ty - T.yaw) * Math.min(1, dt * 0.012 * speed);
+    T.mode = Math.abs(T.yaw - BACK_YAW) < 0.2 ? 'back' : Math.abs(T.yaw - FRONT_YAW) < 0.2 ? 'front' : 'turning';
     let wantSy = 1;
-    if (T.mode === 'back' && T.tip) wantSy = Math.max(.8, Math.min(1, (FLOOR - (T.tip.y + 26 - 250)) / 452));
+    if (T.mode === 'back' && T.tip) wantSy = Math.max(.82, Math.min(1, (FLOOR - (T.tip.y - 230)) / 455));
     T.sy += (wantSy - T.sy) * Math.min(1, dt / 1000 * 6 * speed);
-    $('body').setAttribute('transform', `translate(${T.x.toFixed(1)},${(FLOOR + bob).toFixed(1)}) scale(${sx.toFixed(3)},${T.sy.toFixed(3)})`);
+    const bob = moving ? Math.abs(Math.sin(now / 110)) * 8 : Math.sin(now / 900) * 2;
     $('shadow').setAttribute('cx', T.x.toFixed(1));
-    // front face: lip-sync + blink + look at learner
-    if (T.mode === 'front') {
-      const open = T.talk ? 6 + Math.abs(Math.sin(now / 75) * Math.sin(now / 190)) * 22 : 10;
-      $('mouth').setAttribute('height', open.toFixed(1));
-      $('teeth').setAttribute('height', T.talk ? 5 : 5);
-      if (now > T.blink) { $('eyes').setAttribute('transform', 'translate(0,-542) scale(1,.1) translate(0,542)'); if (now > T.blink + 120) { $('eyes').removeAttribute('transform'); T.blink = now + rnd(2500, 5000); } }
-      const lis = interrupting && !T.talk;
-      // look at the learner while talking, glance at the board otherwise
-      $('pupL').setAttribute('x', T.talk || lis ? -42 : -36); $('pupR').setAttribute('x', T.talk || lis ? 24 : 30);
-      $('browL').setAttribute('y', lis ? -578 : -570); $('browR').setAttribute('y', lis ? -580 : -574);
-      $('pointArm').setAttribute('transform', `rotate(${(lis ? -8 : -62 + Math.sin(now / 700) * 4).toFixed(1)} 112 -452)`);
+    const lis = interrupting && !T.talk;
+
+    if (has3D) {
+      const { root, body, head, legL, legR, armP, armW } = R3;
+      root.position.set(T.x, 900 - FLOOR + bob, 0); root.scale.set(1, T.sy, 1);
+      body.rotation.y = T.yaw;
+      const sw = moving ? Math.sin(now / 110) * 0.5 : 0;
+      legL.rotation.x = sw; legR.rotation.x = -sw;
+      head.rotation.z = Math.sin(now / 1300) * 0.03; head.rotation.x = T.talk ? Math.sin(now / 160) * 0.025 : 0;
+      // pointing arm (+x) and resting writing arm
+      armP.sh.rotation.z = T.mode === 'front' && !lis ? 1.72 + Math.sin(now / 700) * 0.06 : 0.08; armP.el.rotation.z = T.mode === 'front' && !lis ? 0.18 : 0.05;
+      armP.sh.rotation.x = 0;
+      // writing arm IK (world XY plane, mirrored because body is turned by PI)
+      if (T.mode === 'back' && T.tip) {
+        const S = { x: T.x + 117, y: 900 - FLOOR + bob + 455 * T.sy * Math.cos(0.12) }, tgt = { x: T.tip.x + 2, y: 900 - T.tip.y - 4 };
+        const L1 = 145, L2 = 160;
+        let dx = tgt.x - S.x, dy = tgt.y - S.y, d = Math.hypot(dx, dy);
+        if (d > L1 + L2 - 1) { const k = (L1 + L2 - 1) / d; dx *= k; dy *= k; d = L1 + L2 - 1; }
+        const a = Math.atan2(dy, dx), th = Math.acos(Math.max(-1, Math.min(1, (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d))));
+        const p1 = a - th, E = { x: S.x + L1 * Math.cos(p1), y: S.y + L1 * Math.sin(p1) }, p2 = Math.atan2(S.y + dy - E.y, S.x + dx - E.x);
+        armW.sh.rotation.z = -(p1 + Math.PI / 2); armW.el.rotation.z = -(p2 - p1);
+      } else {
+        armW.sh.rotation.z += (-0.06 - armW.sh.rotation.z) * 0.35; armW.el.rotation.z += (-0.05 - armW.el.rotation.z) * 0.35;
+      }
+      armW.chalk.visible = T.mode !== 'front';
+      // face: lip-sync + blink + gaze
+      let m = 0;
+      if (T.talk && T.mode !== 'back') { const v = Math.abs(Math.sin(now / 75) * Math.sin(now / 190)); m = v > .66 ? 3 : v > .36 ? 2 : v > .12 ? 1 : 0; }
+      if (now > T.blink + 130) { if (R3.blinkOn) { R3.blinkOn = false; T.blink = now + rnd(2500, 5000); } }
+      else if (now > T.blink) R3.blinkOn = true;
+      const look = lis ? 'listen' : T.talk ? 'learner' : 'board';
+      if (m !== R3.mouth || R3.blinkOn !== R3.lastBlink || look !== R3.look) {
+        R3.mouth = m; R3.lastBlink = R3.blinkOn; R3.look = look;
+        paintFace(R3.faceT.userData.g, m, R3.blinkOn, look); R3.faceT.needsUpdate = true;
+      }
+      R3.ren.render(R3.scene, R3.cam);
     }
-    // writing arm: 2-bone IK toward the chalk tip
-    const armOn = T.mode === 'back' && T.flip > .6 && T.tip;
-    $('arm').style.display = armOn ? '' : 'none';
-    if (armOn) {
-      const S = { x: T.x + 112, y: FLOOR + bob - 452 * T.sy }, L1 = 150, L2 = 150;
-      let tx = T.tip.x - 4, ty = T.tip.y + 26;
-      let dx = tx - S.x, dy = ty - S.y, d = Math.hypot(dx, dy);
-      if (d > L1 + L2 - 1) { const k = (L1 + L2 - 1) / d; dx *= k; dy *= k; d = L1 + L2 - 1; }
-      const a = Math.atan2(dy, dx), th = Math.acos(Math.max(-1, Math.min(1, (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d))));
-      const E = { x: S.x + L1 * Math.cos(a + th), y: S.y + L1 * Math.sin(a + th) }, H = { x: S.x + dx, y: S.y + dy };
-      const set = (id, p, q) => { const e = $(id); e.setAttribute('x1', p.x); e.setAttribute('y1', p.y); e.setAttribute('x2', q.x); e.setAttribute('y2', q.y); };
-      set('aU', S, E); set('aF', E, H);
-      const cu = { x: E.x + (H.x - E.x) * .72, y: E.y + (H.y - E.y) * .72 }, cu2 = { x: E.x + (H.x - E.x) * .82, y: E.y + (H.y - E.y) * .82 };
-      set('cuff', cu, cu2);
-      $('hand').setAttribute('x', H.x - 22); $('hand').setAttribute('y', H.y - 22);
-      set('stick', { x: H.x + 4, y: H.y - 10 }, { x: T.tip.x, y: T.tip.y });
-    }
+    const st = lis ? 'tinglamoqda…' : T.mode === 'back' ? 'doskaga yozmoqda' : T.talk ? 'gapirmoqda' : 'kutmoqda';
+    if (frame.st !== st) { frame.st = st; $('state').textContent = st; }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
@@ -337,6 +407,9 @@
   async function talk(t, id, ch = 'main') { await face('front'); say(t); await sleep(Math.min(4200, 400 + t.length * 52), id, ch); }
 
   const W = '#f3f0e6', Y = '#f2c94c', O = '#ff9f43', Gr = '#8be28b';
+  const STEPS = ['Tenglama', 'Ikki son', "Ko'paytuvchilar", 'Nolga tenglash', 'Javob'];
+  const segs = $('segs'); STEPS.forEach(() => { const d = document.createElement('div'); d.className = 'seg'; segs.appendChild(d); });
+  function step(i) { [...segs.children].forEach((d, k) => d.className = 'seg' + (k < i ? ' done' : k === i ? ' now' : '')); $('stepLbl').textContent = i < STEPS.length ? `Qadam ${i + 1}/${STEPS.length} · ${STEPS[i]}` : 'Dars tugadi'; }
   let sideDone = false;
 
   async function lesson() {
@@ -344,16 +417,18 @@
     ink.replaceChildren(); me.style.display = 'none'; askBtn.disabled = false;
     T.want = 'front'; T.tip = null;
     await sleep(400, id);
+    step(0);
     await talk("Salom! Bugun kvadrat tenglamani birga yechamiz.", id);
     say("Mana bizning tenglama.");
     await draw(write('x²−5x+6=0', 60, 110, 72, W), id);
+    step(1);
     await talk("Bizga ikkita son kerak: ko'paytmasi 6, yig'indisi minus 5.", id);
     say("Chetda hisoblab olaman…");
     await draw(line(640, 40, 642, 300, 'rgba(243,240,230,.35)', 3), id, 'main', 900);
     await draw(write('(−2)·(−3)=6', 668, 100, 40, Y), id);
     await draw(write('(−2)+(−3)=−5', 668, 170, 40, Y), id);
     await draw(tick(820, 215, Gr), id); sideDone = true;
-    say("Demak, ko'paytuvchilarga ajratamiz…");
+    step(2); say("Demak, ko'paytuvchilarga ajratamiz…");
     await draw(write('(x+2)', 60, 250, 64, W), id);
     await sleep(500, id);
     await talk("Hmm, to'xta — ishoralarni tekshiramiz. Minus bo'lishi kerak!", id);
@@ -361,11 +436,12 @@
     const row = write('(x−2)(x−3)=0', 60, 365, 64, W);
     await draw(row, id);
     await draw(arrow(700, 190, 500, 318, 70, Y), id, 'main', 700);
+    step(3);
     await talk("Har bir qavs nolga teng bo'lishi mumkin.", id);
     const a = write('x−2=0', 60, 470, 54, W); await draw(a, id);
     const yk = write('yoki', a.endX + 30, 470, 42, 'rgba(243,240,230,.75)'); await draw(yk, id);
     await draw(write('x−3=0', yk.endX + 30, 470, 54, W), id);
-    say("Javob…");
+    step(4); say("Javob…");
     const r1 = write('x=2', 120, 580, 64, Y); await draw(r1, id);
     const yk2 = write('yoki', r1.endX + 34, 580, 44, Y); await draw(yk2, id);
     const r2 = write('x=3', yk2.endX + 34, 580, 64, Y); await draw(r2, id);
@@ -373,6 +449,7 @@
     await draw(tick(r2.endX + 64, 548, Gr), id);
     T.tip = null;
     await talk("Javob: x teng 2 yoki x teng 3. Tushunarli bo'ldimi?", id);
+    step(5);
     askBtn.disabled = true;
   }
 

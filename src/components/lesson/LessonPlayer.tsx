@@ -314,8 +314,9 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
   }, [load]);
 
   useEffect(() => {
-    initLesson({ skillId, characterId, grade: user?.grade ?? 6 });
+    initLesson({ skillId, characterId, grade: user?.grade ?? 6, greeting: `${ch.catchphrases_uz[0]} ${t.lesson.start} tugmasini bos.` });
     return () => disposeLesson();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [skillId, characterId, user?.grade]);
 
   // refresh roadmap/XP after the lesson
