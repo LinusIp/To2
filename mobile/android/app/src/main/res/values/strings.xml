@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">To2</string>
+    <string name="title_activity_main">To2</string>
+    <string name="package_name">uz.to2.app</string>
+    <string name="custom_url_scheme">uz.to2.app</string>
+</resources>

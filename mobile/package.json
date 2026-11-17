@@ -1,0 +1,20 @@
+{
+  "name": "to2-mobile",
+  "private": true,
+  "version": "1.0.0",
+  "description": "To2 Android app (Capacitor shell around the production site). Separate from the web build.",
+  "scripts": {
+    "prepare": "node scripts/prepare.mjs",
+    "sync": "node scripts/prepare.mjs && cap sync android",
+    "assets": "capacitor-assets generate --android --iconBackgroundColor '#2563eb' --splashBackgroundColor '#2563eb'"
+  },
+  "dependencies": {
+    "@capacitor/android": "6.2.0",
+    "@capacitor/core": "6.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.5",
+    "@capacitor/cli": "6.2.0",
+    "typescript": "5.6.3"
+  }
+}

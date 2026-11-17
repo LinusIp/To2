@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- To2 blue (mockup v2) — status bar, splash, adaptive icon background -->
+    <color name="colorPrimary">#2563eb</color>
+    <color name="colorPrimaryDark">#2563eb</color>
+    <color name="colorAccent">#fbbf24</color>
+</resources>

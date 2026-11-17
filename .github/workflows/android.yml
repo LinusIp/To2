@@ -1,0 +1,131 @@
+# Android APK for To2 (Capacitor shell around the production site, see mobile/).
+# Separate from the web build and deploy: only runs for changes under mobile/ (or by hand).
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+    paths: ["mobile/**", "production.json", ".github/workflows/android.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write # the release job attaches the signed APK to a GitHub Release
+
+jobs:
+  debug:
+    name: Debug APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: android-actions/setup-android@v3
+      - name: Production site answers (/version)
+        run: |
+          URL=$(node -p "require('../production.json').url")
+          echo "server.url = $URL"
+          curl -fsS "$URL/version"
+      - run: npm ci --no-audit --no-fund
+      - run: npm run sync
+      - name: Build debug APK
+        working-directory: mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk ../To2-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: To2-debug.apk
+          path: mobile/To2-debug.apk
+          if-no-files-found: error
+
+  emulator-smoke:
+    name: Emulator smoke test (best effort)
+    needs: debug
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: To2-debug.apk
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: |
+            adb install -r To2-debug.apk
+            adb shell am start -n uz.to2.app/.MainActivity
+            sleep 45
+            adb shell pidof uz.to2.app
+            adb logcat -d | grep -iE "Capacitor|chromium" | tail -40 || true
+            adb exec-out screencap -p > emulator-home.png
+            adb shell dumpsys package uz.to2.app | grep -E "RECORD_AUDIO|MODIFY_AUDIO" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: emulator-screenshot
+          path: emulator-home.png
+          if-no-files-found: ignore
+
+  release:
+    name: Signed release APK (only with signing secrets)
+    needs: debug
+    runs-on: ubuntu-latest
+    env:
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.KEYSTORE_PASSWORD != '' && secrets.KEY_ALIAS != '' && secrets.KEY_PASSWORD != '' }}
+    steps:
+      - name: Skip without signing secrets
+        if: env.HAS_KEYSTORE != 'true'
+        run: echo "No ANDROID_KEYSTORE_BASE64 / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD secrets — skipping the signed release (debug APK is above)."
+      - uses: actions/checkout@v4
+        if: env.HAS_KEYSTORE == 'true'
+      - uses: actions/setup-java@v4
+        if: env.HAS_KEYSTORE == 'true'
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-node@v4
+        if: env.HAS_KEYSTORE == 'true'
+        with:
+          node-version: "20"
+      - uses: android-actions/setup-android@v3
+        if: env.HAS_KEYSTORE == 'true'
+      - name: Build signed release APK
+        if: env.HAS_KEYSTORE == 'true'
+        working-directory: mobile
+        env:
+          TO2_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          TO2_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          TO2_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/to2.keystore"
+          export TO2_KEYSTORE_FILE="$RUNNER_TEMP/to2.keystore"
+          npm ci --no-audit --no-fund
+          npm run sync
+          cd android && chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk ../To2-release.apk
+          rm -f "$RUNNER_TEMP/to2.keystore"
+      - name: Short commit hash
+        if: env.HAS_KEYSTORE == 'true'
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+      - name: GitHub Release apk-<short-sha>
+        if: env.HAS_KEYSTORE == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ env.SHORT_SHA }}
+          name: To2 APK ${{ env.SHORT_SHA }}
+          files: mobile/To2-release.apk

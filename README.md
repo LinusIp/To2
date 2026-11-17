@@ -1,6 +1,11 @@
 # To2 — AI math tutor that speaks Uzbek and draws on the board
 
-**Live:** https://to2.locallabs-io.workers.dev
+**Live:** https://to2.locallabs-io.workers.dev · [![Android APK](https://github.com/LinusIp/To2/actions/workflows/android.yml/badge.svg)](https://github.com/LinusIp/To2/actions/workflows/android.yml)
+
+### How to install the APK (Android)
+1. Open the latest green run of [Android APK](https://github.com/LinusIp/To2/actions/workflows/android.yml) → **Artifacts** → download **To2-debug.apk** (a zip; unzip it). Signed builds, when the signing secrets are set, are on the [Releases](https://github.com/LinusIp/To2/releases) page as `apk-<commit>`.
+2. Copy the APK to the phone and open it. Android asks to **allow installs from this source** (Chrome / Files) — allow it, then **Install**.
+3. Open **To2**. It loads the live site (needs internet; without it you see "Internet aloqasi yo'q — qayta urinib ko'ring"). The first time you press **Savol berish**, allow the microphone.
 
 National AI Hackathon, Tashkent 2026 · Ministry task **#3 "Shaxsiylashtirilgan o'qitish"** — *an AI tutor that works in Uzbek, finds knowledge gaps and builds an individual learning path.*
 
