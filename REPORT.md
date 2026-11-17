@@ -456,3 +456,14 @@ Source: `docs/prototypes/mobile-app-v2/index.html` + `docs/design/target-ui.png`
     set the client build target to `chrome87` (not done before the demo — risk).
 - ⚠️ One release attempt failed on a single unit test in the clean checkout that passed locally and on the retry (flaky; likely
   the animator timing/heap test) — TODO: identify and stabilise it.
+### Live (non-pinned) questions — never stuck (14b7183) · then CODE FREEZE
+- Question → thinking state at once (hand to chin, "o'ylayapti" + cached "Hmm…" filler) → the first answer segment's text goes
+  into the bubble as soon as it arrives; every answer segment's audio is requested on arrival (cached server-side); a live answer
+  segment waits ≤ 4 s for its voice, else plays captions-only with the text-paced mouth. Audio that arrives too late for a line
+  is ignored (bug fixed: it used to start playing anyway). Answers use v2 only.
+- **Timeline on production** (Blokbek, fresh question "Kasrlarni ayirganda ham umumiy maxraj kerakmi?"):
+  think state **26 ms** · filler caption **26 ms** · filler voice **306 ms** · first answer caption **5,774 ms** (LLM time to the
+  first segment) · first answer audio: **none within ~20 s** — a fresh v2 line takes > 11 s, so the first answer segments ran
+  captions-only (as designed; the tutor never froze). Later segments get audio once their background generation finishes
+  (segment 2 was requested at 6.8 s and played at ~20 s; not captured). Pinned demo answers are fully cached (instant voice).
+- After this: code freeze — only bugs reported from the phone test.
