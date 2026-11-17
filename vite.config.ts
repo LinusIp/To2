@@ -14,8 +14,9 @@ const git = (cmd: string) => {
 };
 const BUILD = {
   commit: git("rev-parse HEAD") || "unknown",
-  // the build regenerates the character manifests first (scripts/characters-manifest.mjs): not "dirty"
-  dirty: git('status --porcelain --untracked-files=no -- . ":(exclude)src/config/characterModels.json" ":(exclude)src/config/characterRenders.json"') !== "",
+  // the build regenerates the character manifests + copies the Draco decoder first
+  // (scripts/characters-manifest.mjs): those outputs don't make a build "dirty"
+  dirty: git('status --porcelain --untracked-files=no -- . ":(exclude)src/config/characterModels.json" ":(exclude)src/config/characterRenders.json" ":(exclude)public/draco"') !== "",
   builtAt: new Date().toISOString(),
 };
 
