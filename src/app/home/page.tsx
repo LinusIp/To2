@@ -7,7 +7,7 @@ import { t } from "@/i18n/uz";
 import AppShell from "@/components/ui/AppShell";
 import TutorPortrait from "@/components/characters/TutorPortrait";
 import { Bar, StreakChip } from "@/components/ui/hud";
-import { ArrowIcon, BarsIcon, Logo, TriangleIcon, TrophyIcon } from "@/components/ui/icons";
+import { ArrowIcon, BarsIcon, Logo, TriangleIcon, TrophyIcon, GearIcon } from "@/components/ui/icons";
 import { SUBJECTS } from "@/config/subjects";
 import { getCharacter } from "@/config/characters";
 import { useMe } from "@/lib/client/me";
@@ -30,35 +30,40 @@ export default function HomePage() {
   return (
     <AppShell>
       <div className="px-[18px] pt-3 md:px-2 md:pt-6">
+        {/* mockup v2 (screen s2): avatar · streak + settings, a big hello with the tutor, today's lesson card */}
         <div className="flex h-[52px] items-center justify-between">
-          <span className="md:invisible">
-            <Logo size={36} />
-          </span>
+          <Link href="/tutors" aria-label={t.home.chooseTutor} title={t.home.chooseTutor} className="h-11 w-11 overflow-hidden rounded-full bg-soft2">
+            <TutorPortrait id={charId} pose="idle" frame="face" className="h-11 w-11" alt="" />
+          </Link>
           <div className="flex items-center gap-2.5">
             {user && <StreakChip days={user.streak} />}
-            <Link href="/tutors" aria-label={t.home.chooseTutor} title={t.home.chooseTutor} className="h-11 w-11 overflow-hidden rounded-full bg-soft2">
-              <TutorPortrait id={charId} pose="idle" frame="face" className="h-11 w-11" alt="" />
+            <Link href="/settings" aria-label={t.tabs.profile} title={t.tabs.profile} className="icon-btn bg-white">
+              <GearIcon size={22} />
             </Link>
           </div>
+        </div>
+        <div className="relative mt-1 flex h-[150px] items-end justify-between">
+          <h1 className="m-0 mb-6 text-[34px] leading-[1.1] font-black">
+            Salom,
+            <br />
+            {user?.nickname ?? ""}!
+          </h1>
+          <TutorPortrait id={charId} pose="thumbs" frame="half" className="h-[170px] w-[170px]" alt="" style={{ objectPosition: "50% 100%" }} />
         </div>
 
         {/* today's lesson */}
         {cur ? (
-          <Link
-            href={`/lesson/${cur.id}`}
-            className="relative mt-2 block h-[178px] overflow-hidden rounded-[24px] no-underline shadow-[0_10px_24px_rgba(47,107,255,.15)]"
-            style={{ background: "linear-gradient(140deg,#cfe0ff,#a9c6ff)" }}
-          >
-            <div className="absolute top-5 left-5 w-[56%]">
-              <div className="text-[15px] font-extrabold text-[#3a4a80]">{t.home.today}</div>
-              <div className="mt-1 text-[22px] leading-[1.15] font-black">{cur.title}</div>
-              <Bar value={Math.round(cur.p * 100)} className="mt-5 bg-white/60" label={t.practice.mastery} />
-              <div className="mt-1.5 text-[13px] font-extrabold text-[#3a4a80]">
-                {Math.round(cur.p * 100)}% · {cur.section}
-              </div>
+          <div className="relative -mt-3 overflow-hidden rounded-[24px] p-5 shadow-[0_10px_24px_rgba(47,107,255,.15)]" style={{ background: "linear-gradient(140deg,#dbe7ff,#bcd3ff)" }}>
+            <div className="text-[14px] font-extrabold text-[#3a4a80]">{t.home.today}</div>
+            <div className="mt-1 w-[78%] text-[21px] leading-[1.15] font-black">{cur.title}</div>
+            <Bar value={Math.round(cur.p * 100)} className="mt-3 w-[70%] bg-white/60" label={t.practice.mastery} />
+            <div className="mt-1 text-[12px] font-extrabold text-[#3a4a80]">
+              {Math.round(cur.p * 100)}% · {cur.section}
             </div>
-            <TutorPortrait id={charId} pose="thumbs" frame="half" className="absolute right-[-14px] bottom-[-30px] h-[200px] w-[200px]" alt="" />
-          </Link>
+            <Link href={`/lesson/${cur.id}`} className="btn btn-primary mt-3 min-h-11 px-5 text-[15px]">
+              {t.lesson.start} <ArrowIcon size={16} />
+            </Link>
+          </div>
         ) : (
           loaded && (
             <Link href="/diagnostic" className="card mt-2 flex items-center gap-3 p-5 no-underline">
@@ -70,11 +75,6 @@ export default function HomePage() {
               </div>
             </Link>
           )
-        )}
-        {cur && (
-          <Link href={`/lesson/${cur.id}`} className="btn btn-primary mt-4 w-full">
-            {t.roadmap.continue} <ArrowIcon />
-          </Link>
         )}
 
         {/* subjects */}

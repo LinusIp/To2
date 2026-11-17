@@ -313,8 +313,8 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
         {user && <StreakChip days={user.streak} />}
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-start md:gap-5">
-        <div className="relative min-w-0 md:flex-[7_1_0%]">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:gap-5">
+        <div className="relative min-w-0 lg:flex-[7_1_0%]">
           <Stage characterId={characterId} />
           {/* mobile overlay: back + tools */}
           <div className="absolute inset-x-3 top-3 flex items-start justify-between md:hidden" style={{ paddingTop: "env(safe-area-inset-top)" }}>
@@ -325,7 +325,7 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-3 px-4 pb-6 md:flex-[3_1_0%] md:px-0 md:pb-0 md:min-w-[320px]">
+        <div className="flex min-w-0 flex-col gap-3 px-4 pb-6 lg:flex-[3_1_0%] lg:px-0 lg:pb-0 lg:min-w-[320px]">
           <div className="relative z-10 mt-3 md:mt-0">
             <Bubble name={ch.name} />
           </div>

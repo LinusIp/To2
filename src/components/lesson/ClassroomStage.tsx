@@ -179,8 +179,31 @@ export default function ClassroomStage({
           <rect x="880" y="628" width="70" height="6" fill="#c9b79a" />
         </g>
         <rect width="1600" height="900" fill="url(#room-vig)" pointerEvents="none" />
+        {/* cinematic light (mockup v2): warm window key from the left, cool fill from the right, a warm
+            spot on the board — same directions as the three.js key/fill/rim on the tutor (voxel.ts addLights) */}
+        <defs>
+          <radialGradient id="cine-key" gradientUnits="userSpaceOnUse" cx="60" cy="250" r="1000">
+            <stop offset="0" stopColor="#ffc97a" stopOpacity=".42" />
+            <stop offset="1" stopColor="#ffc97a" stopOpacity="0" />
+          </radialGradient>
+          <radialGradient id="cine-fill" gradientUnits="userSpaceOnUse" cx="1600" cy="520" r="760">
+            <stop offset="0" stopColor="#8fb6ff" stopOpacity=".26" />
+            <stop offset="1" stopColor="#8fb6ff" stopOpacity="0" />
+          </radialGradient>
+          <radialGradient id="cine-spot" gradientUnits="userSpaceOnUse" cx={BOARD_X + 520 * BOARD_S} cy={BOARD_Y + 280 * BOARD_S} r="560">
+            <stop offset="0" stopColor="#ffe7b4" stopOpacity=".24" />
+            <stop offset="1" stopColor="#ffe7b4" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <g pointerEvents="none" style={{ mixBlendMode: "soft-light" }}>
+          <rect width="1600" height="900" fill="url(#cine-key)" />
+          <rect width="1600" height="900" fill="url(#cine-fill)" />
+        </g>
+        <rect width="1600" height="900" fill="url(#cine-spot)" pointerEvents="none" style={{ mixBlendMode: "screen" }} />
       </svg>
       <TutorCanvas characterId={characterId} view={view} />
+      {/* vignette over everything, tutor included (a camera effect) */}
+      <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(120% 90% at 45% 40%, transparent 55%, rgba(20,10,0,.35))" }} />
     </div>
   );
 }
