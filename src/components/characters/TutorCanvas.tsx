@@ -68,7 +68,18 @@ export default function TutorCanvas({ characterId, view }: { characterId: string
       };
       const scene = new THREE.Scene();
       V.addLights(scene);
-      const ch = V.makeChar(getCharacter(characterId).voxel, scene, false);
+      // real 3D model (public/models/tripo/<id>.glb) when it exists, else the box-built voxel rig
+      const G = await import("./glbTutor");
+      let glb: import("./glbTutor").GlbTutor | null = null;
+      if (G.hasGlb(characterId)) {
+        try {
+          glb = G.makeGlbTutor(await G.loadGlb(characterId), scene);
+        } catch (e) {
+          console.warn("[tutor] GLB failed, using voxel rig", e);
+        }
+      }
+      if (disposed) return;
+      const ch = glb ? null : V.makeChar(getCharacter(characterId).voxel, scene, false);
 
       const fit = () => {
         const r = canvas.getBoundingClientRect();
@@ -79,7 +90,7 @@ export default function TutorCanvas({ characterId, view }: { characterId: string
       const ro = new ResizeObserver(fit);
       ro.observe(canvas);
 
-      const T = { x: viewRef.current.frontX, tx: viewRef.current.frontX, yaw: FRONT_YAW, sy: 1, want: "front" as "front" | "back", lastTip: 0, amp: 0, wave: performance.now() + 1600, cheerUntil: 0, celebrate: useLesson.getState().celebrate, last: performance.now() };
+      const T = { x: viewRef.current.frontX, tx: viewRef.current.frontX, yaw: FRONT_YAW, sy: 1, want: "front" as "front" | "back", lastTip: 0, amp: 0, wave: performance.now() + 1600, cheerUntil: 0, hop: 0, celebrate: useLesson.getState().celebrate, last: performance.now() };
 
       const frame = (now: number) => {
         raf = requestAnimationFrame(frame);
@@ -96,7 +107,8 @@ export default function TutorCanvas({ characterId, view }: { characterId: string
         if (st.celebrate !== T.celebrate) {
           T.celebrate = st.celebrate;
           T.cheerUntil = now + 1300;
-          ch.hop = now + 600;
+          T.hop = now + 600;
+          if (ch) ch.hop = T.hop;
         }
 
         // writing → back to the learner; 600 ms hysteresis so he doesn't flip between strokes
@@ -118,6 +130,37 @@ export default function TutorCanvas({ characterId, view }: { characterId: string
         const target = mouth.speaking ? mouth.amp : 0;
         T.amp += (target - T.amp) * (target > T.amp ? Math.min(1, dt / 30) : Math.min(1, dt / 90));
         const talking = mouth.speaking;
+
+        if (glb) {
+          const turnK = Math.max(0, Math.min(1, (T.yaw - FRONT_YAW) / (BACK_YAW - FRONT_YAW)));
+          G.poseGlb(glb, {
+            now,
+            x: T.x,
+            floorY: 900 - FLOOR,
+            yaw: T.yaw,
+            mode,
+            turnK: T.want === "back" ? turnK : 1 - turnK,
+            s: S,
+            sy: T.sy,
+            moving,
+            talking,
+            amp: T.amp,
+            listening,
+            thinking,
+            cheerUntil: T.cheerUntil - 400,
+            writing: mode !== "front" && tipOn,
+            tip: tipOn ? { x: tip.x, y: 900 - tip.y } : null,
+          });
+          if (shadowRef.current) {
+            shadowRef.current.style.left = `${((T.x - V0.x0) / V0.w) * 100}%`;
+            shadowRef.current.style.top = `${((FLOOR - V0.y0) / V0.h) * 100}%`;
+            shadowRef.current.style.width = `${((240 * S) / V0.w) * 100}%`;
+          }
+          ren.clear();
+          ren.render(scene, cam);
+          return;
+        }
+        if (!ch) return;
 
         const bob = (moving ? Math.abs(Math.sin(now / 110)) * 8 : Math.sin(now / 900) * 2) * S;
         const hop = ch.hop > now ? Math.sin(((ch.hop - now) / 600) * Math.PI) * 26 * S : 0;
@@ -202,7 +245,8 @@ export default function TutorCanvas({ characterId, view }: { characterId: string
       cleanup = () => {
         cancelAnimationFrame(raf);
         ro.disconnect();
-        ch.dispose();
+        ch?.dispose();
+        glb?.dispose();
         ren.dispose();
       };
     })();

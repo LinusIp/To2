@@ -25,7 +25,10 @@ export default function TutorsPage() {
     if (!r.ok || !j.user) {
       setErr(j.error ?? t.common.error);
       setUser(user);
-    } else setUser(j.user);
+    } else {
+      setUser(j.user);
+      void import("@/components/characters/glbTutor").then((m) => m.preloadGlb(id));
+    }
   };
 
   return (

@@ -459,7 +459,7 @@ export function addLights(scene: THREE.Scene, studio = false) {
   scene.add(rim);
 }
 
-export type Pose = "idle" | "wave" | "point" | "thumbs" | "cheer";
+export type Pose = "idle" | "wave" | "point" | "thumbs" | "cheer" | "sig";
 
 /** Static poses for portraits (from the mobile prototype). */
 export function applyPose(ch: VoxelChar, p: Pose) {
@@ -469,7 +469,7 @@ export function applyPose(ch: VoxelChar, p: Pose) {
   armP.el.rotation.z = 0.05;
   armW.sh.rotation.z = -0.06;
   armW.el.rotation.z = -0.05;
-  if (p === "wave") {
+  if (p === "wave" || p === "sig") {
     armP.sh.rotation.z = 2.7;
     armP.el.rotation.z = 0.45;
   }
@@ -488,7 +488,7 @@ export function applyPose(ch: VoxelChar, p: Pose) {
     armW.el.rotation.z = -0.3;
   }
   if (armW.chalk) armW.chalk.visible = false;
-  const happy = p === "wave" || p === "cheer";
+  const happy = p === "wave" || p === "cheer" || p === "sig";
   ch.mouth = -1;
   updateFace(ch, happy ? 2 : 0, false, "learner");
 }

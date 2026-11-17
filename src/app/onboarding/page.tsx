@@ -41,6 +41,8 @@ export default function Onboarding() {
       if (!r.ok) throw new Error();
       const j = (await r.json()) as { user: PublicUser };
       setUser(j.user);
+      // warm the 3D tutor for the first lesson (Draco GLB, ~1 MB) while the diagnostic runs
+      void import("@/components/characters/glbTutor").then((m) => m.preloadGlb(ch));
       if (skipDiagnostic) {
         await load(true);
         router.push("/home");

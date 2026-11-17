@@ -4,7 +4,7 @@
 // 2) else a three.js render of the voxel rig (lazy-loaded, cached)
 import { useEffect, useState } from "react";
 import renders from "@/config/characterRenders.json";
-import { getCharacter } from "@/config/characters";
+import { CHARACTER_BY_ID, getCharacter, type CharacterId } from "@/config/characters";
 import type { Pose } from "./voxel";
 import type { Frame } from "./portraits";
 
@@ -49,7 +49,7 @@ export default function TutorPortrait({ id, pose = "idle", frame = "half", class
     };
   }, [file, id, pose, frame]);
 
-  const label = alt ?? getCharacter(id).name;
+  const label = alt ?? CHARACTER_BY_ID[id as CharacterId]?.name ?? getCharacter(id).name;
   if (!src) return <span className={className} style={{ display: "block", ...style }} role="img" aria-label={label} />;
   const imgStyle: React.CSSProperties = { display: "block", pointerEvents: "none", userSelect: "none", objectFit: "contain", filter: locked ? "brightness(.15) saturate(0)" : undefined, opacity: locked ? 0.55 : undefined, ...style };
   const img = (

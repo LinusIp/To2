@@ -34,7 +34,7 @@ export default function Landing() {
               <SplashCta />
             </div>
           </div>
-          <TutorPortrait id="blokbek" pose="wave" frame="full" alt="Blokbek qo'l silkitmoqda" className="mt-2 h-[min(44dvh,420px)] w-auto md:h-[560px]" />
+          <TutorPortrait id="blokbek" pose="sig" frame="full" alt="Blokbek" className="mt-2 h-[min(44dvh,420px)] w-auto md:h-[560px]" />
         </div>
         <div className="relative z-10 w-full max-w-[420px] px-6 pb-10 md:hidden">
           <SplashCta />
@@ -70,12 +70,12 @@ export default function Landing() {
         <div className="mx-auto max-w-[1100px] px-5">
           <h2 className="m-0 mb-5 text-[28px] font-black">{t.landing.charactersTitle}</h2>
           <div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5 pb-2">
-            {CHARACTERS.filter((c) => c.unlock !== "streak").map((c) => (
+            {CHARACTERS.map((c) => (
               <div key={c.id} className="card relative flex h-[210px] w-[160px] flex-none flex-col items-center justify-end overflow-hidden">
-                <TutorPortrait id={c.id} pose="idle" frame="half" className="absolute top-0 left-1/2 h-[160px] w-[160px] -translate-x-1/2" />
+                <TutorPortrait id={c.id} pose="sig" frame="half" alt={c.name} className="absolute top-0 left-1/2 h-[160px] w-[160px] -translate-x-1/2" style={c.status === "soon" ? { opacity: 0.5 } : undefined} />
                 <div className="relative w-full px-2 pt-6 pb-3 text-center" style={{ background: "linear-gradient(to top,#fff 62%,rgba(255,255,255,0))" }}>
                   <b className="block text-[16px] font-black">{c.name}</b>
-                  <span className="text-[12px] font-bold text-mut">{c.tag}</span>
+                  <span className="text-[12px] font-bold text-mut">{c.status === "soon" ? t.tutors.soon : c.tag}</span>
                 </div>
               </div>
             ))}

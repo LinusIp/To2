@@ -206,7 +206,7 @@ export const t = {
     diagnostic: "Diagnostikani boshlash",
     chooseTutor: "Ustozni tanlash",
   },
-  tutors: { title: "Qahramonlar", hear: "Ovozini eshit", choose: "Shu ustozni tanlash", chosen: "Tanlangan", secret: "Maxfiy qahramon" },
+  tutors: { title: "Qahramonlar", soon: "Tez orada", hear: "Ovozini eshit", choose: "Shu ustozni tanlash", chosen: "Tanlangan", secret: "Maxfiy qahramon" },
   success: { title: "A'lo!", correct: (xp: number) => `To'g'ri javob! +${xp} XP`, next: "Keyingi savol", toMap: "Xaritaga", lessonDone: "Dars tugadi!" },
   settings: {
     title: "Sozlamalar",

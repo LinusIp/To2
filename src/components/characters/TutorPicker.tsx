@@ -25,7 +25,7 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
     <div>
       <div className="relative h-[250px] overflow-hidden rounded-[24px] shadow-[0_0_0_3px_#2f6bff,0_12px_26px_rgba(47,107,255,.3)]" style={{ background: "linear-gradient(160deg,#6aa0ff,#3a72ff)" }}>
         <div key={`${value}-${bump}`} className="anim-in absolute top-3 left-1/2 -translate-x-1/2">
-          <TutorPortrait id={value} pose="wave" frame="half" className="h-[250px] w-[250px]" />
+          <TutorPortrait id={value} pose="sig" frame="half" className="h-[250px] w-[250px]" />
         </div>
         <div className="absolute inset-x-0 bottom-0 px-3.5 pt-8 pb-3.5 text-center text-white" style={{ background: "linear-gradient(to top, rgba(36,84,220,.95) 55%, rgba(36,84,220,0))" }}>
           <div className="text-[24px] font-black">{sel.name}</div>
@@ -45,8 +45,9 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
 
       <div className="mt-3.5 grid grid-cols-2 gap-3 sm:grid-cols-4" role="radiogroup" aria-label={t.tutors.title}>
         {CHARACTERS.map((c) => {
+          const soon = c.status === "soon";
           const open = isUnlocked(c.id, xp, streak);
-          const secret = c.unlock === "streak" && !open;
+          const secret = !soon && c.unlock === "streak" && !open;
           const on = c.id === value;
           return (
             <button
@@ -54,6 +55,7 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
               type="button"
               role="radio"
               aria-checked={on}
+              disabled={soon}
               aria-label={open ? `${c.name}, ${c.tag}` : `${secret ? t.tutors.secret : c.name}, yopiq: ${lockText(c, xp)}`}
               onClick={() => {
                 if (!open) {
@@ -67,7 +69,17 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
               className={`relative flex h-[190px] flex-col items-center justify-end overflow-hidden rounded-[20px] bg-white ${on ? "shadow-[0_0_0_3px_#2f6bff,0_8px_20px_rgba(47,107,255,.25)]" : "shadow-[0_6px_18px_rgba(31,54,120,.08)]"}`}
               style={shake === c.id ? { animation: "shake .35s" } : undefined}
             >
-              <TutorPortrait id={c.id} pose="idle" frame="half" locked={!open} className="absolute top-0.5 left-1/2 h-[150px] w-[150px] -translate-x-1/2" />
+              {/* "sig" art = the cut-outs that match the 3D models; MVP "soon" tutors keep their colours, dimmed */}
+              <TutorPortrait
+                id={c.id}
+                pose="sig"
+                frame="half"
+                alt={c.name}
+                locked={!open && !soon}
+                className="absolute top-0.5 left-1/2 h-[150px] w-[150px] -translate-x-1/2"
+                style={soon ? { opacity: 0.5, filter: "saturate(.6)" } : undefined}
+              />
+              {soon && <span className="absolute top-2.5 left-2.5 rounded-full bg-ink px-2.5 py-1 text-[11px] font-black text-white">{t.tutors.soon}</span>}
               <div className="relative w-full px-1.5 pt-7 pb-2.5 text-center" style={{ background: "linear-gradient(to top,#fff 62%,rgba(255,255,255,0))" }}>
                 <b className="block text-[16px] font-black">{secret ? "???" : c.name}</b>
                 <span className="inline-flex items-center gap-1 text-[12px] font-bold text-mut">
