@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { BoardCommand, DrawCommand } from "@/lib/ai/schema";
 import { DEMO_LESSONS } from "@/lib/ai/mock/lessons";
-import { layoutMainSegments, measure, mainLayouter } from "./layout";
+import { layoutMainSegments, measure, mainLayouter, segBoxDist } from "./layout";
 import { BOARD_H, BOARD_W, NOTE_PANEL, isDraw } from "./model";
 
 type Seg = { board: BoardCommand[]; layer?: string };
@@ -146,6 +146,34 @@ describe("main-layer layout", () => {
     const lb = measure(out[0].board.find((c) => isDraw(c) && c.id === "sq_side") as DrawCommand);
     expect(lb.y + lb.h).toBeLessThanOrEqual(sq.y);
     expect(sq.y - (lb.y + lb.h)).toBeLessThan(12);
+  });
+
+  it("keeps triangle side labels off the (diagonal) sides — measured against the real chalk", () => {
+    // geo-perimeter p5 from the second live LLM run: a triangle drawn as 3 lines + side labels
+    const TRI: Seg = {
+      board: [
+        { op: "line", id: "l1", from: [400, 339], to: [500, 139], color: "blue" },
+        { op: "line", id: "l2", from: [500, 139], to: [600, 339], color: "blue" },
+        { op: "line", id: "l3", from: [600, 339], to: [400, 339], color: "blue" },
+        { op: "write", id: "side1", x: 370, y: 219, text: "3 sm", size: "s", color: "red" },
+        { op: "write", id: "side2", x: 530, y: 219, text: "4 sm", size: "s", color: "red" },
+        { op: "write", id: "side3", x: 480, y: 349, text: "5 sm", size: "s", color: "red" },
+      ],
+    };
+    const lines = TRI.board.filter((c) => c.op === "line") as Extract<DrawCommand, { op: "line" }>[];
+    const minGap = (segs: Seg[]) => {
+      const labels = segs[0].board.filter((c) => c.op === "write") as DrawCommand[];
+      return Math.min(...labels.flatMap((l) => lines.map((ln) => segBoxDist(ln.from, ln.to, measure(l)))));
+    };
+    expect(minGap([TRI])).toBeLessThan(2); // the bug: "4 sm" sits on the diagonal
+    const out = layoutMainSegments([TRI]);
+    expect(minGap(out)).toBeGreaterThanOrEqual(8);
+    // labels only stepped aside, they still sit next to their side
+    for (const id of ["side1", "side2", "side3"]) {
+      const before = TRI.board.find((c) => isDraw(c) && c.id === id) as { x: number; y: number };
+      const after = out[0].board.find((c) => isDraw(c) && c.id === id) as { x: number; y: number };
+      expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeLessThan(40);
+    }
   });
 
   it("geo-perimeter p1 then p5 lays out cleanly as one lesson", () => {

@@ -8,6 +8,14 @@ import { spawnSync } from "node:child_process";
 
 const out = ".cloudflare/output/v0/workers/default";
 const cfg = JSON.parse(fs.readFileSync(path.join(out, "worker.config.json"), "utf8"));
+
+// Source/work-in-progress art in public/ must not be uploaded (Cloudflare: 25 MiB per asset).
+// The web-ready files (public/models/*.glb, public/characters/*.webp|png) still ship.
+const ignore = path.join(out, "assets", ".assetsignore");
+const extra = ["models/raw/", "characters/blender/", "**/_*.png"];
+const cur = fs.existsSync(ignore) ? fs.readFileSync(ignore, "utf8") : "";
+const add = extra.filter((p) => !cur.split(/\r?\n/).includes(p));
+if (add.length) fs.writeFileSync(ignore, cur.replace(/\s*$/, "\n") + "# source art, not served (scripts/deploy.mjs)\n" + add.join("\n") + "\n");
 const w = {
   name: cfg.name,
   main: path.posix.join("..", out.replace(".cloudflare/", ""), "bundle", cfg.manifest.mainModule),

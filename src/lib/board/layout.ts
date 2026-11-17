@@ -35,6 +35,23 @@ const LABEL_W = 160;
 const LABEL_H = 64;
 const SIZES = ["l", "m", "s"] as const;
 
+/** clearance a label keeps from a chalk line (lines wobble up to ±4 px) */
+const LINE_CLEAR = 8;
+
+/** Shortest distance between segment a–b and a box (0 if the segment crosses it). */
+export function segBoxDist(a: [number, number], b: [number, number], box: Box): number {
+  let best = Infinity;
+  for (let i = 0; i <= 24; i++) {
+    const t = i / 24;
+    const x = a[0] + (b[0] - a[0]) * t;
+    const y = a[1] + (b[1] - a[1]) * t;
+    const dx = Math.max(box.x - x, 0, x - (box.x + box.w));
+    const dy = Math.max(box.y - y, 0, y - (box.y + box.h));
+    best = Math.min(best, Math.hypot(dx, dy));
+  }
+  return best;
+}
+
 const isLabel = (op: string, b: Box) => (op === "write" || op === "latex") && b.w <= LABEL_W && b.h <= LABEL_H;
 
 /**
@@ -199,6 +216,29 @@ export function mainLayouter() {
         it.cmd = shift(it.cmd, dx, dy);
         it.box = { ...a, x: a.x + dx, y: a.y + dy };
         resized.set(it.i, it.cmd);
+      }
+      // sides drawn as lines (a triangle): bounding boxes of diagonals are useless, so measure
+      // the distance to the segment itself and step the label away along the line's normal
+      for (const ln of items) {
+        if (ln.cmd.op !== "line") continue;
+        const { from: a, to: b } = ln.cmd;
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+        let nx = -(b[1] - a[1]) / len;
+        let ny = (b[0] - a[0]) / len;
+        const c = { x: it.box.x + it.box.w / 2, y: it.box.y + it.box.h / 2 };
+        if ((c.x - a[0]) * nx + (c.y - a[1]) * ny < 0) {
+          nx = -nx;
+          ny = -ny;
+        }
+        let k = 0;
+        while (k < 15 && segBoxDist(a, b, it.box) < LINE_CLEAR) {
+          it.box = { ...it.box, x: it.box.x + nx * 4, y: it.box.y + ny * 4 };
+          k++;
+        }
+        if (k) {
+          it.cmd = shift(it.cmd, Math.round(nx * 4 * k), Math.round(ny * 4 * k));
+          resized.set(it.i, it.cmd);
+        }
       }
     }
 
