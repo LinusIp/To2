@@ -193,7 +193,19 @@ export function mainLayouter() {
       if (c !== c0) resized.set(i, c);
       if (placed.has(c.id)) replaced.add(c.id); // same id = rewrite in place
       const box = measure(c);
-      const anchored = ANNOT.has(c.op) && [...placed.entries()].some(([id, b]) => !replaced.has(id) && hit(box, b, 4));
+      // a frame (rect/circle/ellipse) is an annotation only if it surrounds what it touches —
+      // a new rectangle that merely grazes old text is a new diagram and may be moved;
+      // lines/arrows/ticks are annotations when they touch (underline, connector, check mark)
+      const frame = c.op === "rect" || c.op === "circle" || c.op === "ellipse";
+      const anchored =
+        ANNOT.has(c.op) &&
+        [...placed.entries()].some(([id, b]) => {
+          if (replaced.has(id)) return false;
+          if (!frame) return hit(box, b, 4);
+          const cx = b.x + b.w / 2;
+          const cy = b.y + b.h / 2;
+          return cx > box.x && cx < box.x + box.w && cy > box.y && cy < box.y + box.h;
+        });
       items.push({ i, cmd: c, box, anchored });
     }
 

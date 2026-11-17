@@ -176,6 +176,26 @@ describe("main-layer layout", () => {
     }
   });
 
+  it("a new rectangle that only grazes earlier text is moved; a frame around text stays", () => {
+    // third live geo-perimeter run: p3's rectangle landed touching the p2 definition
+    const lay = mainLayouter();
+    lay({ board: [{ op: "write", id: "def", x: 50, y: 340, text: "Perimetr (P) = barcha tomonlar", size: "m" }] });
+    const def = measure({ op: "write", id: "def", x: 50, y: 340, text: "Perimetr (P) = barcha tomonlar", size: "m" });
+    const p3 = lay({
+      board: [
+        { op: "rect", id: "rect2", x: 400, y: def.y + def.h - 2, w: 200, h: 100, color: "green" },
+        { op: "write", id: "w1", x: 480, y: def.y + def.h - 30, text: "5 sm", size: "s" },
+      ],
+    });
+    const r = p3.board[0] as DrawCommand;
+    expect(overlaps(measure(r), def)).toBe(false);
+    // …but a box drawn AROUND the answer is an annotation and stays exactly where it was put
+    const lay2 = mainLayouter();
+    lay2({ board: [{ op: "write", id: "ans", x: 300, y: 300, text: "P = 16 sm", size: "m" }] });
+    const box = lay2({ board: [{ op: "rect", id: "fr", x: 285, y: 290, w: 240, h: 70, color: "yellow" }] });
+    expect(box.board[0]).toMatchObject({ x: 285, y: 290 });
+  });
+
   it("geo-perimeter p1 then p5 lays out cleanly as one lesson", () => {
     expect(anyOverlap(layoutMainSegments([GEO_P1, GEO_P5]))).toEqual([]);
   });
