@@ -1,5 +1,5 @@
 "use client";
-// /lesson and /practice tabs → the learner's current roadmap node (or onboarding).
+// /lesson and /practice without a skill → the learner's current roadmap node (or onboarding).
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMe } from "@/lib/client/me";
@@ -15,5 +15,5 @@ export default function CurrentRedirect({ base }: { base: string }) {
       else router.replace(`${base}/${rm?.currentId ?? "frac-add-unlike"}`);
     });
   }, [base, load, router]);
-  return <div className="p-8 font-pixel text-[18px]">{t.common.loading}</div>;
+  return <div className="p-8 text-center font-extrabold text-mut">{t.common.loading}</div>;
 }

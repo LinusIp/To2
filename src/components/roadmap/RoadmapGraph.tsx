@@ -13,11 +13,11 @@ const W = 210;
 const H = 64;
 
 const STYLE: Record<RoadmapNode["status"], { bg: string; border: string; dashed?: boolean; text: string }> = {
-  mastered: { bg: "#c9efc6", border: "#1b1a17", text: "#1b1a17" },
-  current: { bg: "#ffc83d", border: "#1b1a17", text: "#1b1a17" },
-  next: { bg: "#ffffff", border: "#1b1a17", dashed: true, text: "#1b1a17" },
-  optional: { bg: "#ffffff", border: "#8a857a", dashed: true, text: "#5c584f" },
-  locked: { bg: "#e4dfd3", border: "#8a857a", text: "#4f4b43" },
+  mastered: { bg: "#e7f8ee", border: "#22b45a", text: "#141a3a" },
+  current: { bg: "#2f6bff", border: "#2f6bff", text: "#ffffff" },
+  next: { bg: "#ffffff", border: "#f0a400", dashed: true, text: "#141a3a" },
+  optional: { bg: "#ffffff", border: "#c9d1e6", dashed: true, text: "#6b7393" },
+  locked: { bg: "#e9edf7", border: "#dfe4f1", text: "#8a92b0" },
 };
 
 function SkillNode({ data }: NodeProps<Node<{ n: RoadmapNode }>>) {
@@ -30,11 +30,11 @@ function SkillNode({ data }: NodeProps<Node<{ n: RoadmapNode }>>) {
         width: W,
         minHeight: H,
         background: s.bg,
-        border: `3px ${s.dashed ? "dashed" : "solid"} ${s.border}`,
-        borderRadius: 12,
+        border: `2px ${s.dashed ? "dashed" : "solid"} ${s.border}`,
+        borderRadius: 16,
         padding: "6px 10px",
         color: s.text,
-        boxShadow: n.status === "current" ? "4px 4px 0 #1b1a17" : undefined,
+        boxShadow: n.status === "current" ? "0 10px 22px rgba(47,107,255,.35)" : "0 4px 12px rgba(31,54,120,.06)",
         cursor: n.status === "locked" ? "default" : "pointer",
         fontFamily: "var(--font-body)",
       }}
@@ -43,7 +43,7 @@ function SkillNode({ data }: NodeProps<Node<{ n: RoadmapNode }>>) {
       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800 }}>
         {n.status === "mastered" ? <Check size={13} strokeWidth={3.5} /> : n.status === "locked" ? <Lock size={12} /> : n.status === "current" ? <Play size={12} /> : null}
         {t.roadmap.status[n.status]}
-        {n.weak && <span style={{ marginLeft: "auto", fontSize: 10, border: "2px solid #1b1a17", borderRadius: 5, padding: "0 4px", background: "#fff" }}>{t.roadmap.weak}</span>}
+        {n.weak && <span style={{ marginLeft: "auto", fontSize: 10, borderRadius: 8, padding: "0 6px", background: "#fff4e8", color: "#c2410c" }}>{t.roadmap.weak}</span>}
       </div>
       <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.2 }}>{n.title}</div>
       <Handle type="source" position={Position.Bottom} />
@@ -70,7 +70,7 @@ export default function RoadmapGraph({ roadmap }: { roadmap: Roadmap }) {
         .forEach((p) => {
           g.setEdge(p, n.id);
           const hot = n.onPath;
-          es.push({ id: `${p}-${n.id}`, source: p, target: n.id, style: { stroke: "#1b1a17", strokeWidth: hot ? 3 : 2, opacity: hot ? 0.9 : 0.35, strokeDasharray: hot ? undefined : "6 6" } });
+          es.push({ id: `${p}-${n.id}`, source: p, target: n.id, style: { stroke: hot ? "#2f6bff" : "#8a92b0", strokeWidth: hot ? 3 : 2, opacity: hot ? 0.9 : 0.35, strokeDasharray: hot ? undefined : "6 6" } });
         }),
     );
     dagre.layout(g);
@@ -84,7 +84,7 @@ export default function RoadmapGraph({ roadmap }: { roadmap: Roadmap }) {
   const cur = nodes.find((n) => n.id === roadmap.currentId);
 
   return (
-    <div className="h-[70dvh] min-h-[460px] overflow-hidden rounded-2xl border-[3px] border-ink bg-paper">
+    <div className="card h-[70dvh] min-h-[460px] overflow-hidden">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -101,7 +101,7 @@ export default function RoadmapGraph({ roadmap }: { roadmap: Roadmap }) {
         }}
         proOptions={{ hideAttribution: true }}
       >
-        <Background gap={24} color="#e4dfd3" />
+        <Background gap={24} color="#e3e8f6" />
         <Controls showInteractive={false} />
       </ReactFlow>
     </div>

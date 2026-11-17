@@ -27,6 +27,24 @@
 6. Same URL on tablet/laptop.
 - Before the demo: run `node scripts/warm-tts.mjs` once (idempotent) and do a dry run on the demo phone (mic permission prompt!).
 
+## ★ Design update — re-skin + voxel tutors (17 Nov, evening) ✅
+Per CLAUDE.md "★ Design update" and `docs/prototypes/`:
+- **App UI = `mobile-app.html`**: light lavender/white, blue primary `#2f6bff`, Nunito 700–900, white cards r22, bottom tabs **Bosh sahifa · Darslar · Progress · Sozlamalar** (sidebar on ≥768 px). All 8 prototype screens exist: splash `/`, home `/home`, lesson `/lesson/[id]`, tutors `/tutors`, progress `/progress`, quiz style in `/diagnostic` + `/practice/[id]`, "A'lo!" success screen, settings `/settings`. Onboarding, roadmap (list + React Flow), teacher and privacy re-skinned.
+- **8 voxel tutors** (Blokbek, Agent Shox, Lola, Ziyo, Sardor, Ravshan, Diyorbek, Shadow) from `makeChar(cfg)`, ported to TypeScript for three.js r180 (`src/components/characters/voxel.ts`). Free: Blokbek, Agent Shox, Lola · 200/300/400/500 XP · Shadow = 7-day streak. Each has its own VoiceLab voice (Lola female: *Safiya*).
+- **Portraits:** `/characters/<id>_<pose>_<frame>.png` if listed in `src/config/characterRenders.json` (generated at build from `public/characters/`), else an in-browser three.js render. The team's 144 Blender renders were picked up automatically; the build also writes WebP copies (3.6 MB vs 28 MB PNG) served via `<picture>`.
+- **Lesson stage** = `board-handwriting.html` ported: classroom SVG + chalkboard + live 3D tutor (`TutorCanvas`) who faces the learner while talking, turns his back and walks along the board while writing, right arm follows the chalk tip with 2-bone IK, bends for low rows, lip-syncs from the real TTS amplitude, leans in while listening, hand-to-chin while thinking, cheers on correct answers. Phones get a board-focused crop with a 0.75× tutor.
+- **Handwriting engine** (`src/components/board/handwriting.ts`): every board command becomes single-line chalk strokes revealed at hand speed in writing order; per-glyph ±3° / 0.96–1.04 / baseline jitter; fractions stacked by hand; fraction bars shaded with chalk hatching; chalk SVG filter; chalk piece at the tip; chalk-circle highlights; erase = wipe-out. New §5b ops: `strike`, `arrow` (point or target), `tick`, `divider`, `wipe`, `circle{target}`. Writing starts 300 ms after speech. No typeset math on the board any more.
+- "Savol berish" = push-to-talk (hold, or tap-to-toggle, Space on desktop) + keyboard; barge-in engine unchanged.
+- Backend, engine, VoiceLab, learning logic: unchanged (34 vitest tests).
+
+## ❓ Unclear / assumption — design update
+- What: repo `docs/prototypes/*.html` were older than the attached versions (repo `board-handwriting.html` had no `makeChar`). - I assumed: the attached files are current and copied them over. - To change: replace the files.
+- Letters: single-stroke glyphs from **EMS Tech** (SIL OFL, via the MIT `hersheytext` package, extracted to `src/components/board/glyphs.json` by `pnpm glyphs`). It reads like teacher handwriting; the prototype's own glyph table covered only ~15 characters.
+- Subjects on the home screen map to our curriculum sections (`src/config/subjects.ts`): Algebra, Geometriya, Funksiyalar, Kasrlar, Sonlar (+ "Tez orada: Fizika"). The prototype's "Ehtimollar" has no skills in our graph yet.
+- Old characters Robo-Rayhon and Chaqmoq were replaced by the new roster; existing users with them fall back to Blokbek.
+- three.js r180 instead of the prototype's r128 (colour management on, lights ×π to match).
+- Pose `sig` exists in the Blender set but isn't used by the UI yet.
+
 ## 🔑 Team must provide / decide
 - [x] VoiceLab key — `.dev.vars` (local) + Wrangler secret on Worker `to2`.
 - [x] Base URL `https://api.voicelab.uz`, language `uz`, model `aisha-gemma-4` (from docs + live API).

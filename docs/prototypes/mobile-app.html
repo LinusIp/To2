@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>To2 — mobil ilova prototipi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Kalam:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e8edfb;--ph:#f3f6fe;--card:#fff;--ink:#141a3a;--mut:#6b7393;--line:#e3e8f6;--blue:#2f6bff;--blue2:#4d86ff;--green:#22b45a;--orange:#ff8a1f;--purple:#8a5cf6;--gold:#ffc42e}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);font-family:Nunito,system-ui,sans-serif;color:var(--ink);display:flex;justify-content:center;align-items:flex-start;gap:36px;padding:28px 16px;flex-wrap:wrap}
+.side{width:260px;display:flex;flex-direction:column;gap:8px;padding-top:10px}
+.side h1{margin:0 0 4px;font-size:26px;font-weight:900}.side h1 span{color:var(--blue)}
+.side p{margin:0 0 10px;color:var(--mut);font-weight:700;font-size:14px;line-height:1.45}
+.side button{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;font-weight:800;font-size:15px;color:#3a4266}
+.side button:hover{background:#dfe6fa}.side button[aria-current="true"]{background:#fff;color:var(--blue);box-shadow:0 4px 14px rgba(47,107,255,.12)}
+.side button i{font-style:normal;width:24px;height:24px;border-radius:7px;background:#dfe6fa;display:grid;place-items:center;font-size:12px}
+.side .note{margin-top:10px;font-size:13px;color:var(--mut);font-weight:700}
+.phone{width:390px;height:844px;border-radius:46px;background:var(--ph);box-shadow:0 30px 70px rgba(31,54,120,.22),0 0 0 10px #fff;position:relative;overflow:hidden;flex:none}
+.status{position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 28px 0 34px;font-weight:800;font-size:15px;z-index:20;pointer-events:none}
+.status.light{color:#fff}
+.scr{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
+.scr.on{display:flex;animation:in .28s ease-out}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.pad{padding:56px 18px 0}
+.scroll{flex:1;overflow-y:auto;padding:0 18px 18px}
+.scroll::-webkit-scrollbar{display:none}
+.card{background:var(--card);border-radius:22px;box-shadow:0 6px 20px rgba(31,54,120,.07)}
+.btn{all:unset;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;height:58px;border-radius:29px;background:var(--blue);color:#fff;font-weight:900;font-size:18px;box-shadow:0 10px 22px rgba(47,107,255,.35),inset 0 -3px 0 rgba(0,0,0,.12);transition:transform .1s}
+.btn:active{transform:scale(.98)}.btn:focus-visible{outline:3px solid #ffc42e;outline-offset:3px}
+.btn.white{background:#fff;color:var(--ink);box-shadow:0 10px 24px rgba(0,0,0,.18)}
+.icon-btn{all:unset;cursor:pointer;width:44px;height:44px;display:grid;place-items:center;border-radius:14px}
+.icon-btn:focus-visible{outline:3px solid var(--blue)}
+.top{display:flex;align-items:center;justify-content:space-between;height:52px}
+.title{font-size:22px;font-weight:900}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);height:84px;padding:8px 6px 22px;background:#fff;box-shadow:0 -6px 20px rgba(31,54,120,.06);flex:none}
+.tab{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;font-weight:800;color:#8a92b0}
+.tab.on{color:var(--blue)}.tab:focus-visible{outline:2px solid var(--blue);border-radius:10px}
+.bar{height:10px;border-radius:5px;background:#e6ebf8;overflow:hidden}.bar>b{display:block;height:100%;border-radius:5px;background:var(--blue)}
+img.char{display:block;pointer-events:none;user-select:none}
+/* splash */
+#s-splash{background:linear-gradient(170deg,#3f80ff 0%,#2a5fe8 55%,#1f4fd0 100%);color:#fff;align-items:center}
+.logo{font-weight:900;letter-spacing:-2px;line-height:1}
+.float{position:absolute;color:rgba(255,255,255,.9);font-weight:900}
+/* home */
+.subj{all:unset;cursor:pointer;border-radius:20px;height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#fff;font-weight:800;font-size:14px;box-shadow:inset 0 -4px 0 rgba(0,0,0,.12)}
+.subj b{font-size:28px;font-weight:900;line-height:1}
+/* lesson */
+.room{position:relative;height:300px;flex:none;overflow:hidden;background:#d9cdb6}
+.bubble{display:flex;gap:10px;align-items:center;margin:-34px 18px 0;position:relative;z-index:3;padding:12px 14px;font-weight:800;font-size:15px;line-height:1.35}
+.spk{flex:none;width:42px;height:42px;border-radius:50%;background:var(--blue);display:grid;place-items:center;box-shadow:0 6px 14px rgba(47,107,255,.35)}
+.steps{margin:14px 18px 0;padding:16px 18px;font-weight:800;font-size:15px}
+.steps .st{opacity:.35;transition:opacity .4s}.steps .st.on{opacity:1}
+.steps .m{font-family:Kalam,cursive;font-size:21px;font-weight:700;margin:2px 0 10px;color:#1c2550}
+/* chars */
+.hero{position:relative;height:250px;border-radius:24px;background:linear-gradient(160deg,#6aa0ff,#3a72ff);overflow:hidden;box-shadow:0 0 0 3px #2f6bff, 0 12px 26px rgba(47,107,255,.3)}
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.cc{all:unset;cursor:pointer;position:relative;height:190px;border-radius:20px;background:#fff;box-shadow:0 6px 18px rgba(31,54,120,.08);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.cc img{position:absolute;top:4px;left:50%;transform:translateX(-50%);width:160px}
+.cc .lb{position:relative;width:100%;padding:28px 6px 10px;text-align:center;background:linear-gradient(to top,#fff 62%,rgba(255,255,255,0))}
+.cc b{display:block;font-size:16px;font-weight:900}.cc span{font-size:12px;font-weight:700;color:var(--mut)}
+.cc.on{box-shadow:0 0 0 3px var(--blue),0 8px 20px rgba(47,107,255,.25)}
+.cc.lock img{filter:brightness(.15) saturate(0);opacity:.55}
+.cc:focus-visible{outline:3px solid var(--gold)}
+.chk{position:absolute;right:12px;top:12px;width:30px;height:30px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 4px 10px rgba(0,0,0,.15)}
+/* quiz */
+.opt{all:unset;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;gap:16px;height:62px;padding:0 14px;border-radius:18px;background:#fff;box-shadow:0 4px 14px rgba(31,54,120,.06);font-weight:800;font-size:18px;border:2px solid transparent}
+.opt i{font-style:normal;width:36px;height:36px;border-radius:12px;background:#eef2fd;display:grid;place-items:center;font-weight:900}
+.opt.on{border-color:var(--blue);background:#f0f5ff}.opt.on i{background:var(--blue);color:#fff}
+.opt.bad{border-color:#ff6b6b;animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.opt:focus-visible{outline:3px solid var(--gold)}
+/* success */
+#s-win{background:linear-gradient(170deg,#3f80ff,#1f4fd0);color:#fff;align-items:center}
+.conf{position:absolute;width:12px;height:12px;border-radius:3px;animation:fall 3.2s linear infinite}
+@keyframes fall{from{transform:translateY(-40px) rotate(0)}to{transform:translateY(860px) rotate(540deg)}}
+@keyframes pop{0%{transform:scale(.3) rotate(-20deg)}70%{transform:scale(1.1) rotate(6deg)}100%{transform:scale(1)}}
+/* settings */
+.row{all:unset;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;gap:14px;height:56px;padding:0 16px;font-weight:800;font-size:16px;width:100%}
+.row+.row{border-top:1px solid var(--line)}.row .v{margin-left:auto;color:var(--mut);font-weight:700;display:flex;align-items:center;gap:6px}
+.tg{margin-left:auto;width:50px;height:30px;border-radius:15px;background:var(--blue);position:relative;flex:none}.tg::after{content:"";position:absolute;right:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.2);transition:right .2s}
+.tg.off{background:#cdd4ea}.tg.off::after{right:23px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<nav class="side" aria-label="Ekranlar">
+  <h1>To<span>2</span></h1>
+  <p>Mobil ilova prototipi — bosib ko'ring. Barcha ekranlar ishlaydi.</p>
+  <div id="nav"></div>
+  <div class="note">Darsdagi doska qo'lda chizadi (bo'r bilan, chiziqma-chiziq).</div>
+</nav>
+
+<div class="phone" id="phone">
+  <div class="status" id="status"><span>9:41</span><span><svg width="70" height="14" viewBox="0 0 70 14" aria-hidden="true"><g fill="currentColor"><rect x="0" y="9" width="3" height="5" rx="1"/><rect x="5" y="6" width="3" height="8" rx="1"/><rect x="10" y="3" width="3" height="11" rx="1"/><rect x="15" y="0" width="3" height="14" rx="1"/><path d="M30 4a9 9 0 0 1 12 0l-1.6 1.7a6.6 6.6 0 0 0-8.8 0zM33 7.5a4.7 4.7 0 0 1 6 0L36 11z"/><rect x="48" y="1" width="20" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="50" y="3" width="15" height="8" rx="1.5"/></g></svg></span></div>
+  <!-- 1 SPLASH -->
+<section class="scr" id="s-splash" aria-label="Boshlash ekrani" data-light="1">
+  <div class="float" style="left:26px;top:300px;font-size:52px">+</div>
+  <div class="float" style="right:40px;top:250px;font-size:44px">÷</div>
+  <div class="float" style="right:30px;top:410px;font-size:56px;font-family:Georgia,serif">π</div>
+  <div class="float" style="right:70px;top:470px;font-size:40px">÷</div>
+  <div class="float" style="left:60px;top:110px;width:26px;height:26px;background:rgba(255,255,255,.18);transform:rotate(45deg)"></div>
+  <div style="margin-top:110px;text-align:center">
+    <div class="logo" style="font-size:96px;text-shadow:0 6px 0 rgba(0,0,0,.12)">To2</div>
+    <div style="font-size:20px;font-weight:800;opacity:.92;margin-top:10px;line-height:1.3">Matematika endi<br>yanada qiziqarli!</div>
+  </div>
+  <img class="char" data-render="blokbek:wave:full" alt="Blokbek qo'l silkitmoqda" style="width:330px;margin-top:6px">
+  <div style="position:absolute;left:24px;right:24px;bottom:96px"><button class="btn white" style="width:100%" data-go="home">Boshlash <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+  <button class="icon-btn" style="position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:auto;padding:0 18px;color:#fff;font-weight:800;font-size:17px" data-go="home">Kirish</button>
+</section>
+
+<!-- 2 HOME -->
+<section class="scr" id="s-home" aria-label="Bosh sahifa">
+  <div class="pad"><div class="top">
+    <div class="logo" style="font-size:36px">To<span style="color:var(--blue)">2</span></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="display:flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:20px;background:#fff;box-shadow:0 4px 12px rgba(31,54,120,.07);font-weight:900;font-size:18px"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1.5 4.5 6 6 6 12a6 6 0 0 1-12 0c0-2.6 1.3-4 2.6-5.2.2 2.3 1.3 3.4 2.4 3.4 0-3.6-1.4-6 1-10.2z" fill="#ff7a1a"/><path d="M12 12c.8 2 2.6 2.7 2.6 5a2.6 2.6 0 0 1-5.2 0c0-1.5.9-2.4 1.6-3 .1 1 .6 1.5 1 1.5 0-1.5-.6-2.5 0-3.5z" fill="#ffd23f"/></svg>12</div>
+      <button class="icon-btn" aria-label="Ustozni tanlash" data-go="chars" style="width:44px;height:44px;border-radius:50%;overflow:hidden;background:#dfe6fa;padding:0"><img class="char" data-render="cur:idle:face" alt="" style="width:44px;height:44px"></button>
+    </div></div></div>
+  <div class="scroll">
+    <button class="card" data-go="lesson" style="all:unset;cursor:pointer;display:block;box-sizing:border-box;width:100%;position:relative;height:178px;border-radius:24px;background:linear-gradient(140deg,#cfe0ff,#a9c6ff);overflow:hidden;margin-top:8px;box-shadow:0 10px 24px rgba(47,107,255,.15)">
+      <div style="position:absolute;left:20px;top:20px;width:52%">
+        <div style="font-weight:800;font-size:15px;color:#3a4a80">Bugungi dars</div>
+        <div style="font-weight:900;font-size:23px;line-height:1.15;margin-top:4px">Kvadrat tenglamalar</div>
+        <div class="bar" style="margin-top:22px;background:rgba(255,255,255,.6)"><b style="width:0%"></b></div>
+        <div style="font-weight:800;font-size:13px;color:#3a4a80;margin-top:6px">0 / 5</div>
+      </div>
+      <img class="char" data-render="cur:thumbs:half" alt="" style="position:absolute;right:-14px;bottom:-30px;width:200px">
+    </button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:22px 2px 10px"><div class="title">Fanlar</div><button class="icon-btn" style="width:auto;font-weight:800;color:var(--ink);gap:6px;display:flex">Hammasi <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      <button class="subj" data-go="lesson" style="background:linear-gradient(160deg,#4d86ff,#2f6bff)"><b>x²</b>Algebra</button>
+      <button class="subj" style="background:linear-gradient(160deg,#34cc6c,#1fa955)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l9 16H3z"/></svg>Geometriya</button>
+      <button class="subj" style="background:linear-gradient(160deg,#ffa63d,#ff8019)"><svg width="30" height="30" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><rect x="3" y="13" width="4" height="8" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>Funksiyalar</button>
+      <button class="subj" style="background:linear-gradient(160deg,#a27bff,#7c4dff)"><b>Σ</b>Ehtimollar</button>
+      <button class="subj" style="background:#e6ebf8;color:#8a92b0;box-shadow:none;grid-column:span 2">+ Tez orada: Fizika</button>
+    </div>
+    <button class="card" data-go="progress" style="all:unset;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;gap:14px;width:100%;margin-top:16px;padding:16px;border-radius:22px;background:#fff;box-shadow:0 6px 20px rgba(31,54,120,.07)">
+      <svg width="46" height="46" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v5a5 5 0 0 1-10 0z" fill="#ffc42e"/><path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3" fill="none" stroke="#f0a400" stroke-width="1.6"/><rect x="10.5" y="12.5" width="3" height="4" fill="#f0a400"/><rect x="7.5" y="16.5" width="9" height="3" rx="1" fill="#e08e00"/><path d="M12 4.5l.9 1.8 2 .2-1.5 1.3.4 2-1.8-1-1.8 1 .4-2L9.1 6.5l2-.2z" fill="#fff6d6"/></svg>
+      <div style="flex:1"><div style="font-weight:900;font-size:16px">Sizning progressingiz</div><div style="font-weight:700;font-size:13px;color:var(--mut);margin:2px 0 8px">12 / 50 dars</div><div class="bar"><b style="width:24%"></b></div></div>
+    </button>
+  </div>
+  <nav class="tabs" aria-label="Asosiy"><button class="tab on" data-go="home"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" fill="currentColor"/></svg>Bosh sahifa</button><button class="tab" data-go="lesson"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c3-1.5 5.5-1.5 8 0v15c-2.5-1.5-5-1.5-8 0zM12 5c2.5-1.5 5-1.5 8 0v15c-3-1.5-5.5-1.5-8 0z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Darslar</button><button class="tab" data-go="progress"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><rect x="4" y="12" width="4" height="8" rx="1"/><rect x="10" y="7" width="4" height="13" rx="1"/><rect x="16" y="3" width="4" height="17" rx="1"/></g></svg>Progress</button><button class="tab" data-go="settings"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></g></svg>Sozlamalar</button></nav>
+</section>
+
+<!-- 3 LESSON -->
+<section class="scr" id="s-lesson" aria-label="Dars">
+  <div class="room" id="room">
+    <svg viewBox="0 0 390 300" width="390" height="300" style="position:absolute;inset:0" aria-hidden="true">
+      <rect width="390" height="300" fill="#e3d6bd"/>
+      <rect x="-10" y="40" width="70" height="120" fill="#7a4f2c"/><rect x="-4" y="46" width="58" height="108" fill="#a8d8f2"/><rect x="-4" y="120" width="58" height="34" fill="#7ab24f"/><rect x="22" y="46" width="4" height="108" fill="#7a4f2c"/>
+      <rect x="0" y="232" width="390" height="68" fill="#1d4a73"/><rect x="0" y="226" width="390" height="8" fill="#f1e8d6"/>
+      <g fill="#2fb6c4"><rect x="8" y="227" width="6" height="6" transform="rotate(45 11 230)"/><rect x="30" y="227" width="6" height="6" transform="rotate(45 33 230)"/><rect x="52" y="227" width="6" height="6" transform="rotate(45 55 230)"/><rect x="74" y="227" width="6" height="6" transform="rotate(45 77 230)"/></g>
+      <rect x="150" y="30" width="250" height="196" fill="#7a4f2c"/>
+      <rect x="350" y="200" width="30" height="40" fill="#b5653a"/><g fill="#4f8f36"><rect x="352" y="168" width="8" height="32"/><rect x="362" y="156" width="8" height="44"/><rect x="372" y="172" width="7" height="28"/></g>
+    </svg>
+    <svg id="mini" viewBox="0 0 1000 625" width="238" height="149" style="position:absolute;left:158px;top:38px;background:#253a30" role="img" aria-label="Doska: ustoz qo'lda yozmoqda">
+      <defs><filter id="chalk" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G"/></filter></defs>
+      <g id="ink" filter="url(#chalk)"></g>
+    </svg>
+    <canvas id="lc" width="390" height="300" style="position:absolute;inset:0;width:390px;height:300px;pointer-events:none" aria-hidden="true"></canvas>
+    <div style="position:absolute;left:12px;right:12px;top:48px;display:flex;justify-content:space-between">
+      <button class="icon-btn" aria-label="Orqaga" data-go="home" style="background:rgba(255,255,255,.85)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#141a3a" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <button class="icon-btn" aria-label="Saqlash" style="background:rgba(255,255,255,.85)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#141a3a" stroke-width="2.6" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
+    </div>
+  </div>
+  <div class="card bubble"><div class="spk" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z" fill="#fff"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg></div><span id="say" aria-live="polite">Keling, tenglamani bosqichma-bosqich yechamiz.</span></div>
+  <div class="card steps" id="steps">
+    <div class="st on" data-s="0">1. Ko'paytuvchilarga ajratamiz:<div class="m">x² − 5x + 6 = (x − 2)(x − 3) = 0</div></div>
+    <div class="st" data-s="1">2. Har bir qavsni nolga tenglaymiz:<div class="m">x − 2 = 0 yoki x − 3 = 0</div></div>
+    <div class="st" data-s="2">3. Ildizlar:<div class="m" style="color:#d18a00">x = 2 yoki x = 3</div></div>
+  </div>
+  <div style="margin-top:auto;padding:0 40px 34px;display:flex;flex-direction:column;gap:10px">
+    <button class="btn" id="next">Keyingi qadam <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+  </div>
+</section>
+
+<!-- 4 CHARACTERS -->
+<section class="scr" id="s-chars" aria-label="Qahramonlar">
+  <div class="pad"><div class="top"><button class="icon-btn" aria-label="Orqaga" data-go="home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#141a3a" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="title">Qahramonlar</div><div style="width:44px"></div></div></div>
+  <div class="scroll">
+    <div class="hero" id="hero">
+      <img class="char" id="heroImg" data-render="cur:wave:half" alt="" style="position:absolute;left:50%;transform:translateX(-50%);top:14px;width:250px">
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:14px;text-align:center;color:#fff;background:linear-gradient(to top,rgba(36,84,220,.95) 55%,rgba(36,84,220,0))"><div id="heroName" style="font-weight:900;font-size:24px">Blokbek</div><div id="heroTag" style="font-weight:700;font-size:13px;opacity:.9">Matematika ustasi</div></div>
+      <div class="chk" style="right:16px;top:auto;bottom:22px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2f6bff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+    </div>
+    <div class="cg" id="cg" role="group" aria-label="Ustozlar"></div>
+  </div>
+</section>
+
+<!-- 5 PROGRESS -->
+<section class="scr" id="s-progress" aria-label="Progress">
+  <div class="pad"><div class="top"><button class="icon-btn" aria-label="Orqaga" data-go="home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#141a3a" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div class="title">Progress</div><div style="width:44px"></div></div></div>
+  <div class="scroll">
+    <div class="card" style="padding:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:16px;background:#f6f8fe"><svg width="40" height="40" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6.5 7 .8-5.2 4.8 1.5 7L12 17.6 5.7 21l1.5-7L2 9.3l7-.8z" fill="#ffc42e" stroke="#f0a400" stroke-width="1"/></svg><div><div style="font-weight:900;font-size:28px;line-height:1">12</div><div style="font-weight:700;font-size:13px;color:var(--mut)">daraja</div></div></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:16px;background:#f6f8fe"><svg width="36" height="36" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1.5 4.5 6 6 6 12a6 6 0 0 1-12 0c0-2.6 1.3-4 2.6-5.2.2 2.3 1.3 3.4 2.4 3.4 0-3.6-1.4-6 1-10.2z" fill="#ff7a1a"/></svg><div><div style="font-weight:900;font-size:28px;line-height:1">320</div><div style="font-weight:700;font-size:13px;color:var(--mut)">tajriba ochkosi</div></div></div>
+      </div>
+      <div class="bar" style="margin-top:16px"><b style="width:24%"></b></div>
+      <div style="text-align:center;font-weight:900;margin-top:8px">12 / 50 dars</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:22px 2px 10px"><div style="font-weight:900;font-size:18px">Mavzular bo'yicha</div><span style="font-weight:800;color:var(--blue);font-size:14px">Hammasi →</span></div>
+    <div id="topics" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+  <nav class="tabs" aria-label="Asosiy"><button class="tab" data-go="home"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" fill="currentColor"/></svg>Bosh sahifa</button><button class="tab" data-go="lesson"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c3-1.5 5.5-1.5 8 0v15c-2.5-1.5-5-1.5-8 0zM12 5c2.5-1.5 5-1.5 8 0v15c-3-1.5-5.5-1.5-8 0z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Darslar</button><button class="tab on" data-go="progress"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><rect x="4" y="12" width="4" height="8" rx="1"/><rect x="10" y="7" width="4" height="13" rx="1"/><rect x="16" y="3" width="4" height="17" rx="1"/></g></svg>Progress</button><button class="tab" data-go="settings"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></g></svg>Sozlamalar</button></nav>
+</section>
+
+<!-- 6 QUIZ -->
+<section class="scr" id="s-quiz" aria-label="Savol">
+  <div class="pad"><div class="top" style="gap:14px"><button class="icon-btn" aria-label="Yopish" data-go="home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#141a3a" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="bar" style="flex:1"><b style="width:60%"></b></div><div style="font-weight:800;color:var(--mut)">3 / 5</div></div></div>
+  <div class="scroll" style="display:flex;flex-direction:column;gap:12px">
+    <div class="card" style="padding:20px;margin-top:6px"><div style="font-weight:900;font-size:19px">Tenglamaning ildizlarini toping:</div><div style="font-family:Kalam,cursive;font-size:28px;text-align:center;margin-top:10px">x² − 4x − 5 = 0</div></div>
+    <div id="opts" role="radiogroup" aria-label="Javoblar" style="display:flex;flex-direction:column;gap:12px"></div>
+    <div id="hint" style="display:none;font-weight:800;color:#c2410c;background:#fff4e8;border-radius:14px;padding:12px 14px;font-size:14px">Maslahat: ko'paytmasi −5, yig'indisi 4 bo'lgan ikki sonni toping.</div>
+  </div>
+  <div style="padding:10px 24px 34px"><button class="btn" style="width:100%" id="check">Tekshirish</button></div>
+</section>
+
+<!-- 7 SUCCESS -->
+<section class="scr" id="s-win" aria-label="To'g'ri javob" data-light="1">
+  <div id="confetti" aria-hidden="true"></div>
+  <svg width="150" height="150" viewBox="0 0 24 24" style="margin-top:90px;animation:pop .7s ease-out both;filter:drop-shadow(0 10px 18px rgba(0,0,0,.25))" aria-hidden="true"><path d="M12 2l3 6.5 7 .8-5.2 4.8 1.5 7L12 17.6 5.7 21l1.5-7L2 9.3l7-.8z" fill="#ffc42e" stroke="#ffde7a" stroke-width=".6"/><path d="M12 5l1.8 4 4.3.5-3.2 3" fill="none" stroke="#fff3c4" stroke-width=".8" stroke-linecap="round"/></svg>
+  <div style="font-weight:900;font-size:46px;margin-top:6px">A'lo!</div>
+  <div style="font-weight:800;font-size:19px;opacity:.9">To'g'ri javob! +20 XP</div>
+  <img class="char" data-render="cur:cheer:full" alt="Ustoz xursand" style="width:300px;margin-top:6px">
+  <div style="position:absolute;left:28px;right:28px;bottom:40px"><button class="btn" style="width:100%;background:#2f6bff;box-shadow:0 10px 22px rgba(0,0,0,.25)" data-go="quiz">Keyingi savol</button></div>
+</section>
+
+<!-- 8 SETTINGS -->
+<section class="scr" id="s-settings" aria-label="Sozlamalar">
+  <div class="pad"><div class="top" style="justify-content:flex-start;gap:8px"><button class="icon-btn" aria-label="Orqaga" data-go="home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#141a3a" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><div class="title">Sozlamalar</div></div></div>
+  <div class="scroll" style="display:flex;flex-direction:column;gap:14px">
+    <button class="card row" style="height:86px;margin-top:6px" data-go="chars"><span style="width:58px;height:58px;border-radius:16px;overflow:hidden;background:#dfe6fa;flex:none"><img class="char" data-render="cur:idle:face" alt="" style="width:58px;height:58px"></span><span><span style="display:block;font-size:19px;font-weight:900">Aziz</span><span style="font-size:14px;color:var(--mut);font-weight:700">@aziz_uz</span></span><span class="v"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></button>
+    <div class="card" style="overflow:hidden">
+      <button class="row"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#141a3a" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>Til<span class="v">O'zbek <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></button>
+      <button class="row" role="switch" aria-checked="true" data-tg><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#141a3a" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg>Ovoz<span class="tg"></span></button>
+      <button class="row" role="switch" aria-checked="true" data-tg><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#141a3a" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>Bildirishnomalar<span class="tg"></span></button>
+    </div>
+    <div class="card" style="overflow:hidden">
+      <button class="row" data-go="chars"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#141a3a" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Ustozni almashtirish<span class="v"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></button>
+      <button class="row"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#141a3a" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7M12 17h.01"/></svg>Yordam<span class="v"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></button>
+      <button class="row"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#141a3a" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg>Biz haqimizda<span class="v"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></button>
+    </div>
+  </div>
+  <nav class="tabs" aria-label="Asosiy"><button class="tab" data-go="home"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" fill="currentColor"/></svg>Bosh sahifa</button><button class="tab" data-go="lesson"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c3-1.5 5.5-1.5 8 0v15c-2.5-1.5-5-1.5-8 0zM12 5c2.5-1.5 5-1.5 8 0v15c-3-1.5-5.5-1.5-8 0z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Darslar</button><button class="tab" data-go="progress"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><rect x="4" y="12" width="4" height="8" rx="1"/><rect x="10" y="7" width="4" height="13" rx="1"/><rect x="16" y="3" width="4" height="17" rx="1"/></g></svg>Progress</button><button class="tab on" data-go="settings"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></g></svg>Sozlamalar</button></nav>
+</section>
+
+</div>
+
+<script>
+window.TO2_RENDERS = (() => {
+  const ids = { blokbek: 'blokbek', shox: 'agent-shox', ziyo: 'ziyo', lola: 'lola', sardor: 'sardor', ravshan: 'ravshan', diyorbek: 'diyorbek', shadow: 'shadow' };
+  const m = {};
+  for (const [id, file] of Object.entries(ids)) for (const p of ['idle', 'wave', 'point', 'thumbs', 'cheer']) for (const f of ['full', 'half', 'face']) m[`${id}_${p}_${f}`] = `../../public/characters/${file}_sig_${f}.png`;
+  return m;
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const NS = 'http://www.w3.org/2000/svg';
+  let speed = 1, runId = 0, paused = false;
+  const ink = $('ink');
+  // ---------- characters (one voxel rig, many configs) ----------
+  const XP = 340;
+  const CHARS = [
+    { id: 'blokbek', name: 'Blokbek', tag: 'Matematika ustasi', hi: "Salom! Men Blokbek. Matematikani blokma-blok quramiz!", skin: '#c98b5e', hair: '#2b1d14', hairStyle: 'messy', top: { c: '#24262d', side: '#1b1d22', kind: 'hoodie', print: 'To2', hem: true, cuff: '#e0873a' }, pants: ['#34446a', '#3d5080'], shoes: '#f2f2f2', sole: '#3b6fd9', acc: ['neckphones'], need: 0 },
+    { id: 'shox', name: 'Agent Shox', tag: 'Aqlli strateg', hi: "Agent Shox. Har bir masala — bu missiya. Rejani tuzamiz.", skin: '#d9a273', hair: '#17171a', hairStyle: 'slick', eyes: 'sun', top: { c: '#2a2d33', side: '#1f2126', kind: 'jacket', collar: '#3a3e46' }, pants: ['#26282e', '#2d3037'], shoes: '#1a1a1c', sole: '#444', acc: [], need: 0 },
+    { id: 'ziyo', name: 'Ziyo', tag: 'Bilimga chanqoq', hi: "Men Ziyo! Doim so'rayman: nega? Keling, birga bilib olamiz!", skin: '#d39a6c', hair: '#2b1d14', hairStyle: 'hood', hood: '#3c9a3c', top: { c: '#3c9a3c', side: '#2f7d2f', kind: 'hoodie', hem: false }, pants: ['#2f3a2f', '#36433a'], shoes: '#f2f2f2', sole: '#3c9a3c', acc: ['hoodup', 'headphones'], need: 200 },
+    { id: 'lola', name: 'Lola', tag: 'Mehribon tutor', hi: "Salom, men Lola. Xato qilsang ham qo'rqma — birga tushunamiz.", skin: '#d9a273', hair: '#241812', hairStyle: 'long', female: true, top: { c: '#f1ede6', side: '#d9d3c8', kind: 'vest', vest: '#e0457b' }, pants: ['#34446a', '#3d5080'], shoes: '#ffffff', sole: '#e0457b', acc: ['longhair', 'flower'], need: 0 },
+    { id: 'sardor', name: 'Sardor', tag: 'Mantiq ustasi', hi: "Sardor. Qisqa va aniq: mantiq bilan yechamiz.", skin: '#c98b5e', hair: '#1e1611', hairStyle: 'cap', cap: '#1d1f24', top: { c: '#1f2a3a', side: '#18212e', kind: 'jacket', collar: '#2a374b' }, pants: ['#23262c', '#2a2e35'], shoes: '#1a1a1c', sole: '#666', acc: ['cap'], need: 300 },
+    { id: 'ravshan', name: 'Ravshan', tag: 'Hisobchi', hi: "Ravshan — tez hisob ustasi. Sizga sirli usullarni o'rgataman!", skin: '#e0b08a', hair: '#9a4a22', hairStyle: 'volume', top: { c: '#d9d4cc', side: '#bdb7ad', kind: 'jacket', collar: '#ffffff' }, pants: ['#4a4f5a', '#555b67'], shoes: '#2a2a2a', sole: '#9a4a22', acc: ['headphones'], need: 400 },
+    { id: 'diyorbek', name: 'Diyorbek', tag: 'Ilmiy yordamchi', hi: "Diyorbek. Har bir formulaning ortida haqiqiy hayot bor.", skin: '#c98b5e', hair: '#2b1d14', hairStyle: 'messy', eyes: 'glasses', top: { c: '#f0efea', side: '#d6d4cc', kind: 'labcoat' }, pants: ['#2b2d33', '#33363d'], shoes: '#1a1a1c', sole: '#777', acc: ['labcoat'], need: 500 },
+    { id: 'shadow', name: 'Shadow', tag: 'Maxfiy qahramon', hi: "…", skin: '#15111d', hair: '#2a2238', hairStyle: 'hood', hood: '#2a2238', eyes: 'glow', top: { c: '#2a2238', side: '#1f192b', kind: 'hoodie' }, pants: ['#1f1a28', '#241e2f'], shoes: '#1a1622', sole: '#7b4dff', acc: ['hoodup', 'glow'], need: 'streak' }
+  ];
+  const unlocked = c => c.need === 0 || (typeof c.need === 'number' && XP >= c.need);
+  const lockText = c => c.need === 'streak' ? '7 kunlik seriya' : `${c.need} XP · ${c.need - XP} qoldi`;
+
+  const px = (g, col, x, y, w = 1, h = 1) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  function canvasTex(w, h, paint) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d'); g.imageSmoothingEnabled = false; paint(g);
+    const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.encoding = THREE.sRGBEncoding;
+    t.userData = { g }; return t;
+  }
+  function paintFace(g, f, mouth, blink, look) {
+    const H = f.hair, S = f.skin;
+    px(g, S, 0, 0, 16, 16);
+    if (f.eyes === 'glow') { px(g, '#15111d', 0, 0, 16, 16); px(g, f.hood, 0, 0, 16, 3); px(g, f.hood, 0, 0, 2, 16); px(g, f.hood, 14, 0, 2, 16); px(g, '#b26bff', 4, 7, 3, 2); px(g, '#b26bff', 9, 7, 3, 2); px(g, '#e3c7ff', 5, 7, 1, 1); px(g, '#e3c7ff', 10, 7, 1, 1); return; }
+    const st = f.hairStyle;
+    if (st === 'messy' || st === 'volume') { px(g, H, 0, 0, 16, 3); px(g, H, 0, 3, 5, 2); px(g, H, 7, 3, 3, 1); px(g, H, 11, 3, 5, 2); px(g, H, 0, 5, 1, 4); px(g, H, 15, 5, 1, 4); }
+    if (st === 'slick') { px(g, H, 0, 0, 16, 4); px(g, H, 0, 4, 1, 3); px(g, H, 15, 4, 1, 3); }
+    if (st === 'long') { px(g, H, 0, 0, 16, 3); px(g, H, 0, 3, 7, 2); px(g, H, 10, 3, 6, 1); px(g, H, 0, 3, 2, 13); px(g, H, 14, 3, 2, 13); }
+    if (st === 'cap') { px(g, f.cap, 0, 0, 16, 4); px(g, '#0f1013', 0, 4, 16, 1); px(g, H, 0, 5, 1, 3); px(g, H, 15, 5, 1, 3); }
+    if (st === 'hood') { px(g, f.hood, 0, 0, 16, 3); px(g, f.hood, 0, 0, 2, 16); px(g, f.hood, 14, 0, 2, 16); px(g, H, 2, 3, 12, 1); px(g, H, 2, 4, 3, 1); }
+    // brows
+    if (f.eyes !== 'sun') { px(g, H, 3, 5, 3, 1); px(g, H, 10, 5 - (look === 'listen' ? 1 : 0), 3, 1); }
+    // eyes
+    if (f.eyes === 'sun') { px(g, '#0e0e10', 2, 6, 12, 3); px(g, '#4a4f5a', 3, 6, 2, 1); px(g, '#4a4f5a', 10, 6, 2, 1); }
+    else if (blink) { px(g, '#7a4c2e', 3, 7, 3, 1); px(g, '#7a4c2e', 10, 7, 3, 1); }
+    else {
+      px(g, '#ffffff', 3, 6, 3, 3); px(g, '#ffffff', 10, 6, 3, 3);
+      const o = look === 'board' ? 1 : 0;
+      px(g, '#1d1a1a', 4 + o, 6, 2, 3); px(g, '#1d1a1a', 11 + o, 6, 2, 3);
+      px(g, '#ffffff', 4 + o, 6, 1, 1); px(g, '#ffffff', 11 + o, 6, 1, 1);
+      if (f.female) { px(g, '#1d1a1a', 2, 6, 1, 1); px(g, '#1d1a1a', 13, 6, 1, 1); }
+    }
+    if (f.eyes === 'glasses') { const k = '#141414'; px(g, k, 2, 5, 5, 1); px(g, k, 2, 9, 5, 1); px(g, k, 2, 5, 1, 5); px(g, k, 6, 5, 1, 5); px(g, k, 9, 5, 5, 1); px(g, k, 9, 9, 5, 1); px(g, k, 9, 5, 1, 5); px(g, k, 13, 5, 1, 5); px(g, k, 7, 6, 2, 1); }
+    px(g, 'rgba(0,0,0,.18)', 7, 9, 2, 2);
+    const L = f.female ? '#9b3048' : '#5a2318';
+    if (mouth === 0) { px(g, L, 5, 12, 6, 1); px(g, L, 4, 11, 1, 1); px(g, L, 11, 11, 1, 1); }
+    else { const h = [0, 2, 3, 3][mouth], w = [0, 5, 6, 8][mouth], x = 8 - w / 2; px(g, L, x, 11, w, h); px(g, '#ffffff', x, 11, w, 1); if (mouth > 1) px(g, '#c0504a', x + 1, 11 + h - 1, w - 2, 1); }
+  }
+
+  let scene3;
+  function makeChar(cfg, silhouette) {
+    const SIL = new THREE.MeshLambertMaterial({ color: new THREE.Color('#2b2530').convertSRGBToLinear() });
+    const M = c => silhouette ? SIL : new THREE.MeshLambertMaterial({ color: new THREE.Color(c).convertSRGBToLinear() });
+    const MT = t => silhouette ? SIL : new THREE.MeshLambertMaterial({ map: t });
+    const box = (w, h, d, m, x, y, z, parent) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, z); parent.add(b); return b; };
+    const root = new THREE.Group(), lean = new THREE.Group(), body = new THREE.Group();
+    lean.rotation.x = 0.12; root.add(lean); lean.add(body); scene3.add(root);
+    const legL = new THREE.Group(); legL.position.set(-38, 232, 0); body.add(legL);
+    const legR = new THREE.Group(); legR.position.set(38, 232, 0); body.add(legR);
+    [[legL, cfg.pants[0]], [legR, cfg.pants[1]]].forEach(([lg, col]) => { box(72, 204, 72, M(col), 0, -102, 0, lg); box(78, 28, 90, M(cfg.shoes), 0, -216, 6, lg); box(80, 8, 92, M(cfg.sole), 0, -228, 6, lg); });
+    const tp = cfg.top;
+    const front = canvasTex(32, 48, g => {
+      px(g, tp.c, 0, 0, 32, 48);
+      if (tp.kind === 'hoodie') { px(g, 'rgba(255,255,255,.06)', 0, 0, 32, 3); px(g, '#e8e6e0', 12, 2, 1, 9); px(g, '#e8e6e0', 19, 2, 1, 9); px(g, 'rgba(0,0,0,.18)', 6, 34, 20, 6); }
+      if (tp.kind === 'jacket') { px(g, tp.collar, 10, 0, 12, 6); px(g, 'rgba(0,0,0,.35)', 15, 0, 2, 48); px(g, 'rgba(0,0,0,.18)', 3, 30, 7, 2); px(g, 'rgba(0,0,0,.18)', 22, 30, 7, 2); }
+      if (tp.kind === 'vest') { px(g, tp.vest, 0, 0, 10, 48); px(g, tp.vest, 22, 0, 10, 48); px(g, '#ffffff', 10, 0, 12, 48); px(g, 'rgba(0,0,0,.12)', 15, 6, 2, 30); }
+      if (tp.kind === 'labcoat') { px(g, '#2b2d33', 12, 0, 8, 48); px(g, '#d6d4cc', 10, 0, 2, 20); px(g, '#d6d4cc', 20, 0, 2, 20); px(g, '#3b6fd9', 23, 10, 3, 4); }
+      if (tp.print) { px(g, '#efece4', 9, 20, 1, 6); px(g, '#efece4', 9, 20, 2, 1); px(g, '#efece4', 9, 25, 2, 1); g.fillStyle = '#efece4'; g.font = 'bold 8px monospace'; g.textBaseline = 'top'; g.fillText(tp.print, 12, 19); }
+    });
+    const back = canvasTex(32, 48, g => { px(g, tp.c, 0, 0, 32, 48); if (tp.kind === 'hoodie') { px(g, 'rgba(255,255,255,.06)', 4, 0, 24, 14); px(g, 'rgba(0,0,0,.2)', 4, 0, 24, 2); } if (tp.kind === 'vest') { px(g, tp.vest, 0, 0, 32, 48); } });
+    const side = M(tp.side);
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(184, 238, 104), [side, side, M(tp.c), M(tp.c), MT(front), MT(back)]); torso.position.set(0, 350, 0); body.add(torso);
+    if (tp.hem) { const hemT = canvasTex(24, 2, g => { const c = ['#e0873a', '#f2c94c', '#a8411a', '#e0873a']; for (let i = 0; i < 24; i++) px(g, c[i % 4], i, 0, 1, 2); }); box(188, 24, 108, MT(hemT), 0, 243, 0, body); }
+    if (cfg.acc.includes('labcoat')) { box(92, 90, 108, M(tp.c), -47, 200, 0, body); box(92, 90, 108, M(tp.c), 47, 200, 0, body); }
+    if (cfg.acc.includes('neckphones')) { box(162, 16, 112, M('#1aa3b8'), 0, 478, 0, body); box(24, 36, 40, M('#0e6f80'), -88, 488, 0, body); box(24, 36, 40, M('#0e6f80'), 88, 488, 0, body); }
+    // head
+    const head = new THREE.Group(); head.position.set(0, 548, 0); body.add(head);
+    const faceT = canvasTex(16, 16, g => paintFace(g, cfg, 0, false, 'learner'));
+    const H = cfg.hair, st = cfg.hairStyle;
+    const sideT = canvasTex(16, 16, g => {
+      if (st === 'hood' || cfg.eyes === 'glow') { px(g, cfg.hood, 0, 0, 16, 16); return; }
+      px(g, cfg.skin, 0, 0, 16, 16);
+      if (st === 'long') { px(g, H, 0, 0, 16, 16); px(g, cfg.skin, 7, 6, 3, 4); return; }
+      if (st === 'cap') { px(g, cfg.cap, 0, 0, 16, 4); px(g, H, 0, 4, 8, 3); }
+      else { px(g, H, 0, 0, 16, 5); px(g, H, 0, 5, 9, 3); px(g, H, 0, 8, 4, 4); }
+      px(g, 'rgba(0,0,0,.12)', 7, 8, 1, 2);
+    });
+    const backT = canvasTex(16, 16, g => { px(g, st === 'hood' ? cfg.hood : st === 'cap' ? cfg.cap : H, 0, 0, 16, 16); if (st !== 'hood' && st !== 'long') { px(g, H, 0, 4, 16, 10); px(g, cfg.skin, 3, 15, 10, 1); } px(g, 'rgba(255,255,255,.06)', 3, 3, 4, 1); });
+    const topT = canvasTex(16, 16, g => { px(g, st === 'hood' ? cfg.hood : st === 'cap' ? cfg.cap : H, 0, 0, 16, 16); px(g, 'rgba(255,255,255,.07)', 3, 3, 4, 2); });
+    const sideM = MT(sideT);
+    head.add(new THREE.Mesh(new THREE.BoxGeometry(150, 150, 150), [sideM, sideM, MT(topT), M(cfg.skin), MT(faceT), MT(backT)]));
+    const hairM = M(H), hairM2 = M(cfg.hairStyle === 'volume' ? '#b4592b' : '#3a2719');
+    if (st === 'messy') { box(52, 30, 60, hairM, -46, 84, 30, head); box(58, 40, 70, hairM2, 6, 92, 0, head); box(50, 28, 60, hairM, 50, 84, -20, head); box(48, 26, 50, hairM2, -30, 86, -46, head); }
+    if (st === 'volume') { box(160, 40, 160, hairM, 0, 92, -4, head); box(60, 36, 70, hairM2, -40, 118, 20, head); box(70, 30, 60, hairM, 36, 116, -30, head); box(30, 60, 150, hairM, -82, 40, -4, head); box(30, 60, 150, hairM, 82, 40, -4, head); }
+    if (st === 'slick') { box(156, 18, 156, hairM, 0, 82, -2, head); }
+    if (st === 'long') { box(156, 16, 156, hairM, 0, 82, 0, head); }
+    if (cfg.acc.includes('longhair')) { box(158, 160, 26, hairM, 0, -40, -84, head); box(16, 130, 60, hairM, -82, -24, -40, head); box(16, 130, 60, hairM, 82, -24, -40, head); }
+    if (cfg.acc.includes('flower')) { box(22, 22, 22, M('#ff8fb1'), -74, 58, 52, head); box(10, 10, 24, M('#ffd85c'), -74, 58, 54, head); }
+    if (cfg.acc.includes('hoodup')) { box(168, 168, 150, M(cfg.hood), 0, 6, -16, head); }
+    if (cfg.acc.includes('headphones')) { box(170, 14, 34, M('#2a2d33'), 0, 88, 0, head); box(24, 50, 50, M('#1d1f24'), -88, 6, 0, head); box(24, 50, 50, M('#1d1f24'), 88, 6, 0, head); }
+    if (cfg.acc.includes('cap')) { box(158, 34, 158, M(cfg.cap), 0, 66, 0, head); box(130, 10, 74, M(cfg.cap), 0, 52, 104, head); }
+    if (cfg.acc.includes('glow') && !silhouette) { const gm = new THREE.MeshBasicMaterial({ color: 0xc58bff }); box(26, 12, 4, gm, -28, -6, 77, head); box(26, 12, 4, gm, 28, -6, 77, head); }
+    if (silhouette) { const q = new THREE.MeshBasicMaterial({ color: 0x6b6375 }); box(14, 14, 4, q, -28, 0, 77, head); box(14, 14, 4, q, 28, 0, 77, head); }
+    function arm(xs, chalk) {
+      const sh = new THREE.Group(); sh.position.set(xs, 455, 0); body.add(sh);
+      box(54, 150, 64, M(tp.kind === 'vest' ? '#f1ede6' : tp.c), 0, -70, 0, sh);
+      const el = new THREE.Group(); el.position.set(0, -145, 0); sh.add(el);
+      box(50, 112, 60, M(tp.kind === 'vest' ? '#f1ede6' : tp.c), 0, -52, 0, el);
+      if (tp.cuff) box(52, 16, 62, M(tp.cuff), 0, -96, 0, el);
+      box(50, 44, 56, M(cfg.skin === '#15111d' ? '#2a2238' : cfg.skin), 0, -128, 0, el);
+      let ch = null; if (chalk) { ch = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 36, 8), M('#f4f1e8')); ch.position.set(0, -158, 12); el.add(ch); }
+      return { sh, el, chalk: ch };
+    }
+    return { cfg, root, body, head, legL, legR, armP: arm(117, false), armW: arm(-117, !silhouette), faceT, mouth: -1, blinkOn: false, look: '', blinkAt: 0, hop: 0 };
+  }
+
+
+  // ---------- handwriting ----------
+  const G = {
+    '0': { w: 60, s: ['M30,2 C10,2 4,30 4,52 C4,78 14,98 30,98 C46,98 56,78 56,50 C56,24 48,2 30,2'] },
+    '1': { w: 44, s: ['M10,22 L30,2 L30,98'] },
+    '2': { w: 60, s: ['M6,24 C8,8 20,2 30,2 C44,2 54,12 54,26 C54,44 30,62 6,98 L56,98'] },
+    '3': { w: 60, s: ['M8,12 C16,3 24,2 32,2 C46,2 54,12 54,24 C54,38 42,46 28,48 C44,48 56,58 56,72 C56,88 44,98 30,98 C20,98 10,94 4,86'] },
+    '5': { w: 60, s: ['M52,2 L12,2 L8,44 C16,38 24,36 32,36 C46,36 56,48 56,66 C56,84 44,98 28,98 C18,98 10,94 4,88'] },
+    '6': { w: 60, s: ['M50,6 C42,2 36,2 32,2 C14,2 6,30 6,58 C6,82 16,98 32,98 C48,98 56,84 56,70 C56,54 46,44 32,44 C20,44 10,52 6,62'] },
+    'x': { w: 56, s: ['M6,42 C20,58 34,80 50,98', 'M50,42 C36,58 20,80 6,98'] },
+    '+': { w: 60, s: ['M30,42 L30,90', 'M6,66 L54,66'] },
+    '−': { w: 60, s: ['M6,66 L54,66'] },
+    '=': { w: 60, s: ['M6,56 L54,56', 'M6,78 L54,78'] },
+    '(': { w: 36, s: ['M32,0 C10,24 10,76 32,100'] },
+    ')': { w: 36, s: ['M4,0 C26,24 26,76 4,100'] },
+    '·': { w: 24, s: ['M12,64 L12.5,68'] },
+    'y': { w: 54, s: ['M6,42 L28,90', 'M50,42 L22,112 C18,122 10,122 6,116'] },
+    'o': { w: 56, s: ['M28,42 C12,42 6,58 6,70 C6,86 16,98 28,98 C42,98 50,84 50,68 C50,52 42,42 28,42'] },
+    'k': { w: 52, s: ['M8,0 L8,98', 'M46,46 L10,76 L48,98'] },
+    'i': { w: 26, s: ['M13,44 L13,98', 'M13,20 L13.5,25'] },
+    ' ': { w: 30, s: [] }
+  };
+  const SUP = { '²': '2' };
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const el = (tag, a) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); return e; };
+
+  async function sleep(ms, id, ch = 'main') {
+    let left = ms / speed;
+    while (left > 0) {
+      if (id !== runId) return;
+      const step = Math.min(40, left);
+      await new Promise(r => setTimeout(r, step));
+      if (!(ch === 'main' && paused)) left -= step;
+    }
+  }
+
+  function write(str, x, y, size, color) {
+    const s = size / 100, out = []; let cx = x;
+    for (const ch of str) {
+      const sup = SUP[ch], g = G[sup || ch]; if (!g) continue;
+      const sc = (sup ? s * .55 : s) * rnd(.96, 1.04);
+      const gy = y - 100 * sc - (sup ? size * .55 : 0) + rnd(-2, 2) * s, rot = rnd(-3, 3);
+      for (const d of g.s) out.push(el('path', { d, fill: 'none', stroke: color, 'stroke-width': size > 50 ? 5 : 4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'vector-effect': 'non-scaling-stroke', 'data-sc': sc.toFixed(4), transform: `translate(${cx.toFixed(1)},${gy.toFixed(1)}) rotate(${rot.toFixed(2)},${g.w / 2},50) scale(${sc.toFixed(4)})` }));
+      cx += (g.w + 10) * (sup ? s * .55 : s);
+    }
+    out.endX = cx; return out;
+  }
+  const P = (d, c, w = 4) => el('path', { d, fill: 'none', stroke: c, 'stroke-width': w, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+  const line = (x1, y1, x2, y2, c, w = 4) => [P(`M${x1},${y1} Q${(x1 + x2) / 2 + rnd(-4, 4)},${(y1 + y2) / 2 + rnd(-4, 4)} ${x2},${y2}`, c, w)];
+  function circle(cx, cy, rx, ry, c) {
+    let d = '', n = 46, st = rnd(-.6, -.2);
+    for (let i = 0; i <= n; i++) { const t = st + i / n * Math.PI * 2.18, j = 1 + Math.sin(i * .7) * .025 + rnd(-.012, .012); d += (i ? ' L' : 'M') + (cx + Math.cos(t) * rx * j).toFixed(1) + ',' + (cy + Math.sin(t) * ry * j * (1 + i / n * .06)).toFixed(1); }
+    return [P(d, c)];
+  }
+  function arrow(x1, y1, x2, y2, bend, c) {
+    const mx = (x1 + x2) / 2 + bend, my = (y1 + y2) / 2 - bend * .3, a = Math.atan2(y2 - my, x2 - mx), L = 18;
+    return [P(`M${x1},${y1} Q${mx},${my} ${x2},${y2}`, c), P(`M${x2 - L * Math.cos(a - .45)},${y2 - L * Math.sin(a - .45)} L${x2},${y2} L${x2 - L * Math.cos(a + .45)},${y2 - L * Math.sin(a + .45)}`, c)];
+  }
+  const tick = (x, y, c) => [P(`M${x},${y} L${x + 14},${y + 18} L${x + 44},${y - 26}`, c, 6)];
+
+
+  // ---------- offscreen renders of the voxel characters ----------
+  let curId = 'blokbek';
+  const cache = {};
+  let R = null;
+  function initR() {
+    if (!window.THREE || R) return !!R;
+    const c = document.createElement('canvas');
+    const ren = new THREE.WebGLRenderer({ canvas: c, alpha: true, antialias: true, preserveDrawingBuffer: true });
+    ren.outputEncoding = THREE.sRGBEncoding; ren.toneMapping = THREE.ACESFilmicToneMapping; ren.toneMappingExposure = 1.08;
+    ren.setPixelRatio(2);
+    R = { ren };
+    return true;
+  }
+  const FRAMES = {
+    full: { w: 300, h: 380, fov: 24, pos: [-420, 470, 1950], at: [0, 345, 0] },
+    half: { w: 300, h: 300, fov: 22, pos: [-330, 600, 1500], at: [0, 470, 0] },
+    face: { w: 120, h: 120, fov: 12, pos: [-150, 600, 1050], at: [0, 548, 0] }
+  };
+  function pose(ch, p) {
+    const { armP, armW, body } = ch;
+    body.rotation.y = p === 'cheer' ? -0.15 : -0.32;
+    armP.sh.rotation.z = 0.08; armP.el.rotation.z = 0.05; armW.sh.rotation.z = -0.06; armW.el.rotation.z = -0.05;
+    if (p === 'wave') { armP.sh.rotation.z = 2.7; armP.el.rotation.z = 0.45; }
+    if (p === 'point') { armP.sh.rotation.z = 1.55; armP.el.rotation.z = 0.12; }
+    if (p === 'thumbs') { armP.sh.rotation.z = 0.55; armP.el.rotation.z = 2.1; }
+    if (p === 'cheer') { armP.sh.rotation.z = 2.75; armP.el.rotation.z = 0.3; armW.sh.rotation.z = -2.75; armW.el.rotation.z = -0.3; }
+    if (armW.chalk) armW.chalk.visible = false;
+    const happy = p === 'wave' || p === 'cheer';
+    paintFace(ch.faceT.userData.g, ch.cfg, happy ? 2 : 0, false, 'learner'); ch.faceT.needsUpdate = true;
+  }
+  function render(id, p, f) {
+    const key = id + ':' + p + ':' + f;
+    if (cache[key]) return cache[key];
+    if (!initR()) return '';
+    const cfg = CHARS.find(c => c.id === id), F = FRAMES[f];
+    scene3 = new THREE.Scene();
+    scene3.add(new THREE.HemisphereLight(0xfff4e6, 0x8a7ab0, 1.0));
+    const key1 = new THREE.DirectionalLight(0xfff0dc, 1.35); key1.position.set(-800, 1100, 1200); scene3.add(key1);
+    const fill = new THREE.DirectionalLight(0x9fbcff, 0.45); fill.position.set(900, 300, 700); scene3.add(fill);
+    const rim = new THREE.DirectionalLight(0xffffff, 0.6); rim.position.set(500, 700, -900); scene3.add(rim);
+    const ch = makeChar(cfg, false);
+    pose(ch, p);
+    const cam = new THREE.PerspectiveCamera(F.fov, F.w / F.h, 10, 10000);
+    cam.position.set(...F.pos); cam.lookAt(new THREE.Vector3(...F.at));
+    R.ren.setSize(F.w, F.h, false); R.ren.setClearColor(0x000000, 0); R.ren.clear();
+    R.ren.render(scene3, cam);
+    const url = R.ren.domElement.toDataURL('image/png');
+    scene3.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+    return (cache[key] = url);
+  }
+  // Blender renders (if present next to this page) win over the browser renders
+  const BLENDER = window.TO2_RENDERS || {};
+  function fillImgs(root = document) {
+    root.querySelectorAll('img[data-render]').forEach(img => {
+      let [id, p, f] = img.dataset.render.split(':'); if (id === 'cur') id = curId;
+      const art = BLENDER[`${id}_${p}_${f}`];
+      if (art) { img.onerror = () => { img.onerror = null; img.src = render(id, p, f); }; img.src = art; } else img.src = render(id, p, f);
+    });
+  }
+
+  // ---------- navigation ----------
+  const SCREENS = [['splash', 'Boshlash'], ['home', 'Bosh sahifa'], ['lesson', 'Dars'], ['chars', 'Qahramonlar'], ['progress', 'Progress'], ['quiz', 'Savol'], ['win', "To'g'ri javob"], ['settings', 'Sozlamalar']];
+  const nav = $('nav');
+  SCREENS.forEach(([id, name], i) => { const b = document.createElement('button'); b.type = 'button'; b.dataset.nav = id; b.innerHTML = `<i>${i + 1}</i>${name}`; b.onclick = () => go(id); nav.appendChild(b); });
+  function go(id) {
+    document.querySelectorAll('.scr').forEach(s => s.classList.toggle('on', s.id === 's-' + id));
+    document.querySelectorAll('[data-nav]').forEach(b => b.setAttribute('aria-current', b.dataset.nav === id));
+    $('status').classList.toggle('light', !!$('s-' + id).dataset.light);
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.go === id));
+    if (id === 'lesson') startLesson();
+    if (id === 'quiz') resetQuiz();
+    if (id === 'win') confetti();
+  }
+  document.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) go(g.dataset.go); });
+
+  // ---------- characters screen ----------
+  const cg = $('cg');
+  CHARS.forEach(c => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'cc' + (unlocked(c) ? '' : ' lock'); b.dataset.id = c.id;
+    const sec = c.need === 'streak' && !unlocked(c);
+    b.innerHTML = `<img class="char" data-render="${c.id}:idle:half" alt=""><div class="lb"><b>${sec ? '???' : c.name}</b><span>${unlocked(c) ? c.tag : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> ' + lockText(c)}</span></div>`;
+    b.setAttribute('aria-label', unlocked(c) ? `${c.name}, ${c.tag}` : `${sec ? 'Maxfiy qahramon' : c.name}, yopiq: ${lockText(c)}`);
+    b.onclick = () => choose(c.id);
+    cg.appendChild(b);
+  });
+  function choose(id) {
+    const c = CHARS.find(x => x.id === id);
+    if (!unlocked(c)) { const b = cg.querySelector(`[data-id="${id}"]`); b.animate([{ transform: 'translateX(-5px)' }, { transform: 'translateX(5px)' }, { transform: 'none' }], 300); return; }
+    curId = id;
+    cg.querySelectorAll('.cc').forEach(b => b.classList.toggle('on', b.dataset.id === id));
+    $('heroName').textContent = c.name; $('heroTag').textContent = c.tag;
+    fillImgs();
+    $('heroImg').animate([{ transform: 'translateX(-50%) translateY(10px)', opacity: .4 }, { transform: 'translateX(-50%)', opacity: 1 }], 300);
+  }
+
+  // ---------- progress ----------
+  const TOPICS = [['Algebra', 100, '#2f6bff', '#22b45a', '<path d="M5 12l5 5 9-10" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'], ['Geometriya', 60, '#22b45a', '#2f6bff', '<path d="M12 5l7 13H5z" stroke="#fff" stroke-width="2.6" fill="none" stroke-linejoin="round"/>'], ['Funksiyalar', 0, '#ff8a1f', '#2f6bff', '<g fill="#fff"><rect x="5" y="13" width="3" height="6"/><rect x="10.5" y="9" width="3" height="10"/><rect x="16" y="5" width="3" height="14"/></g>'], ['Ehtimollar', 0, '#8a5cf6', '#2f6bff', '<text x="12" y="17" text-anchor="middle" font-size="14" font-weight="900" fill="#fff" font-family="Nunito">Σ</text>']];
+  $('topics').innerHTML = TOPICS.map(([n, v, bg, bar, ic]) => `<div class="card" style="display:flex;align-items:center;gap:14px;padding:14px"><svg width="40" height="40" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="${bg}"/>${ic}</svg><div style="flex:1"><div style="display:flex;justify-content:space-between;font-weight:800"><span>${n}</span><span style="color:${v === 100 ? '#22b45a' : '#141a3a'}">${v}%</span></div><div class="bar" style="margin-top:8px;height:8px"><b style="width:${v}%;background:${bar}"></b></div></div></div>`).join('');
+
+  // ---------- quiz ----------
+  const OPTS = [['A', 'x = 1, x = 5'], ['B', 'x = −1, x = 5'], ['C', 'x = 1, x = −5'], ['D', 'x = −1, x = −5']];
+  let pickd = null;
+  function resetQuiz() {
+    pickd = null; $('hint').style.display = 'none';
+    $('opts').innerHTML = OPTS.map(([k, t]) => `<button class="opt" role="radio" aria-checked="false" data-k="${k}"><i>${k}</i>${t}</button>`).join('');
+    $('opts').querySelectorAll('.opt').forEach(o => o.onclick = () => { pickd = o.dataset.k; $('opts').querySelectorAll('.opt').forEach(x => { x.classList.toggle('on', x === o); x.classList.remove('bad'); x.setAttribute('aria-checked', x === o); }); });
+  }
+  $('check').onclick = () => {
+    if (!pickd) return;
+    if (pickd === 'B') go('win');
+    else { const o = $('opts').querySelector(`[data-k="${pickd}"]`); o.classList.add('bad'); $('hint').style.display = 'block'; }
+  };
+
+  // ---------- success ----------
+  function confetti() {
+    const c = $('confetti'); c.innerHTML = '';
+    const cols = ['#ffc42e', '#ff7ab6', '#7cf0c9', '#b28bff', '#ffffff', '#ff9f43'];
+    for (let i = 0; i < 34; i++) { const d = document.createElement('div'); d.className = 'conf'; d.style.left = Math.random() * 390 + 'px'; d.style.top = '-20px'; d.style.background = cols[i % cols.length]; d.style.animationDelay = (Math.random() * 3) + 's'; d.style.transform = `rotate(${Math.random() * 90}deg)`; if (i % 3 === 0) d.style.borderRadius = '50%'; c.appendChild(d); }
+  }
+
+  // ---------- settings toggles ----------
+  document.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => { const on = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', on); b.querySelector('.tg').classList.toggle('off', !on); });
+
+  // ---------- lesson: live 3D tutor (talks, turns, writes) ----------
+  const L = { x: 70, tx: 70, yaw: -0.38, want: 'front', tip: null, talkUntil: 0, ch: null, id: null, sy: 1 };
+  const LS = 0.36, FLOORY = 300;
+  let lren = null, lcam = null, lscene = null;
+  function initLesson3D() {
+    if (!window.THREE || lren) return;
+    lren = new THREE.WebGLRenderer({ canvas: $('lc'), alpha: true, antialias: true });
+    lren.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); lren.setSize(390, 300, false);
+    lren.outputEncoding = THREE.sRGBEncoding; lren.toneMapping = THREE.ACESFilmicToneMapping; lren.toneMappingExposure = 1.05;
+    lcam = new THREE.OrthographicCamera(0, 390, 300, 0, -2000, 2000); lcam.position.set(0, 0, 1000);
+  }
+  function lessonChar() {
+    if (!lren) return null;
+    if (L.ch && L.id === curId) return L.ch;
+    lscene = new THREE.Scene();
+    lscene.add(new THREE.HemisphereLight(0xfff1dc, 0x6a5440, 0.95));
+    const k = new THREE.DirectionalLight(0xffe0b5, 1.25); k.position.set(-700, 900, 900); lscene.add(k);
+    const f = new THREE.DirectionalLight(0x9fc3ff, 0.32); f.position.set(900, 200, 600); lscene.add(f);
+    scene3 = lscene;
+    L.ch = makeChar(CHARS.find(c => c.id === curId), false); L.id = curId;
+    L.ch.root.scale.set(LS, LS, LS);
+    return L.ch;
+  }
+  function sayLive(t) { $('say').textContent = t; L.talkUntil = performance.now() + Math.min(4200, 300 + t.length * 55); }
+  function roomPoint(p, len) {
+    const pt = p.getPointAtLength(len), m = p.getScreenCTM(), r = $('room').getBoundingClientRect();
+    return { x: pt.x * m.a + pt.y * m.c + m.e - r.left, y: pt.x * m.b + pt.y * m.d + m.f - r.top };
+  }
+  function lessonFrame(now) {
+    requestAnimationFrame(lessonFrame);
+    if (!$('s-lesson').classList.contains('on') || !lren) return;
+    const c = lessonChar(); if (!c) return;
+    const dt = Math.min(50, now - (lessonFrame.last || now)); lessonFrame.last = now;
+    if (L.want === 'back' && L.tip) L.tx = Math.max(40, Math.min(330, L.tip.x - 92));
+    if (L.want === 'front') L.tx = 70;
+    const moving = Math.abs(L.tx - L.x) > 1;
+    L.x += (L.tx - L.x) * Math.min(1, dt / 1000 * 5);
+    L.yaw += ((L.want === 'back' ? Math.PI : -0.38) - L.yaw) * Math.min(1, dt * 0.012);
+    const back = Math.abs(L.yaw - Math.PI) < 0.2, front = Math.abs(L.yaw + 0.38) < 0.2;
+    let wantSy = 1; if (back && L.tip) wantSy = Math.max(.85, Math.min(1, (FLOORY - (L.tip.y - 80)) / (455 * LS)));
+    L.sy += (wantSy - L.sy) * Math.min(1, dt / 1000 * 6);
+    const bob = moving ? Math.abs(Math.sin(now / 110)) * 3 : Math.sin(now / 900) * 0.8;
+    c.root.position.set(L.x, bob, 0); c.root.scale.set(LS, LS * L.sy, LS);
+    c.body.rotation.y = L.yaw;
+    const sw = moving ? Math.sin(now / 110) * 0.5 : 0; c.legL.rotation.x = sw; c.legR.rotation.x = -sw;
+    const talking = now < L.talkUntil;
+    c.head.rotation.x = talking ? Math.sin(now / 160) * 0.03 : 0; c.head.rotation.z = Math.sin(now / 1300) * 0.03;
+    if (front && talking) { c.armP.sh.rotation.z = 1.7 + Math.sin(now / 600) * 0.08; c.armP.el.rotation.z = 0.2; }
+    else { c.armP.sh.rotation.z += (0.08 - c.armP.sh.rotation.z) * 0.25; c.armP.el.rotation.z += (0.05 - c.armP.el.rotation.z) * 0.25; }
+    if (back && L.tip) {
+      const S = { x: L.x + 117 * LS, y: bob + 455 * LS * L.sy * Math.cos(0.12) }, tg = { x: L.tip.x, y: FLOORY - L.tip.y - 1 }, A = 145 * LS, B = 160 * LS;
+      let dx = tg.x - S.x, dy = tg.y - S.y, d = Math.hypot(dx, dy);
+      if (d > A + B - .5) { const k = (A + B - .5) / d; dx *= k; dy *= k; d = A + B - .5; }
+      const a = Math.atan2(dy, dx), th = Math.acos(Math.max(-1, Math.min(1, (A * A + d * d - B * B) / (2 * A * d))));
+      const p1 = a - th, E = { x: S.x + A * Math.cos(p1), y: S.y + A * Math.sin(p1) }, p2 = Math.atan2(S.y + dy - E.y, S.x + dx - E.x);
+      c.armW.sh.rotation.z = -(p1 + Math.PI / 2); c.armW.el.rotation.z = -(p2 - p1);
+    } else { c.armW.sh.rotation.z += (-0.06 - c.armW.sh.rotation.z) * 0.3; c.armW.el.rotation.z += (-0.05 - c.armW.el.rotation.z) * 0.3; }
+    if (c.armW.chalk) c.armW.chalk.visible = !front;
+    let m = 0; if (talking && !back) { const v = Math.abs(Math.sin(now / 75) * Math.sin(now / 190)); m = v > .66 ? 3 : v > .36 ? 2 : v > .12 ? 1 : 0; }
+    if (now > c.blinkAt + 130 && c.blinkOn) { c.blinkOn = false; c.blinkAt = now + rnd(2500, 5000); } else if (now > c.blinkAt && now < c.blinkAt + 130) c.blinkOn = true;
+    const look = talking ? 'learner' : 'board';
+    if (m !== c.mouth || c.blinkOn !== c.lastBlink || look !== c.look) { c.mouth = m; c.lastBlink = c.blinkOn; c.look = look; paintFace(c.faceT.userData.g, c.cfg, m, c.blinkOn, look); c.faceT.needsUpdate = true; }
+    lren.clear(); lren.render(lscene, lcam);
+  }
+  initLesson3D(); requestAnimationFrame(lessonFrame);
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  async function turnTo(w) { if (L.want !== w) { L.want = w; await wait(380); } }
+
+  // ---------- lesson: hand-drawn board ----------
+  async function drawPaths(paths, id, pxs = 520) {
+    for (const p of paths) {
+      if (id !== runId) return;
+      ink.appendChild(p);
+      L.tip = roomPoint(p, 0);
+      if (L.want !== 'back') await turnTo('back');
+      const len = p.getTotalLength(), sc = parseFloat(p.dataset.sc || '1');
+      const dur = Math.max(60, len * sc / pxs * 1000 * rnd(.85, 1.15));
+      p.style.strokeDasharray = len; p.style.strokeDashoffset = len;
+      await new Promise(res => { const t0 = performance.now(); const st = now => { if (id !== runId) return res(); const k = Math.min(1, (now - t0) / dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; p.style.strokeDashoffset = len * (1 - e); L.tip = roomPoint(p, len * e); k < 1 ? requestAnimationFrame(st) : res(); }; requestAnimationFrame(st); });
+      await new Promise(r => setTimeout(r, rnd(20, 60)));
+    }
+  }
+  const W = '#f3f0e6', Y = '#f2c94c', Gr = '#8be28b';
+  let stepN = 0, busy = false;
+  const LINES = [
+    async id => { await turnTo('front'); sayLive("Ko'paytmasi 6, yig'indisi −5 bo'lgan sonlar: −2 va −3."); await wait(2200); await drawPaths(write('(x−2)(x−3)=0', 60, 250, 64, W), id); },
+    async id => { await turnTo('front'); sayLive("Har bir qavs nolga teng bo'lishi mumkin."); await wait(1800); const a = write('x−2=0', 60, 390, 56, W); await drawPaths(a, id); const y = write('yoki', a.endX + 30, 390, 42, 'rgba(243,240,230,.75)'); await drawPaths(y, id); await drawPaths(write('x−3=0', y.endX + 30, 390, 56, W), id); },
+    async id => { await turnTo('front'); sayLive("Javob qaysi? Keling, yozamiz."); await wait(1500); const r1 = write('x=2', 120, 545, 64, Y); await drawPaths(r1, id); const y = write('yoki', r1.endX + 34, 545, 44, Y); await drawPaths(y, id); const r2 = write('x=3', y.endX + 34, 545, 64, Y); await drawPaths(r2, id); await drawPaths(circle((120 + r2.endX) / 2, 518, (r2.endX - 120) / 2 + 40, 50, Y), id, 650); await drawPaths(tick(r2.endX + 60, 512, Gr), id); L.tip = null; await turnTo('front'); sayLive("Javob: x = 2 yoki x = 3. Zo'r!"); }
+  ];
+  async function startLesson() {
+    const id = ++runId; ink.replaceChildren(); stepN = 0; busy = true;
+    document.querySelectorAll('#steps .st').forEach(s => s.classList.remove('on'));
+    L.want = 'front'; L.tip = null; L.x = L.tx = 70;
+    $('next').firstChild.textContent = 'Keyingi qadam ';
+    await wait(300);
+    sayLive('Keling, tenglamani bosqichma-bosqich yechamiz.');
+    await wait(2300);
+    await drawPaths(write('x²−5x+6=0', 60, 110, 72, W), id);
+    L.tip = null; await turnTo('front');
+    busy = false;
+  }
+  $('next').onclick = async () => {
+    if (busy) return;
+    if (stepN >= LINES.length) { go('quiz'); return; }
+    const id = runId; busy = true;
+    document.querySelector(`#steps .st[data-s="${stepN}"]`).classList.add('on');
+    await LINES[stepN](id); stepN++; busy = false;
+    if (stepN >= LINES.length) $('next').firstChild.textContent = "Mashqqa o'tish ";
+  };
+
+  fillImgs();
+  choose('blokbek');
+  go(location.hash.slice(1) && SCREENS.some(s => s[0] === location.hash.slice(1)) ? location.hash.slice(1) : 'splash');
+})();
+
+</script>
+</body>
+</html>

@@ -91,3 +91,47 @@ describe("fitToBoard", () => {
     expect(c.op === "rect" && c.y + c.h).toBeLessThanOrEqual(609);
   });
 });
+
+import { progressOf, rngFrom, strokesFor, writeText } from "@/components/board/handwriting";
+import { parseBoard as parse2 } from "@/lib/ai/schema";
+describe("handwriting engine", () => {
+  it("writes every character of demo text as strokes", () => {
+    const r = rngFrom(1);
+    const L = writeText("EKUK (2; 3) = 6 bo'laklar har xil!", 10, 10, 44, "ink", r);
+    expect(L.strokes.length).toBeGreaterThan(30);
+    expect(L.width).toBeGreaterThan(300);
+    for (const s of L.strokes) expect(s.len).toBeGreaterThan(0);
+  });
+  it("stacks fractions (numerator above the bar, denominator below)", () => {
+    const s = strokesFor({ op: "latex", id: "q", x: 50, y: 40, tex: String.raw`\frac{1}{2} + \frac{1}{3}`, size: "m" }, rngFrom(2));
+    const ys = s.flatMap((k) => k.pts.map((p) => p[1]));
+    expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(80); // two rows tall
+  });
+  it("progress reveals strokes in order and moves the chalk tip", () => {
+    const s = strokesFor({ op: "write", id: "a", x: 0, y: 0, text: "x=4", size: "l" }, rngFrom(3));
+    const half = progressOf(s, 0.5);
+    expect(half.tip).not.toBeNull();
+    expect(half.drawn[0]).toBe(s[0].len);
+    expect(half.drawn[half.drawn.length - 1]).toBe(0);
+    expect(progressOf(s, 1).tip).toBeNull();
+  });
+  it("fraction bars are shaded with chalk hatching", () => {
+    const s = strokesFor({ op: "fractionbar", id: "f", x: 0, y: 100, w: 400, parts: 3, filled: 1, color: "blue" }, rngFrom(4));
+    expect(s.filter((k) => k.color === "blue").length).toBeGreaterThan(3);
+  });
+  it("supports §5b ops: wipe, circle-around-target, strike, arrow, tick", () => {
+    const cmds = parse2([
+      { op: "wipe", target: "all" },
+      { op: "circle", target: "a" },
+      { op: "strike", target: "a" },
+      { op: "arrow", from: "a", to: [500, 300] },
+      { op: "tick", x: 10, y: 10 },
+    ]);
+    expect(cmds.map((c) => c.op)).toEqual(["erase", "highlight", "strike", "arrow", "tick"]);
+    let st = applyCommand(emptyBoard(), { op: "write", id: "a", x: 100, y: 100, text: "(x+2)" });
+    st = applyAll(st, cmds.slice(2));
+    const strike = st.els.find((e) => e.cmd.op === "strike");
+    expect(strike && strike.cmd.op === "strike" && strike.cmd.from).toBeTruthy();
+    expect(st.els.find((e) => e.cmd.op === "arrow")).toBeTruthy();
+  });
+});

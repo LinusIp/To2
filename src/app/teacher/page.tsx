@@ -22,7 +22,7 @@ function sampleMastery(): number[][] {
   );
 }
 
-const cellColor = (p: number) => (p >= 0.85 ? "#3fae49" : p >= 0.5 ? "#ffc83d" : "#ff9bb0");
+const cellColor = (p: number) => (p >= 0.85 ? "#22b45a" : p >= 0.5 ? "#ffc42e" : "#ff9d9d");
 
 export default function TeacherPage() {
   const data = useMemo(sampleMastery, []);
@@ -37,17 +37,17 @@ export default function TeacherPage() {
   };
 
   return (
-    <main className="mx-auto max-w-[1200px] px-4 py-6 md:px-6">
+    <main className="mx-auto min-h-dvh max-w-[1200px] bg-ph px-4 py-6 md:px-6">
       <div className="mb-1 flex items-center justify-between gap-3 print:hidden">
-        <Link href="/" className="font-pixel text-[20px] font-bold no-underline">
+        <Link href="/" className="font-black text-[20px] font-bold no-underline">
           {brand.name}
         </Link>
-        <span className="rounded-md border-2 border-ink bg-cream px-2 text-[12px] font-extrabold">Namuna ma&apos;lumot</span>
+        <span className="rounded-md bg-soft px-2 text-[12px] font-extrabold">Namuna ma&apos;lumot</span>
       </div>
-      <h1 className="m-0 font-pixel text-[30px] font-bold">{t.teacher.title}</h1>
-      <p className="mt-1 text-[15px] font-bold text-muted">6-&ldquo;B&rdquo; sinf · {t.teacher.subtitle}</p>
+      <h1 className="m-0 font-black text-[30px] font-bold">{t.teacher.title}</h1>
+      <p className="mt-1 text-[15px] font-bold text-mut">6-&ldquo;B&rdquo; sinf · {t.teacher.subtitle}</p>
 
-      <div className="mt-4 overflow-x-auto rounded-2xl border-[3px] border-ink bg-white p-3 print:hidden">
+      <div className="mt-4 overflow-x-auto card p-3 print:hidden">
         <table className="w-full border-separate border-spacing-1 text-[13px]">
           <thead>
             <tr>
@@ -66,7 +66,7 @@ export default function TeacherPage() {
               <tr key={n}>
                 <td className="pr-2 font-extrabold whitespace-nowrap">{n}</td>
                 {data[i].map((p, j) => (
-                  <td key={j} title={`${n}: ${Math.round(p * 100)}%`} className="h-8 rounded-md border-2 border-ink text-center font-pixel" style={{ background: cellColor(p) }}>
+                  <td key={j} title={`${n}: ${Math.round(p * 100)}%`} className="h-8 rounded-md text-center font-black" style={{ background: cellColor(p) }}>
                     {Math.round(p * 100)}
                   </td>
                 ))}
@@ -75,7 +75,7 @@ export default function TeacherPage() {
             <tr>
               <td className="pr-2 font-extrabold">{t.teacher.avg}</td>
               {avg.map((p, j) => (
-                <td key={j} className={`h-9 rounded-md border-[3px] border-ink text-center font-pixel font-bold ${j === weakest ? "outline-3 outline-orange" : ""}`} style={{ background: cellColor(p) }}>
+                <td key={j} className={`h-9 rounded-md text-center font-black font-bold ${j === weakest ? "ring-2 ring-blue" : ""}`} style={{ background: cellColor(p) }}>
                   {Math.round(p * 100)}%
                 </td>
               ))}
@@ -83,30 +83,30 @@ export default function TeacherPage() {
           </tbody>
         </table>
         <div className="mt-2 flex flex-wrap gap-3 text-[12px] font-extrabold">
-          <span className="flex items-center gap-1"><span className="h-3 w-3 border-2 border-ink" style={{ background: "#3fae49" }} /> O&apos;zlashtirildi ≥85</span>
-          <span className="flex items-center gap-1"><span className="h-3 w-3 border-2 border-ink" style={{ background: "#ffc83d" }} /> Jarayonda 50–85</span>
-          <span className="flex items-center gap-1"><span className="h-3 w-3 border-2 border-ink" style={{ background: "#ff9bb0" }} /> Zaif &lt;50</span>
+          <span className="flex items-center gap-1"><span className="h-3 w-3" style={{ background: "#22b45a" }} /> O&apos;zlashtirildi ≥85</span>
+          <span className="flex items-center gap-1"><span className="h-3 w-3" style={{ background: "#ffc42e" }} /> Jarayonda 50–85</span>
+          <span className="flex items-center gap-1"><span className="h-3 w-3" style={{ background: "#ff9d9d" }} /> Zaif &lt;50</span>
         </div>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3 print:hidden">
         <div className="text-[15px] font-extrabold">
           {t.teacher.skill}: {SKILL_BY_ID[CLASS_SKILLS[skillIdx]].title_uz}
-          {skillIdx === weakest && <span className="ml-2 rounded-md bg-ink px-1.5 text-[12px] text-white">eng zaif</span>}
+          {skillIdx === weakest && <span className="ml-2 rounded-md bg-blue px-2 text-[12px] text-white rounded-full">eng zaif</span>}
         </div>
-        <button type="button" className="btn btn-primary h-14 text-[17px]" onClick={generate}>
+        <button type="button" className="btn btn-primary" onClick={generate}>
           <Sparkles size={18} aria-hidden /> {t.teacher.generate}
         </button>
         {set && (
-          <button type="button" className="btn h-14 text-[15px]" onClick={() => window.print()}>
+          <button type="button" className="btn" onClick={() => window.print()}>
             <Printer size={18} aria-hidden /> Chop etish
           </button>
         )}
       </div>
 
       {set && (
-        <section className="mt-4 rounded-2xl border-[3px] border-ink bg-white p-5">
-          <h2 className="m-0 font-pixel text-[22px]">
+        <section className="mt-4 card p-5">
+          <h2 className="m-0 font-black text-[22px]">
             {t.teacher.set}: {SKILL_BY_ID[CLASS_SKILLS[skillIdx]].title_uz}
           </h2>
           <ol className="mt-3 flex flex-col gap-2 pl-6 text-[16px] font-bold">

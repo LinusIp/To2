@@ -1,14 +1,15 @@
 "use client";
+// "Darslar" tab: the personal roadmap (list, or roadmap.sh-style graph), filterable by subject.
 import { lazy, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { t } from "@/i18n/uz";
-import AppShell from "@/components/ui/AppShell";
-import { StreakChip, XpChip } from "@/components/ui/hud";
+import AppShell, { ScreenTop } from "@/components/ui/AppShell";
 import RoadmapList from "@/components/roadmap/RoadmapList";
+import TutorPortrait from "@/components/characters/TutorPortrait";
 import { useMe } from "@/lib/client/me";
-import type { CharacterId } from "@/config/characters";
 import { getCharacter } from "@/config/characters";
+import { SUBJECTS, SUBJECT_BY_ID } from "@/config/subjects";
 
 const RoadmapGraph = lazy(() => import("@/components/roadmap/RoadmapGraph"));
 
@@ -16,74 +17,64 @@ export default function RoadmapPage() {
   const router = useRouter();
   const { user, roadmap, load, loaded } = useMe();
   const [view, setView] = useState<"list" | "graph">("list");
+  const [subject, setSubject] = useState<string | null>(null);
 
   useEffect(() => {
     void load(true).then((u) => {
       if (!u) router.replace("/onboarding");
     });
+    const s = new URLSearchParams(window.location.search).get("subject");
+    if (s && SUBJECT_BY_ID[s]) setSubject(s);
   }, [load, router]);
 
-  useEffect(() => {
-    if (window.matchMedia("(min-width: 1280px)").matches) setView("graph");
-  }, []);
-
   const ch = getCharacter(user?.characterId);
+  const sections = subject ? SUBJECT_BY_ID[subject].sections : undefined;
 
   return (
     <AppShell>
-      <div className="bg-sky px-4 pt-4 pb-3 md:px-6 md:pt-6">
-        <div className="mx-auto max-w-[1100px]">
-          <div className="flex items-center justify-between gap-2">
-            <h1 className="m-0 font-pixel text-[26px] font-bold md:text-[32px]">{t.roadmap.title}</h1>
-            {user && (
-              <div className="flex gap-1.5">
-                <StreakChip days={user.streak} long />
-                <XpChip xp={user.xp} />
-              </div>
-            )}
+      <ScreenTop title={t.roadmap.title} back="/home" />
+      <div className="flex flex-col gap-4 px-[18px] pb-8 md:px-2">
+        {roadmap && (
+          <div className="card flex items-center gap-3 p-3.5">
+            <span className="h-12 w-12 flex-none overflow-hidden rounded-full bg-soft2">
+              <TutorPortrait id={ch.id} pose="idle" frame="face" className="h-12 w-12" alt="" />
+            </span>
+            <p className="m-0 text-[14px] leading-[1.35] font-extrabold">
+              <span className="text-blue">{ch.name}:</span> {t.roadmap.summary(roadmap.weakCount)}
+            </p>
           </div>
-          {roadmap && (
-            <div className="mt-2.5 rounded-[14px] border-[3px] border-ink bg-white px-3 py-2.5 text-[14px] leading-[1.35] font-bold">
-              {ch.name}: {t.roadmap.summary(roadmap.weakCount)}
-            </div>
-          )}
-          <div className="mt-3 flex gap-2" role="tablist" aria-label="Ko'rinish">
-            {(["list", "graph"] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                role="tab"
-                aria-selected={view === v}
-                onClick={() => setView(v)}
-                className={`btn h-10 text-[14px] ${view === v ? "bg-gold" : ""}`}
-              >
-                {v === "list" ? t.roadmap.listView : t.roadmap.mapView}
-              </button>
-            ))}
-          </div>
+        )}
+        <div className="no-scrollbar -mx-[18px] flex gap-2 overflow-x-auto px-[18px] md:mx-0 md:px-0" role="tablist" aria-label="Fanlar">
+          <button type="button" role="tab" aria-selected={!subject} onClick={() => setSubject(null)} className={`btn min-h-10 flex-none px-4 text-[14px] ${!subject ? "bg-blue text-white" : ""}`}>
+            {t.home.all}
+          </button>
+          {SUBJECTS.map((s) => (
+            <button key={s.id} type="button" role="tab" aria-selected={subject === s.id} onClick={() => setSubject(s.id)} className="btn min-h-10 flex-none px-4 text-[14px]" style={subject === s.id ? { background: s.to, color: "#fff" } : undefined}>
+              {s.title}
+            </button>
+          ))}
         </div>
-      </div>
-      <div className="border-t-[3px] border-ink bg-paper px-4 pt-4 pb-8 md:px-6">
-        <div className="mx-auto max-w-[1100px]">
-          {!loaded || !roadmap ? (
-            <div className="p-6 font-pixel text-[18px]">{t.common.loading}</div>
-          ) : view === "list" ? (
-            <div className="mx-auto max-w-[560px]">
-              <RoadmapList roadmap={roadmap} characterId={(user?.characterId ?? "blokbek") as CharacterId} />
-            </div>
-          ) : (
-            <Suspense fallback={<div className="p-6 font-pixel">{t.common.loading}</div>}>
-              <RoadmapGraph roadmap={roadmap} />
-            </Suspense>
-          )}
-          {roadmap && !roadmap.currentId && (
-            <div className="mt-4 text-center">
-              <Link href="/diagnostic" className="btn btn-primary h-14 text-[18px] no-underline">
-                {t.diagnostic.title}
-              </Link>
-            </div>
-          )}
+        <div className="flex gap-2" role="tablist" aria-label="Ko'rinish">
+          {(["list", "graph"] as const).map((v) => (
+            <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`btn min-h-10 flex-1 text-[14px] ${view === v ? "bg-ink text-white" : "btn-soft"}`}>
+              {v === "list" ? t.roadmap.listView : t.roadmap.mapView}
+            </button>
+          ))}
         </div>
+        {!loaded || !roadmap ? (
+          <div className="p-6 text-center font-extrabold text-mut">{t.common.loading}</div>
+        ) : view === "list" ? (
+          <RoadmapList roadmap={roadmap} characterId={ch.id} subjectSections={sections} />
+        ) : (
+          <Suspense fallback={<div className="p-6 text-center font-extrabold text-mut">{t.common.loading}</div>}>
+            <RoadmapGraph roadmap={roadmap} />
+          </Suspense>
+        )}
+        {roadmap && !roadmap.currentId && (
+          <Link href="/diagnostic" className="btn btn-primary w-full">
+            {t.home.diagnostic}
+          </Link>
+        )}
       </div>
     </AppShell>
   );

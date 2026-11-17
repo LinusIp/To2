@@ -1,22 +1,19 @@
 "use client";
-// Push-to-talk: hold to speak, release to send. A quick tap toggles (tap again to send).
-// Space bar works on desktop.
+// "Savol berish": hold to speak, release to send; a quick tap toggles (tap again to send). Space bar on desktop.
 import { useEffect, useRef, useState } from "react";
-import { Mic, Square } from "lucide-react";
 import { t } from "@/i18n/uz";
+import { MicIcon } from "@/components/ui/icons";
 
 export default function MicButton({
   onStart,
   onStop,
   listening,
   disabled,
-  variant = "round",
 }: {
   onStart: () => Promise<boolean> | void;
   onStop: () => void;
   listening: boolean;
   disabled?: boolean;
-  variant?: "round" | "wide";
 }) {
   const downAt = useRef(0);
   const [toggled, setToggled] = useState(false);
@@ -36,19 +33,18 @@ export default function MicButton({
     onStop();
   };
 
-  // Space = push-to-talk (not while typing in an input)
   useEffect(() => {
-    const isTyping = (e: KeyboardEvent) => {
+    const typing = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
       return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
     };
     const down = (e: KeyboardEvent) => {
-      if (e.code !== "Space" || e.repeat || isTyping(e)) return;
+      if (e.code !== "Space" || e.repeat || typing(e)) return;
       e.preventDefault();
       void start();
     };
     const up = (e: KeyboardEvent) => {
-      if (e.code !== "Space" || isTyping(e)) return;
+      if (e.code !== "Space" || typing(e)) return;
       e.preventDefault();
       stop();
     };
@@ -60,59 +56,31 @@ export default function MicButton({
     };
   });
 
-  const handlers = {
-    onPointerDown: (e: React.PointerEvent) => {
-      e.preventDefault();
-      if (toggled) {
-        stop();
-        return;
-      }
-      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-      void start();
-    },
-    onPointerUp: () => {
-      if (!active.current) return;
-      if (performance.now() - downAt.current < 350) {
-        setToggled(true); // quick tap → keep listening until next tap
-        return;
-      }
-      stop();
-    },
-    onPointerCancel: () => stop(),
-    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
-  };
-
-  const label = listening ? t.lesson.listening : variant === "wide" ? t.lesson.micLong : t.lesson.mic;
-  const bg = listening ? "#f28c28" : "#ffc83d";
-
-  if (variant === "wide") {
-    return (
-      <button
-        type="button"
-        aria-label={label}
-        aria-pressed={listening}
-        disabled={disabled}
-        className="btn btn-primary h-[60px] flex-1 touch-none rounded-2xl text-[18px] select-none"
-        style={{ background: bg }}
-        {...handlers}
-      >
-        {listening ? <Square size={24} strokeWidth={2.6} aria-hidden /> : <Mic size={26} strokeWidth={2.4} aria-hidden />}
-        {label}
-      </button>
-    );
-  }
   return (
     <button
       type="button"
-      aria-label={label}
-      title={label}
+      aria-label={listening ? t.lessonUi.stop : t.lesson.mic}
+      title={t.lessonUi.askHint}
       aria-pressed={listening}
       disabled={disabled}
-      className="btn btn-primary h-[76px] w-[76px] touch-none rounded-[22px] p-0 select-none"
-      style={{ background: bg }}
-      {...handlers}
+      className="btn btn-primary min-w-0 flex-1 touch-none select-none"
+      style={listening ? { background: "#ff8a1f", boxShadow: "0 0 0 6px rgba(255,138,31,.25), 0 10px 22px rgba(255,138,31,.35)" } : undefined}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        if (toggled) return stop();
+        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+        void start();
+      }}
+      onPointerUp={() => {
+        if (!active.current) return;
+        if (performance.now() - downAt.current < 350) return setToggled(true);
+        stop();
+      }}
+      onPointerCancel={stop}
+      onContextMenu={(e) => e.preventDefault()}
     >
-      {listening ? <Square size={30} strokeWidth={2.6} aria-hidden /> : <Mic size={34} strokeWidth={2.4} aria-hidden />}
+      <MicIcon size={22} />
+      {listening ? t.lessonUi.listening : t.lessonUi.ask}
     </button>
   );
 }

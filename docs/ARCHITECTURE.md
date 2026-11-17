@@ -32,6 +32,12 @@ The LLM never draws pixels. It writes a tiny JSON language (`write`, `latex`, `f
 - it scales on every screen, it is cheap (no image generation), and it is testable;
 - bad LLM output can be repaired: unknown ops are dropped, colours default, `fitToBoard()` keeps text on the canvas, and interruption notes are always placed in the orange note panel (`noteLayouter()`), so they never cover the main explanation.
 
+## The lesson stage (handwriting + 3D tutor)
+- `src/components/board/handwriting.ts` turns each board command into **single-line chalk strokes** (polylines in board coordinates): letters from the EMS Tech single-stroke font (`glyphs.json`), fractions stacked by hand, fraction bars shaded with hatching, wobbly lines and circles that overshoot. Progress p∈[0,1] of an element reveals its strokes in writing order (`progressOf`) and gives the exact **chalk-tip** point. Pure functions, unit-tested.
+- `Board.tsx` renders the strokes with a chalk SVG filter and a chalk piece at the tip, and writes the tip into `boardTip` (`src/lib/board/tip.ts`).
+- `ClassroomStage.tsx` = classroom SVG (1600×900) + the board at translate(420,100) scale(1.104) + `TutorCanvas`: a three.js orthographic camera mapped 1:1 onto the stage, so the chalk tip feeds the **2-bone arm IK** directly. Each frame it reads the tip, the lesson state and the TTS amplitude: writing → turn the back, walk along the board, arm follows the tip; talking → face the learner, mouth from amplitude; listening → lean in; thinking → hand to chin; correct answer → cheer + hop.
+- The 8 tutors are one voxel rig (`voxel.ts`) + configs (`src/config/characters.ts`). UI portraits come from Blender PNG/WebP renders when present, else from an offscreen three.js render (`portraits.ts`).
+
 ## Drawing in sync with speech
 VoiceLab TTS returns no word timestamps, so we use the **proportional rule**: each command gets a time slot proportional to its "weight" (text length, ~1 for shapes, `pause` = its ms) inside 90% of the audio duration (`scheduleSegment()` in `src/lib/board/model.ts`). Strokes animate with `stroke-dashoffset`, text reveals left→right with a clip path, and a chalk dot follows the stroke while the character points at the board.
 
@@ -60,7 +66,8 @@ Pressing the mic freezes audio and the chalk timeline and **remembers the exact 
 | Cloudflare Workers + vinext | Next.js-style app on the edge, near-zero idle cost, one deploy for UI + API. |
 | D1 + Drizzle | SQL with types and migrations, no server to run. |
 | KV | sessions, rate limits, LLM/TTS caches (R2 for audio once enabled). |
-| Custom SVG board + rough.js | scripted, time-synced playback (tldraw/Excalidraw can't do that and are heavy). |
+| Custom SVG board + handwriting engine | scripted, time-synced, stroke-by-stroke chalk writing (tldraw/Excalidraw can't do that and are heavy). |
+| three.js voxel tutor | real 3D turn/walk/IK at 60 fps from ~20 boxes; lazy-loaded only on the lesson screen. |
 | mathjs | deterministic answer checking (equivalent fractions, `0,5`, `x = 4`, expressions). |
 | React Flow + dagre | roadmap.sh-style graph with automatic layout. |
 | VoiceLab (fetch, no SDK) | Uzbek-first STT/TTS/LLM; plain REST keeps the Worker bundle small. |

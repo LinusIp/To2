@@ -8,6 +8,13 @@ Product name: **To2** (temporary — the team will rename it later, so put the n
 
 ---
 
+## ★ Design update (latest — overrides older design notes below)
+The team's final direction is in **`docs/prototypes/`** (read its README):
+1. **App UI = `docs/prototypes/mobile-app.html`** — light, friendly mobile design (lavender/white cards, blue primary, coloured subject tiles, bottom tabs). Replaces the dark/brutalist token sets in §10 and in `docs/mockups/`. Desktop/tablet: same components in a centred phone-width column or a 2-column layout; the lesson goes full-width.
+2. **Lesson = `docs/prototypes/board-handwriting.html`** — warm classroom, 3D voxel tutor (three.js) that faces the learner when talking, turns to the board and writes stroke-by-stroke (handwriting engine §5b), barge-in via "Savol berish".
+3. **Characters = the 8 voxel tutors** built by `makeChar(cfg)` (same file) — replace the layered-SVG characters. Use pre-rendered portraits for UI, live 3D in the lesson. Blender renders will replace portraits later (file-name convention in the README).
+Keep all working backend/engine code; this is a front-end re-skin + character swap.
+
 ## 0. Official hackathon problem we solve
 
 National AI Hackathon, Tashkent, 17–19 Nov 2026 — task list from the **Ministry of Higher Education, Science and Innovation / Ta'lim va ilm-fan vazirligi** (`docs/hackathon/problems.pdf`):

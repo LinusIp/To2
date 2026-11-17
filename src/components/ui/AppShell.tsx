@@ -1,129 +1,108 @@
 "use client";
-// Responsive shell: bottom tab bar (<768), side rail (768–1279), sidebar + mini roadmap (≥1280).
+// App chrome: bottom tabs on phones (Bosh sahifa · Darslar · Progress · Sozlamalar),
+// a white sidebar on tablet/desktop with the content in a centred column.
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { Map as MapIcon, Presentation, Target, User } from "lucide-react";
 import { t } from "@/i18n/uz";
-import { brand } from "@/config/brand";
 import { useMe } from "@/lib/client/me";
-import { Flame } from "./hud";
+import { BookIcon, ChartIcon, FlameIcon, GearIcon, HomeIcon, Logo } from "./icons";
+import TutorPortrait from "@/components/characters/TutorPortrait";
 
 const TABS = [
-  { href: "/roadmap", label: t.nav.roadmap, long: t.nav.roadmapLong, Icon: MapIcon, match: "/roadmap" },
-  { href: "/lesson", label: t.nav.lesson, long: t.nav.lesson, Icon: Presentation, match: "/lesson" },
-  { href: "/practice", label: t.nav.practice, long: t.nav.practice, Icon: Target, match: "/practice" },
-  { href: "/profile", label: t.nav.profile, long: t.nav.profile, Icon: User, match: "/profile" },
+  { href: "/home", label: t.tabs.home, Icon: HomeIcon, match: ["/home"] },
+  { href: "/roadmap", label: t.tabs.lessons, Icon: BookIcon, match: ["/roadmap", "/lesson", "/practice"] },
+  { href: "/progress", label: t.tabs.progress, Icon: ChartIcon, match: ["/progress", "/profile"] },
+  { href: "/settings", label: t.tabs.settings, Icon: GearIcon, match: ["/settings", "/tutors"] },
 ];
 
-function MiniRoadmap() {
-  const rm = useMe((s) => s.roadmap);
-  if (!rm?.currentId) return null;
-  const cur = rm.nodes.find((n) => n.id === rm.currentId);
-  if (!cur) return null;
-  const sec = rm.nodes.filter((n) => n.section === cur.section).slice(0, 6);
-  const done = sec.filter((n) => n.status === "mastered").length;
-  const sw = (s: string) =>
-    s === "mastered" ? "bg-grass border-ink" : s === "current" ? "bg-gold border-ink" : s === "locked" ? "bg-locked border-locked-ink" : "bg-white border-ink";
-  return (
-    <div className="rounded-[14px] border-[3px] border-ink bg-paper p-3.5">
-      <div className="mb-2.5 font-pixel text-[15px] font-bold uppercase">
-        {cur.section} · {done}/{sec.length}
-      </div>
-      <ul className="flex flex-col gap-2 text-[14px] font-extrabold">
-        {sec.map((n) => (
-          <li key={n.id}>
-            <Link href={`/lesson/${n.id}`} className={`flex items-center gap-2 no-underline ${n.status === "locked" || n.status === "optional" ? "text-muted" : ""}`}>
-              <span className={`h-4 w-4 flex-none border-[3px] ${sw(n.status)}`} aria-hidden />
-              <span className="truncate">{n.title}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-export default function AppShell({ children, hideMobileNav = false }: { children: React.ReactNode; hideMobileNav?: boolean }) {
+export default function AppShell({ children, wide = false, hideTabs = false }: { children: React.ReactNode; wide?: boolean; hideTabs?: boolean }) {
   const path = usePathname() ?? "";
   const { user, load } = useMe();
   useEffect(() => {
     void load();
   }, [load]);
+  const on = (m: string[]) => m.some((p) => path.startsWith(p));
 
   return (
-    <div className="min-h-dvh bg-paper md:flex">
-      {/* tablet rail / desktop sidebar */}
-      <aside className="sticky top-0 hidden h-dvh flex-none flex-col gap-4 border-r-[3px] border-ink bg-white px-2 py-4 md:flex md:w-[92px] xl:w-[270px] xl:px-4 xl:py-5">
-        <Link href="/" className="flex items-center gap-2.5 no-underline" aria-label={brand.name}>
-          <div className="flex h-12 w-12 flex-none items-center justify-center rounded-xl border-[3px] border-ink bg-grass font-pixel text-[19px] font-bold shadow-[3px_3px_0_#1b1a17] max-xl:mx-auto">
-            {brand.shortName}
-          </div>
-          {user && (
-            <div className="hidden min-w-0 xl:block">
-              <div className="truncate font-pixel text-[18px] font-bold">{user.nickname}</div>
-              <div className="text-[13px] font-bold text-muted">
-                {t.common.grade(user.grade)} · {t.profile.level} {user.level}
-              </div>
-            </div>
-          )}
+    <div className="min-h-dvh bg-ph md:flex md:bg-bg">
+      <aside className="sticky top-0 hidden h-dvh w-[232px] flex-none flex-col gap-2 bg-white px-4 py-6 shadow-[6px_0_24px_rgba(31,54,120,.05)] md:flex">
+        <Link href="/home" className="mb-4 px-2 no-underline" aria-label="To2">
+          <Logo size={34} />
         </Link>
-        <nav aria-label={t.nav.main} className="flex flex-col gap-1.5">
-          {TABS.map(({ href, long, label, Icon, match }) => {
-            const on = path.startsWith(match);
-            return (
-              <Link
-                key={href}
-                href={href}
-                aria-current={on ? "page" : undefined}
-                title={long}
-                className={`flex min-h-[46px] items-center gap-2.5 rounded-xl px-3 text-[15px] font-extrabold no-underline max-xl:flex-col max-xl:justify-center max-xl:gap-0.5 max-xl:px-1 max-xl:py-1.5 max-xl:text-[12px] ${
-                  on ? "border-[3px] border-ink bg-gold" : "border-[3px] border-transparent hover:bg-paper"
-                }`}
-              >
-                <Icon size={22} strokeWidth={2.4} aria-hidden />
-                <span className="xl:hidden">{label}</span>
-                <span className="hidden xl:inline">{long}</span>
-              </Link>
-            );
-          })}
+        <nav aria-label={t.nav.main} className="flex flex-col gap-1">
+          {TABS.map(({ href, label, Icon, match }) => (
+            <Link
+              key={href}
+              href={href}
+              aria-current={on(match) ? "page" : undefined}
+              className={`flex h-12 items-center gap-3 rounded-xl px-3 text-[15px] font-extrabold no-underline ${on(match) ? "bg-soft text-blue" : "text-[#3a4266] hover:bg-soft"}`}
+            >
+              <Icon size={22} />
+              {label}
+            </Link>
+          ))}
         </nav>
-        <div className="hidden flex-col gap-4 xl:flex">
-          <MiniRoadmap />
-          {user && (
-            <div className="flex items-center gap-2.5 rounded-[14px] border-[3px] border-ink bg-gold px-3.5 py-3 text-[14px] font-extrabold">
-              <Flame size={22} />
-              {t.streakToday(user.streak)}
+        {user && (
+          <div className="mt-auto flex flex-col gap-3">
+            <div className="flex items-center gap-2 rounded-2xl bg-soft px-3 py-2.5 text-[14px] font-extrabold">
+              <FlameIcon size={20} /> {t.profile.streakDays(user.streak)}
             </div>
-          )}
-        </div>
+            <Link href="/settings" className="flex items-center gap-3 rounded-2xl px-2 py-2 no-underline hover:bg-soft">
+              <span className="h-11 w-11 flex-none overflow-hidden rounded-full bg-soft2">
+                <TutorPortrait id={user.characterId} pose="idle" frame="face" className="h-11 w-11" alt="" />
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-[15px] font-black">{user.nickname}</span>
+                <span className="block text-[12px] font-bold text-mut">{t.common.grade(user.grade)}</span>
+              </span>
+            </Link>
+          </div>
+        )}
       </aside>
 
-      <div className={`min-w-0 flex-1 ${hideMobileNav ? "" : "pb-[74px] md:pb-0"}`}>{children}</div>
+      <main className={`min-w-0 flex-1 ${hideTabs ? "" : "pb-[96px] md:pb-0"}`}>
+        <div className={wide ? "w-full" : "mx-auto w-full max-w-[760px]"}>{children}</div>
+      </main>
 
-      {/* mobile bottom tabs */}
-      {!hideMobileNav && (
+      {!hideTabs && (
         <nav
           aria-label={t.nav.main}
-          className="fixed inset-x-0 bottom-0 z-30 grid h-[66px] grid-cols-4 border-t-[3px] border-ink bg-white md:hidden"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 bg-white px-1.5 pt-2 shadow-[0_-6px_20px_rgba(31,54,120,.06)] md:hidden"
+          style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
         >
-          {TABS.map(({ href, label, Icon, match }) => {
-            const on = path.startsWith(match);
-            return (
-              <Link
-                key={href}
-                href={href}
-                aria-current={on ? "page" : undefined}
-                className={`flex flex-col items-center justify-center gap-0.5 text-[12px] font-extrabold no-underline ${on ? "bg-gold text-ink" : "text-muted"}`}
-              >
-                <Icon size={22} strokeWidth={2.4} aria-hidden />
-                {label}
-              </Link>
-            );
-          })}
+          {TABS.map(({ href, label, Icon, match }) => (
+            <Link
+              key={href}
+              href={href}
+              aria-current={on(match) ? "page" : undefined}
+              className={`flex h-[62px] flex-col items-center justify-center gap-1 text-[12px] font-extrabold no-underline ${on(match) ? "text-blue" : "text-[#8a92b0]"}`}
+            >
+              <Icon size={24} />
+              {label}
+            </Link>
+          ))}
         </nav>
       )}
+    </div>
+  );
+}
+
+/** Screen header used on inner pages: back button · title · right slot. */
+export function ScreenTop({ title, back = "/home", right }: { title: string; back?: string | null; right?: React.ReactNode }) {
+  return (
+    <div className="flex h-[52px] items-center justify-between px-4 pt-3 md:px-2 md:pt-6">
+      {back ? (
+        <Link href={back} aria-label={t.nav.back} title={t.nav.back} className="icon-btn">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+        </Link>
+      ) : (
+        <div className="w-11" />
+      )}
+      <h1 className="m-0 text-[22px] font-black">{title}</h1>
+      <div className="flex min-w-11 justify-end">{right}</div>
     </div>
   );
 }

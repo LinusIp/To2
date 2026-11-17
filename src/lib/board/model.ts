@@ -53,13 +53,34 @@ export function applyCommand(state: BoardState, cmd: BoardCommand, layer: Layer 
       .reverse();
     return { ...state, els };
   }
+  let draw: DrawCommand = cmd;
+  // resolve target ids for arrows / strikes into board coordinates
+  const center = (t: string): [number, number] | null => {
+    const e = [...state.els].reverse().find((x) => x.id === t);
+    if (!e) return null;
+    const b = bbox(e.cmd);
+    return [b.x + b.w / 2, b.y + b.h / 2];
+  };
+  if (cmd.op === "arrow") {
+    const from = typeof cmd.from === "string" ? center(cmd.from) : cmd.from;
+    const to = typeof cmd.to === "string" ? center(cmd.to) : cmd.to;
+    if (!from || !to) return state;
+    draw = { ...cmd, from, to };
+  }
+  if (cmd.op === "strike") {
+    const e = [...state.els].reverse().find((x) => x.id === cmd.target);
+    if (!e) return state;
+    const b = bbox(e.cmd);
+    draw = { ...cmd, from: [b.x - 8, b.y + b.h * 0.62], to: [b.x + b.w + 8, b.y + b.h * 0.38] };
+  }
   const withColor: DrawCommand =
-    layer === "note" && cmd.op !== "numberline" && !(cmd as { color?: Color }).color
-      ? ({ ...cmd, color: "orange" } as DrawCommand)
-      : cmd;
+    layer === "note" && draw.op !== "numberline" && draw.op !== "divider" && !(draw as { color?: Color }).color
+      ? ({ ...draw, color: "orange" } as DrawCommand)
+      : draw;
   const key = `${layer}:${cmd.id}`;
   const els = state.els.filter((e) => e.key !== key);
   els.push({ key, id: cmd.id, cmd: withColor, layer });
+  void 0;
   return { ...state, els };
 }
 
@@ -92,6 +113,13 @@ export function commandWeight(cmd: BoardCommand): number {
       return 3;
     case "highlight":
       return 0.6;
+    case "arrow":
+      return 1;
+    case "tick":
+      return 0.6;
+    case "divider":
+    case "strike":
+      return 0.8;
     case "erase":
       return 0.3;
     case "pause":
@@ -110,14 +138,17 @@ export interface Slot {
  * Drawing uses ~90% of the audio so the chalk finishes as the sentence ends.
  * `pause` commands take their own ms. Minimum 250ms per drawn command.
  */
+/** Speak first, start writing ~300 ms later (CLAUDE.md §5b rule 6). */
+export const LEAD_MS = 300;
+
 export function scheduleSegment(cmds: BoardCommand[], durationMs: number): Slot[] {
   const pauseMs = cmds.reduce((a, c) => a + (c.op === "pause" ? c.ms : 0), 0);
   const weights = cmds.map(commandWeight);
   const totalW = weights.reduce((a, b) => a + b, 0);
-  const drawBudget = Math.max(0, durationMs * 0.9 - pauseMs);
+  const drawBudget = Math.max(0, durationMs * 0.9 - pauseMs - LEAD_MS);
   const unit = totalW > 0 ? drawBudget / totalW : 0;
   const slots: Slot[] = [];
-  let t = 0;
+  let t = cmds.length ? LEAD_MS : 0;
   cmds.forEach((c, i) => {
     const len = c.op === "pause" ? c.ms : Math.max(250, weights[i] * unit);
     slots.push({ index: i, start: t, end: t + len });
@@ -159,7 +190,21 @@ export function bbox(cmd: DrawCommand): { x: number; y: number; w: number; h: nu
     case "numberline":
       return { x: cmd.x, y: cmd.y - 20, w: cmd.w, h: 70 };
     case "fractionbar":
-      return { x: cmd.x, y: cmd.y, w: cmd.w, h: cmd.h ?? 54 };
+      return { x: cmd.x, y: cmd.y - (cmd.label ? 40 : 0), w: cmd.w, h: (cmd.h ?? 54) + (cmd.label ? 40 : 0) };
+    case "arrow": {
+      const f = typeof cmd.from === "string" ? [0, 0] : cmd.from;
+      const t = typeof cmd.to === "string" ? [0, 0] : cmd.to;
+      return { x: Math.min(f[0], t[0]), y: Math.min(f[1], t[1]), w: Math.abs(t[0] - f[0]), h: Math.abs(t[1] - f[1]) };
+    }
+    case "tick":
+      return { x: cmd.x, y: cmd.y - 26, w: 44, h: 44 };
+    case "divider":
+      return { x: cmd.x, y: 40, w: 2, h: 550 };
+    case "strike": {
+      const f = cmd.from ?? [0, 0];
+      const t = cmd.to ?? [0, 0];
+      return { x: Math.min(f[0], t[0]), y: Math.min(f[1], t[1]), w: Math.abs(t[0] - f[0]), h: Math.abs(t[1] - f[1]) };
+    }
   }
 }
 

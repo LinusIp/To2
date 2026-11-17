@@ -18,7 +18,7 @@ await build({
   logLevel: "silent",
 });
 const { DEMO_LESSONS, mockInterrupt } = await import("file://" + out);
-const voices = ["blokbek", "robo-rayhon", "agent-shox", "chaqmoq"];
+const voices = ["blokbek", "agent-shox", "lola", "ziyo", "sardor", "ravshan", "diyorbek", "shadow"];
 const phrases = new Set();
 for (const l of Object.values(DEMO_LESSONS)) for (const s of l.segments) phrases.add(s.say);
 for (const s of mockInterrupt("Nega maxrajlarni oltiga keltirdik?", "frac-add-unlike")) phrases.add(s.say);
@@ -36,9 +36,21 @@ for (const p of [
 const list = [...phrases];
 console.log(`${list.length} phrases × ${voices.length} voices → ${base}`);
 let ok = 0, fail = 0;
+// each tutor's own greeting ("Ovozini eshit" on the choose-tutor screen)
+const GREETINGS = {
+  blokbek: "Salom! Men Blokbek. Matematikani blokma-blok quramiz!",
+  "agent-shox": "Agent Shox. Har bir masala — bu missiya. Rejani tuzamiz.",
+  lola: "Salom, men Lola. Xato qilsang ham qo'rqma — birga tushunamiz.",
+  ziyo: "Men Ziyo! Doim so'rayman: nega? Keling, birga bilib olamiz!",
+  sardor: "Sardor. Qisqa va aniq: mantiq bilan yechamiz.",
+  ravshan: "Ravshan — tez hisob ustasi. Sizga sirli usullarni o'rgataman!",
+  diyorbek: "Diyorbek. Har bir formulaning ortida haqiqiy hayot bor.",
+  shadow: "Sirli masalalar seni kutmoqda…",
+};
 for (const v of voices) {
   // Blokbek is the demo character: warm everything. Others: warm the fractions lesson only.
-  const mine = v === "blokbek" ? list : [...DEMO_LESSONS["frac-add-unlike"].segments.map((s) => s.say), "Yaxshi savol! Hozir ko'rsataman.", "Qiziq savol! Bir soniya o'ylab olay.", "Tushunarli bo'ldimi? Davom etamizmi?"];
+  const greet = GREETINGS[v] ? [GREETINGS[v]] : [];
+  const mine = v === "blokbek" ? [...list, ...greet] : [...greet, ...DEMO_LESSONS["frac-add-unlike"].segments.map((s) => s.say), "Yaxshi savol! Hozir ko'rsataman.", "Qiziq savol! Bir soniya o'ylab olay.", "Tushunarli bo'ldimi? Davom etamizmi?"];
   for (const text of mine) {
     const u = `${base}/api/tts?voice=${encodeURIComponent(v)}&text=${encodeURIComponent(text)}`;
     const r = await fetch(u);

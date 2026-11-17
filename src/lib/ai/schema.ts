@@ -65,6 +65,12 @@ export const PlotCmd = z.object({
   yRange: point,
   color,
 });
+// §5b handwriting extras
+const pointOrId = z.union([point, id]);
+export const ArrowCmd = z.object({ op: z.literal("arrow"), id, from: pointOrId, to: pointOrId, bend: num.optional().catch(undefined), color });
+export const TickCmd = z.object({ op: z.literal("tick"), id, x: num, y: num, color });
+export const DividerCmd = z.object({ op: z.literal("divider"), id, x: num });
+export const StrikeCmd = z.object({ op: z.literal("strike"), id, target: id, color, from: point.optional(), to: point.optional() });
 export const HighlightCmd = z.object({ op: z.literal("highlight"), target: id, color });
 export const EraseCmd = z.object({ op: z.literal("erase"), target: id });
 export const PauseCmd = z.object({ op: z.literal("pause"), ms: z.coerce.number().min(0).max(5000) });
@@ -77,6 +83,10 @@ export const BoardCommand = z.discriminatedUnion("op", [
   NumberLineCmd,
   FractionBarCmd,
   PlotCmd,
+  ArrowCmd,
+  TickCmd,
+  DividerCmd,
+  StrikeCmd,
   HighlightCmd,
   EraseCmd,
   PauseCmd,
@@ -86,13 +96,27 @@ export type DrawCommand = Exclude<BoardCommand, { op: "highlight" | "erase" | "p
 
 const KNOWN_OPS = new Set([
   "write", "latex", "line", "rect", "circle", "ellipse", "numberline", "fractionbar", "plot", "highlight", "erase", "pause",
+  "arrow", "tick", "divider", "strike",
 ]);
+
+let autoId = 0;
+/** Normalise aliases before validation: wipe→erase, circle{target}→highlight, auto ids. */
+function normalize(c: unknown): unknown {
+  if (!c || typeof c !== "object") return c;
+  const o = { ...(c as Record<string, unknown>) };
+  if (o.op === "wipe") return { op: "erase", target: typeof o.target === "string" ? o.target : "all" };
+  if (o.op === "circle" && typeof o.target === "string" && o.w === undefined) return { op: "highlight", target: o.target, color: o.color };
+  if ((o.op === "tick" || o.op === "divider" || o.op === "arrow") && o.id === undefined) o.id = `${o.op}${++autoId}`;
+  if (o.op === "strike" && o.id === undefined) o.id = `strike-${String(o.target)}`;
+  return o;
+}
 
 /** Parse a list of raw commands, dropping (and logging) unknown or invalid ones. Never throws. */
 export function parseBoard(raw: unknown): BoardCommand[] {
   if (!Array.isArray(raw)) return [];
   const out: BoardCommand[] = [];
-  for (const c of raw) {
+  for (const c0 of raw) {
+    const c = normalize(c0);
     const op = (c as { op?: unknown })?.op;
     if (typeof op !== "string" || !KNOWN_OPS.has(op)) {
       console.warn("[board] unknown op ignored:", op);

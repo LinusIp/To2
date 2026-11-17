@@ -1,15 +1,17 @@
 "use client";
-// Adaptive diagnostic as a "bridge-building expedition": every answer adds a block. No timer, no penalty.
+// Diagnostic = the first expedition (CLAUDE.md §7): every answer adds a block to the bridge.
+// No timer, no lives, no red errors; "Bilmayman" is always there. Quiz layout from the prototype.
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, X } from "lucide-react";
 import Link from "next/link";
 import { t } from "@/i18n/uz";
-import { getCharacter, type CharacterId } from "@/config/characters";
-import Character from "@/components/characters/Character";
-import Confetti from "@/components/characters/Confetti";
+import { getCharacter } from "@/config/characters";
+import TutorPortrait from "@/components/characters/TutorPortrait";
 import AnswerInput from "@/components/lesson/AnswerInput";
+import SuccessScreen from "@/components/ui/SuccessScreen";
+import { CloseIcon } from "@/components/ui/icons";
 import { useMe } from "@/lib/client/me";
+import { speak, unlockAudio, type Speech } from "@/lib/audio/player";
 import type { Expect } from "@/lib/ai/schema";
 
 interface DProblem {
@@ -27,14 +29,14 @@ export default function Diagnostic() {
   const router = useRouter();
   const { user, load } = useMe();
   const [p, setP] = useState<DProblem | null>(null);
-  const [answered, setAnswered] = useState(0);
   const [results, setResults] = useState<boolean[]>([]);
-  const [feedback, setFeedback] = useState<{ ok: boolean; answer: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ ok: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState<{ weak: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [burst, setBurst] = useState(0);
   const started = useRef(false);
+  const voice = useRef<Speech | null>(null);
+  const ch = getCharacter(user?.characterId);
 
   useEffect(() => {
     if (started.current) return;
@@ -47,27 +49,29 @@ export default function Diagnostic() {
     });
   }, [load, router]);
 
-  const ch = getCharacter(user?.characterId);
+  // the tutor reads each question aloud (captions are always on screen too)
+  useEffect(() => {
+    if (!p) return;
+    voice.current?.stop();
+    voice.current = speak(p.q.replace(/\s*=\s*\?$/, " nechaga teng?"), ch.id);
+    return () => voice.current?.stop();
+  }, [p, ch.id]);
 
-  const send = async (answer: string, action: "answer" | "skip" = "answer") => {
-    if (busy) return;
+  const send = async (answer: string) => {
+    if (busy || !p) return;
+    unlockAudio();
     setBusy(true);
     try {
-      const r = await fetch("/api/diagnostic", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, answer }) });
+      const r = await fetch("/api/diagnostic", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "answer", answer }) });
       if (!r.ok) throw new Error();
-      const j = (await r.json()) as { correct?: boolean; answer?: string; problem?: DProblem; done?: boolean };
-      if (action === "answer") {
-        setResults((x) => [...x, !!j.correct]);
-        setAnswered((n) => n + 1);
-        setFeedback({ ok: !!j.correct, answer: j.answer ?? "" });
-        if (j.correct) setBurst((b) => b + 1);
-        await new Promise((res) => setTimeout(res, j.correct ? 700 : 1300));
-        setFeedback(null);
-      }
+      const j = (await r.json()) as { correct?: boolean; problem?: DProblem; done?: boolean; weakCount?: number };
+      setResults((x) => [...x, !!j.correct]);
+      setFeedback({ ok: !!j.correct });
+      await new Promise((res) => setTimeout(res, j.correct ? 800 : 1400));
+      setFeedback(null);
       if (j.done) {
-        setDone(true);
         await load(true);
-        setTimeout(() => router.push("/roadmap"), 900);
+        setDone({ weak: j.weakCount ?? 0 });
       } else if (j.problem) setP(j.problem);
     } catch {
       setErr(t.common.error);
@@ -80,88 +84,73 @@ export default function Diagnostic() {
   const expect: Expect | null = p ? { kind: p.kind, answer: "?", choices: p.choices, prompt: p.prompt } : null;
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-[620px] flex-col bg-paper">
-      {/* sky scene with the bridge */}
-      <div className="relative h-[380px] flex-none overflow-hidden border-b-[3px] border-ink bg-sky md:h-[400px]">
-        <svg viewBox="0 0 390 330" preserveAspectRatio="xMidYMax slice" className="absolute inset-0 h-full w-full" shapeRendering="crispEdges" aria-hidden>
-          <rect width="390" height="330" fill="#cfe8ff" />
-          <rect x="318" y="40" width="34" height="34" fill="#ffd85c" />
-          <g fill="#ffffff">
-            <rect x="40" y="60" width="60" height="12" />
-            <rect x="54" y="50" width="30" height="12" />
-            <rect x="200" y="84" width="54" height="10" />
-          </g>
-          <rect x="0" y="236" width="112" height="94" fill="#7a5230" />
-          <rect x="0" y="236" width="112" height="12" fill="#3fae49" />
-          <rect x="282" y="236" width="108" height="94" fill="#7a5230" />
-          <rect x="282" y="236" width="108" height="12" fill="#3fae49" />
-          <rect x="112" y="290" width="170" height="40" fill="#1e5fa8" />
-          {/* bridge blocks = progress */}
-          {Array.from({ length: total }, (_, i) => {
-            const w = 170 / total;
-            const filled = i < answered;
-            return filled ? (
-              <rect key={i} x={112 + i * w} y={236} width={w - 1} height={12} fill={results[i] ? "#ffc83d" : "#b0773a"} stroke="#1b1a17" strokeWidth={1.5} />
-            ) : i === answered ? (
-              <rect key={i} x={112 + i * w} y={236} width={w - 1} height={12} fill="none" stroke="#f28c28" strokeWidth={2} strokeDasharray="4 3" className="chalk-glow" />
-            ) : null;
-          })}
-        </svg>
-        <div className="absolute inset-x-3 top-3 z-10 flex items-center gap-2">
-          <Link href="/roadmap" aria-label="Chiqish" title="Chiqish" className="btn h-11 w-11 flex-none rounded-full p-0">
-            <X size={20} aria-hidden />
-          </Link>
-          <div className="flex h-11 flex-1 items-center gap-2.5 rounded-full border-[3px] border-ink bg-white px-3.5">
-            <div className="truncate font-pixel text-[14px] font-bold">{p?.skillTitle ?? t.diagnostic.title}</div>
-            <div className="ml-auto text-[13px] font-extrabold whitespace-nowrap">{t.diagnostic.question(Math.min(answered + 1, total), total)}</div>
-          </div>
+    <main className="mx-auto flex min-h-dvh max-w-[640px] flex-col bg-ph px-[18px] pt-4 pb-6">
+      <div className="flex h-[52px] items-center gap-3.5">
+        <Link href="/home" aria-label="Chiqish" title="Chiqish" className="icon-btn">
+          <CloseIcon />
+        </Link>
+        {/* the bridge: one block per question */}
+        <div className="flex flex-1 gap-1" role="img" aria-label={`Ko'prik: ${total} blokdan ${results.length} tasi qurildi`}>
+          {Array.from({ length: total }, (_, i) => (
+            <div
+              key={i}
+              className="h-2.5 flex-1 rounded-[5px]"
+              style={{ background: i < results.length ? (results[i] ? "#2f6bff" : "#ffc42e") : i === results.length ? "#bcd0ff" : "#e6ebf8" }}
+            />
+          ))}
         </div>
-        <div className="absolute inset-x-3 top-[66px] z-10 rounded-[18px] border-[3px] border-ink bg-white px-3.5 pt-2.5 pb-3 shadow-[3px_3px_0_#1b1a17]" aria-live="polite">
-          <div className="mb-0.5 font-pixel text-[12px] font-bold tracking-wide text-rust uppercase">{ch.name}</div>
-          <div className="text-[16px] leading-[1.4] font-bold">
-            {done ? t.diagnostic.done : feedback ? (feedback.ok ? t.diagnostic.correct : `${t.diagnostic.wrong} (${feedback.answer})`) : p ? p.q : answered === 0 ? t.diagnostic.intro : t.common.loading}
-          </div>
+        <div className="font-extrabold text-mut">
+          {Math.min(results.length + 1, total)} / {total}
         </div>
-        <div className="absolute bottom-[26%] left-3 z-10 md:left-6">
-          <div className="relative">
-            <Confetti burst={burst} />
-            <Character id={(user?.characterId ?? "blokbek") as CharacterId} size={84} state={done || feedback?.ok ? "celebrate" : busy ? "thinking" : "happy"} />
+      </div>
+
+      <div className="mt-2 flex items-end gap-2">
+        <TutorPortrait id={ch.id} pose={feedback?.ok ? "cheer" : "point"} frame="half" className="h-[120px] w-[120px] flex-none" alt="" />
+        <div className="card relative mb-4 flex-1 px-4 py-3" aria-live="polite">
+          <div className="text-[12px] font-black tracking-wide text-blue uppercase">{ch.name}</div>
+          <div className="text-[15px] leading-[1.4] font-extrabold">
+            {feedback ? (feedback.ok ? `${t.diagnostic.correct} +XP` : "Bu blokni keyinroq birga quramiz!") : results.length === 0 ? "Yo'lni ochish uchun yordam ber!" : p?.skillTitle}
           </div>
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 px-4 pt-4 pb-6">
-        {err && (
-          <div role="alert" className="rounded-xl border-[3px] border-ink bg-cream px-3 py-2 text-[14px] font-extrabold">
-            {err}
+      {err && (
+        <div role="alert" className="mb-3 rounded-[14px] bg-[#fff4e8] px-3.5 py-2.5 text-[14px] font-extrabold text-[#c2410c]">
+          {err}
+        </div>
+      )}
+
+      {p && expect && (
+        <div className="flex flex-col gap-3">
+          <div className="card p-5">
+            <div className="text-[13px] font-extrabold text-mut">{p.skillTitle}</div>
+            <div className="mt-2 text-center font-chalk text-[26px] leading-snug">{p.q}</div>
           </div>
-        )}
-        {p && expect && !done && (
-          <>
-            <div className="text-[13px] font-extrabold text-muted">{t.diagnostic.answerLabel}</div>
-            {expect.kind === "choice" ? (
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-                {expect.choices?.map((c) => (
-                  <button key={c} type="button" disabled={busy} onClick={() => void send(c)} className="btn h-[76px] rounded-[18px] font-chalk text-[26px] shadow-[0_6px_0_#1b1a17]">
-                    {c}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-2xl border-[3px] border-ink bg-white p-3">
-                <AnswerInput key={p.index} expect={expect} disabled={busy} onSubmit={(v) => void send(v)} />
-              </div>
-            )}
-            <button type="button" className="btn h-[52px] rounded-full font-body text-[15px] font-extrabold" disabled={busy} onClick={() => void send("", "answer")}>
-              {t.diagnostic.dontKnow} — keyin birga quramiz
-            </button>
-          </>
-        )}
-        <div className="mt-auto flex items-start gap-2.5 rounded-2xl border-[3px] border-ink bg-mint px-3.5 py-3">
-          <ShieldCheck size={20} className="mt-0.5 flex-none" aria-hidden />
-          <div className="text-[13px] leading-[1.4] font-bold">Bu imtihon emas. Vaqt chegarasi yo&apos;q, xato uchun jarima yo&apos;q — {ch.name} sen bilan birga yo&apos;l topadi.</div>
+          <AnswerInput key={p.index} expect={expect} disabled={busy} onSubmit={(v) => void send(v)} />
+          <button type="button" className="btn btn-soft w-full" disabled={busy} onClick={() => void send("")}>
+            {t.diagnostic.dontKnow} — keyin birga quramiz
+          </button>
+        </div>
+      )}
+
+      <div className="mt-auto flex items-start gap-2.5 rounded-2xl bg-white px-4 py-3 shadow-[0_4px_14px_rgba(31,54,120,.06)]">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22b45a" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="mt-0.5 flex-none">
+          <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />
+          <path d="M8.5 12l2.5 2.5 4.5-5" />
+        </svg>
+        <div className="text-[13px] leading-[1.4] font-bold text-mut">
+          Bu imtihon emas. Vaqt chegarasi yo&apos;q, xato uchun jarima yo&apos;q — {ch.name} sen bilan birga yo&apos;l topadi.
         </div>
       </div>
+
+      {done && (
+        <SuccessScreen
+          title={t.success.title}
+          subtitle={done.weak > 0 ? "Mana sening yo'ling. Birinchi qurilishni boshlaymiz!" : "Zo'r natija! Keyingi darajaga o'tamiz."}
+          characterId={ch.id}
+          primary={{ label: t.roadmap.title, onClick: () => router.push("/roadmap") }}
+        />
+      )}
     </main>
   );
 }

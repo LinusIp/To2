@@ -16,6 +16,7 @@
     "react-dom": "latest",
     "react-server-dom-webpack": "latest",
     "roughjs": "^4.6.6",
+    "three": "0.180.0",
     "vinext": "latest",
     "zod": "^4.6.7",
     "zustand": "^5.1.0"
@@ -27,11 +28,14 @@
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "@types/three": "0.180.0",
     "@vitejs/plugin-react": "latest",
     "@vitejs/plugin-rsc": "latest",
     "cf": "1.0.0-beta.32",
     "drizzle-kit": "^0.31.11",
     "esbuild": "^0.28.2",
+    "hersheytext": "2.0.0",
+    "sharp": "0.34.4",
     "tailwindcss": "latest",
     "typescript": "latest",
     "vite": "8.3.0",
@@ -41,7 +45,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "node scripts/characters-manifest.mjs && vite build",
     "start": "vite preview",
     "deploy": "pnpm build && node scripts/deploy.mjs",
     "deploy:cf": "vinext-cloudflare deploy",
@@ -49,6 +53,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate:remote": "wrangler d1 execute to2 --remote --file drizzle/0000_init.sql --yes",
     "typecheck": "tsc --noEmit",
-    "cf-typegen": "cf workers types"
+    "cf-typegen": "cf workers types",
+    "glyphs": "node scripts/build-glyphs.mjs"
   }
 }

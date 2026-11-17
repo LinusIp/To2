@@ -1,332 +1,219 @@
 "use client";
-// SVG board: renders BoardState in a fixed 1000×625 viewBox (scales on every screen).
-// Strokes animate in via stroke-dashoffset (pathLength=1); text reveals left→right via clipPath.
-import { memo, useEffect, useMemo, useState } from "react";
-import rough from "roughjs";
+// Chalk board that WRITES: every element is revealed stroke by stroke (handwriting.ts),
+// with a chalk SVG filter, a chalk piece following the tip, chalk-circle highlights and wipe-outs.
+// <BoardInk> is a <g> in the 1000×625 board space (embedded in the classroom stage);
+// <Board> wraps it in its own <svg> for standalone use (landing preview, tests).
+import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Color } from "@/lib/ai/schema";
-import { BOARD_H, BOARD_W, FONT_PX, NOTE_PANEL, bbox, type BoardEl, type BoardState } from "@/lib/board/model";
-import { layoutChalkTex, tokenizeTex } from "./chalkTex";
-import { PALETTE, type BoardTheme } from "./palette";
+import { BOARD_H, BOARD_W, NOTE_PANEL, bbox, type BoardEl, type BoardState } from "@/lib/board/model";
+import { boardTip } from "@/lib/board/tip";
+import { chalkEllipse, pathD, progressOf, rngFrom, strokesFor, type PlotFn, type Stroke } from "./handwriting";
 
-const gen = rough.generator();
+export type BoardTheme = "chalk";
 
-function seedOf(s: string) {
+const CHALK: Record<Color | "dim", string> = {
+  ink: "#f3f0e6",
+  blue: "#7cc7ff",
+  red: "#ff9bb0",
+  green: "#8be28b",
+  orange: "#ff9f43",
+  purple: "#cdb2ff",
+  yellow: "#f2c94c",
+  dim: "rgba(243,240,230,.35)",
+};
+
+function hash(s: string) {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-  return (h >>> 0) % 2 ** 31;
+  return h >>> 0;
 }
 
-const safeId = (k: string) => k.replace(/[^a-zA-Z0-9_-]/g, "_");
+/** One random seed per page load → each run of a lesson looks a little different. */
+const SESSION_SEED = Math.floor(Math.random() * 1e9);
 
-type Pal = (typeof PALETTE)["chalk"];
-const col = (pal: Pal, c: Color | undefined, d: Color = "ink") => pal[c ?? d] ?? pal.ink;
-
-/** rough.js drawable → animated <path>s */
-function RoughPaths({ drawable, p, width = 3.2 }: { drawable: ReturnType<typeof gen.rectangle>; p: number; width?: number }) {
-  const paths = useMemo(() => gen.toPaths(drawable), [drawable]);
-  return (
-    <>
-      {paths.map((ps, i) => (
-        <path
-          key={i}
-          d={ps.d}
-          stroke={ps.stroke === "none" ? undefined : ps.stroke}
-          strokeWidth={ps.stroke === "none" ? 0 : width}
-          fill={ps.fill ?? "none"}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          pathLength={1}
-          strokeDasharray={ps.stroke === "none" ? undefined : 1}
-          strokeDashoffset={ps.stroke === "none" ? undefined : 1 - p}
-          opacity={ps.stroke === "none" ? p : 1}
-        />
-      ))}
-    </>
-  );
-}
-
-function Reveal({ id, x, y, w, h, p, children }: { id: string; x: number; y: number; w: number; h: number; p: number; children: React.ReactNode }) {
-  if (p >= 1) return <>{children}</>;
-  const cid = `clip-${safeId(id)}`;
-  return (
-    <>
-      <clipPath id={cid}>
-        <rect x={x - 10} y={y - 10} width={Math.max(0, (w + 20) * p)} height={h + 40} />
-      </clipPath>
-      <g clipPath={`url(#${cid})`}>{children}</g>
-    </>
-  );
-}
-
-function niceStep(range: number) {
-  const raw = range / 10;
-  const mag = 10 ** Math.floor(Math.log10(raw || 1));
-  const n = raw / mag;
-  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
-}
-
-function Katex({ tex, x, y, fs, color, p }: { tex: string; x: number; y: number; fs: number; color: string; p: number }) {
-  const [html, setHtml] = useState<string | null>(null);
+// lazily compiled plot functions (mathjs is only loaded when a plot appears)
+const plotCache = new Map<string, PlotFn>();
+function usePlotFns(els: BoardEl[]) {
+  const [, force] = useState(0);
+  const fns = els.filter((e) => e.cmd.op === "plot").map((e) => (e.cmd as { fn: string }).fn);
   useEffect(() => {
-    let alive = true;
-    Promise.all([import("katex"), import("katex/dist/katex.min.css")]).then(([k]) => {
-      if (alive) setHtml(k.default.renderToString(tex, { throwOnError: false, output: "html" }));
-    });
-    return () => {
-      alive = false;
-    };
-  }, [tex]);
-  const w = Math.max(200, tex.length * fs * 0.4);
-  return (
-    <Reveal id={`k-${x}-${y}`} x={x} y={y} w={w} h={fs * 2.4} p={p}>
-      <foreignObject x={x} y={y} width={w} height={fs * 2.6}>
-        <div style={{ color, fontSize: fs * 0.8, lineHeight: 1.2 }} dangerouslySetInnerHTML={{ __html: html ?? tex }} />
-      </foreignObject>
-    </Reveal>
-  );
-}
-
-function Plot({ el, pal, p }: { el: Extract<BoardEl["cmd"], { op: "plot" }>; pal: Pal; p: number }) {
-  const [pts, setPts] = useState<string>("");
-  const { x, y, w, h, fn, xRange, yRange } = el;
-  useEffect(() => {
+    const missing = fns.filter((f) => !plotCache.has(f));
+    if (!missing.length) return;
     let alive = true;
     import("mathjs").then((m) => {
-      try {
-        const f = m.compile(fn.replace(/^y\s*=\s*/i, ""));
-        const out: string[] = [];
-        for (let i = 0; i <= 120; i++) {
-          const xv = xRange[0] + ((xRange[1] - xRange[0]) * i) / 120;
-          const yv = Number(f.evaluate({ x: xv }));
-          if (!Number.isFinite(yv)) continue;
-          const px = x + ((xv - xRange[0]) / (xRange[1] - xRange[0])) * w;
-          const py = y + h - ((yv - yRange[0]) / (yRange[1] - yRange[0])) * h;
-          if (py < y - 5 || py > y + h + 5) continue;
-          out.push(`${out.length ? "L" : "M"}${px.toFixed(1)},${py.toFixed(1)}`);
+      for (const f of missing) {
+        try {
+          const c = m.compile(f.replace(/^y\s*=\s*/i, ""));
+          plotCache.set(f, (x: number) => Number(c.evaluate({ x })));
+        } catch {
+          plotCache.set(f, null);
         }
-        if (alive) setPts(out.join(" "));
-      } catch {
-        console.warn("[board] bad plot fn", fn);
       }
+      if (alive) force((n) => n + 1);
     });
     return () => {
       alive = false;
     };
-  }, [fn, x, y, w, h, xRange, yRange]);
-  const ax = x + ((0 - xRange[0]) / (xRange[1] - xRange[0])) * w;
-  const ay = y + h - ((0 - yRange[0]) / (yRange[1] - yRange[0])) * h;
-  const c = col(pal, el.color, "yellow");
-  return (
-    <g>
-      <g stroke={pal.ink} strokeWidth={2.5} opacity={0.8} strokeDasharray={1} pathLength={1}>
-        {ay >= y && ay <= y + h && <line x1={x} x2={x + w} y1={ay} y2={ay} pathLength={1} strokeDasharray={1} strokeDashoffset={1 - Math.min(1, p * 3)} />}
-        {ax >= x && ax <= x + w && <line x1={ax} x2={ax} y1={y} y2={y + h} pathLength={1} strokeDasharray={1} strokeDashoffset={1 - Math.min(1, p * 3)} />}
-      </g>
-      {pts && <path d={pts} fill="none" stroke={c} strokeWidth={4} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - Math.max(0, (p - 0.3) / 0.7)} />}
-    </g>
-  );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fns.join("|")]);
+  return (fn: string) => plotCache.get(fn) ?? null;
 }
 
-const Element = memo(function Element({ el, p, pal }: { el: BoardEl; p: number; pal: Pal }) {
-  const c = el.cmd;
-  const seed = seedOf(el.key);
-  let body: React.ReactNode = null;
-
-  switch (c.op) {
-    case "write": {
-      const fs = FONT_PX[c.size ?? "m"];
-      const b = bbox(c);
-      body = (
-        <Reveal id={el.key} x={b.x} y={b.y} w={b.w} h={b.h} p={p}>
-          <text x={c.x} y={c.y + fs * 0.88} fontSize={fs} fill={col(pal, c.color)} xmlSpace="preserve">
-            {c.text}
-          </text>
-        </Reveal>
-      );
-      break;
-    }
-    case "latex": {
-      const fs = FONT_PX[c.size ?? "m"];
-      const toks = tokenizeTex(c.tex);
-      if (!toks) {
-        body = <Katex tex={c.tex} x={c.x} y={c.y} fs={fs} color={col(pal, c.color)} p={p} />;
-        break;
-      }
-      const lay = layoutChalkTex(toks, c.x, c.y, fs, col(pal, c.color));
-      body = (
-        <Reveal id={el.key} x={c.x} y={c.y} w={lay.width} h={lay.height} p={p}>
-          {lay.nodes}
-        </Reveal>
-      );
-      break;
-    }
-    case "line": {
-      const stroke = col(pal, c.color);
-      const d = gen.line(c.from[0], c.from[1], c.to[0], c.to[1], { seed, stroke, roughness: 0.9, bowing: 0.6 });
-      const ang = Math.atan2(c.to[1] - c.from[1], c.to[0] - c.from[0]);
-      body = (
-        <>
-          <RoughPaths drawable={d} p={p} />
-          {c.arrow && p >= 0.95 && (
-            <path
-              d={`M${c.to[0] - 18 * Math.cos(ang - 0.45)},${c.to[1] - 18 * Math.sin(ang - 0.45)} L${c.to[0]},${c.to[1]} L${c.to[0] - 18 * Math.cos(ang + 0.45)},${c.to[1] - 18 * Math.sin(ang + 0.45)}`}
-              stroke={stroke}
-              strokeWidth={3.5}
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          )}
-        </>
-      );
-      break;
-    }
-    case "rect":
-    case "circle":
-    case "ellipse": {
-      const stroke = col(pal, c.color);
-      const fill = c.fill ? col(pal, c.fill) : undefined;
-      const opts = { seed, stroke, roughness: 1.1, fill, fillStyle: "solid" as const, fillWeight: 2 };
-      const d =
-        c.op === "rect"
-          ? gen.rectangle(c.x, c.y, c.w, c.h, opts)
-          : gen.ellipse(c.x + c.w / 2, c.y + c.h / 2, c.op === "circle" ? Math.min(c.w, c.h) : c.w, c.op === "circle" ? Math.min(c.w, c.h) : c.h, opts);
-      body = (
-        <g opacity={fill ? 0.95 : 1}>
-          <RoughPaths drawable={d} p={p} />
-        </g>
-      );
-      break;
-    }
-    case "fractionbar": {
-      const h = c.h ?? 54;
-      const stroke = pal.ink;
-      const fill = col(pal, c.color, "blue");
-      const outlineP = Math.min(1, p * 1.6);
-      const fillP = Math.max(0, (p - 0.55) / 0.45);
-      const pw = c.w / c.parts;
-      const outline = gen.rectangle(c.x, c.y, c.w, h, { seed, stroke, roughness: 0.8 });
-      body = (
-        <g>
-          {c.label && (
-            <text x={c.x} y={c.y - 10} fontSize={26} fill={pal.ink} opacity={0.85 * outlineP}>
-              {c.label}
-            </text>
-          )}
-          {Array.from({ length: Math.min(c.filled, c.parts) }, (_, i) => (
-            <rect key={i} x={c.x + i * pw + 2} y={c.y + 2} width={pw - 4} height={h - 4} fill={fill} opacity={0.85 * fillP} />
-          ))}
-          <RoughPaths drawable={outline} p={outlineP} width={3.5} />
-          {Array.from({ length: c.parts - 1 }, (_, i) => (
-            <line
-              key={i}
-              x1={c.x + (i + 1) * pw}
-              x2={c.x + (i + 1) * pw}
-              y1={c.y}
-              y2={c.y + h}
-              stroke={stroke}
-              strokeWidth={3}
-              pathLength={1}
-              strokeDasharray={1}
-              strokeDashoffset={1 - Math.max(0, Math.min(1, (p - 0.35) * 3))}
-            />
-          ))}
-        </g>
-      );
-      break;
-    }
-    case "numberline": {
-      const stroke = pal.ink;
-      const step = niceStep(c.max - c.min);
-      const ticks: number[] = [];
-      for (let v = Math.ceil(c.min / step) * step; v <= c.max + 1e-9; v += step) ticks.push(Math.round(v * 1e6) / 1e6);
-      const X = (v: number) => c.x + ((v - c.min) / (c.max - c.min || 1)) * c.w;
-      const lineP = Math.min(1, p * 1.5);
-      const tickP = Math.max(0, (p - 0.4) / 0.6);
-      body = (
-        <g>
-          <RoughPaths drawable={gen.line(c.x, c.y, c.x + c.w, c.y, { seed, stroke, roughness: 0.6 })} p={lineP} />
-          {ticks.map((v, i) => (
-            <g key={v} opacity={tickP >= i / ticks.length ? 1 : 0}>
-              <line x1={X(v)} x2={X(v)} y1={c.y - 10} y2={c.y + 10} stroke={stroke} strokeWidth={3} />
-              <text x={X(v)} y={c.y + 40} fontSize={24} fill={stroke} textAnchor="middle">
-                {v}
-              </text>
-            </g>
-          ))}
-          {(c.marks ?? []).map((m) => (
-            <g key={`m${m}`} opacity={tickP >= 0.95 ? 1 : 0}>
-              <circle cx={X(m)} cy={c.y} r={9} fill={pal.yellow} />
-              <text x={X(m)} y={c.y - 18} fontSize={26} fill={pal.yellow} textAnchor="middle">
-                {m}
-              </text>
-            </g>
-          ))}
-        </g>
-      );
-      break;
-    }
-    case "plot":
-      body = <Plot el={c} pal={pal} p={p} />;
-      break;
-  }
-
-  // Highlight: a hand-drawn ellipse around the element.
-  let hl: React.ReactNode = null;
-  if (el.highlight) {
-    const b = bbox(c);
-    const pad = 14;
-    hl = (
-      <g className="chalk-glow">
-        <RoughPaths
-          drawable={gen.ellipse(b.x + b.w / 2, b.y + b.h / 2, b.w + pad * 3, b.h + pad * 2, { seed: seed + 7, stroke: col(pal, el.highlight), roughness: 1.4 })}
-          p={1}
-          width={3}
-        />
-      </g>
-    );
-  }
-
+const Strokes = memo(function Strokes({ strokes, drawn }: { strokes: Stroke[]; drawn: number[] | null }) {
   return (
-    <g data-id={el.id} data-layer={el.layer}>
-      {body}
-      {hl}
-    </g>
+    <>
+      {strokes.map((s, i) => {
+        const d = drawn ? drawn[i] : s.len;
+        if (d <= 0) return null;
+        const partial = d < s.len;
+        return (
+          <path
+            key={i}
+            d={pathD(s.pts)}
+            fill="none"
+            stroke={CHALK[s.color] ?? CHALK.ink}
+            strokeWidth={s.width}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={partial ? `${s.len} ${s.len}` : undefined}
+            strokeDashoffset={partial ? s.len - d : undefined}
+          />
+        );
+      })}
+    </>
   );
 });
 
-/** Where the chalk tip is for the element currently being drawn. */
-function tipPos(el: BoardEl, p: number): [number, number] {
-  const c = el.cmd;
-  if (c.op === "line") return [c.from[0] + (c.to[0] - c.from[0]) * p, c.from[1] + (c.to[1] - c.from[1]) * p];
-  const b = bbox(c);
-  if (c.op === "write" || c.op === "latex") return [b.x + b.w * p, b.y + b.h * 0.75];
-  // walk the outline: top → right → bottom → left
-  const per = 2 * (b.w + b.h);
-  let d = per * p;
-  if (d < b.w) return [b.x + d, b.y];
-  d -= b.w;
-  if (d < b.h) return [b.x + b.w, b.y + d];
-  d -= b.h;
-  if (d < b.w) return [b.x + b.w - d, b.y + b.h];
-  d -= b.w;
-  return [b.x, b.y + b.h - d];
+function Element({ el, p, plot }: { el: BoardEl; p: number; plot: (fn: string) => PlotFn }) {
+  const plotFn = el.cmd.op === "plot" ? plot(el.cmd.fn) : null;
+  const strokes = useMemo(
+    () => strokesFor(el.cmd, rngFrom(SESSION_SEED ^ hash(el.key + JSON.stringify(el.cmd))), plotFn),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [el.key, JSON.stringify(el.cmd), plotFn],
+  );
+  const prog = p >= 1 ? null : progressOf(strokes, p);
+  return (
+    <g data-id={el.id} data-layer={el.layer}>
+      <Strokes strokes={strokes} drawn={prog ? prog.drawn : null} />
+      {el.highlight && <Highlight el={el} />}
+    </g>
+  );
 }
 
-export interface BoardProps {
+/** Chalk circle drawn around an element (animates in once). */
+function Highlight({ el }: { el: BoardEl }) {
+  const b = bbox(el.cmd);
+  const d = useMemo(() => pathD(chalkEllipse(b.x + b.w / 2, b.y + b.h / 2, b.w / 2 + 26, b.h / 2 + 16, rngFrom(hash(el.key + "hl")))), [b.x, b.y, b.w, b.h, el.key]);
+  return <path d={d} fill="none" stroke={CHALK[el.highlight ?? "yellow"]} strokeWidth={4} strokeLinecap="round" pathLength={1} className="hl-draw" />;
+}
+
+export interface BoardInkProps {
   state: BoardState;
-  /** key of the element currently drawing + its progress 0..1 */
   active?: { key: string; p: number } | null;
-  theme?: BoardTheme;
-  label?: string;
-  className?: string;
+  /** report the chalk tip to the 3D tutor */
+  reportTip?: boolean;
 }
 
-export default function Board({ state, active, theme = "chalk", label, className }: BoardProps) {
-  const pal = PALETTE[theme];
-  const activeEl = active ? state.els.find((e) => e.key === active.key) : undefined;
-  const tip = activeEl && active && active.p < 1 ? tipPos(activeEl, active.p) : null;
+export function BoardInk({ state, active, reportTip = false }: BoardInkProps) {
+  const uid = useId().replace(/:/g, "");
+  const plot = usePlotFns(state.els);
 
+  // erased elements wipe out instead of vanishing
+  const prev = useRef<Map<string, BoardEl>>(new Map());
+  const [wiping, setWiping] = useState<BoardEl[]>([]);
+  useEffect(() => {
+    const now = new Map(state.els.map((e) => [e.key, e]));
+    const gone = [...prev.current.values()].filter((e) => !now.has(e.key));
+    prev.current = now;
+    if (gone.length) {
+      setWiping((w) => [...w, ...gone]);
+      const t = setTimeout(() => setWiping((w) => w.filter((x) => !gone.includes(x))), 520);
+      return () => clearTimeout(t);
+    }
+  }, [state.els]);
+
+  // chalk tip of the element being written
+  const activeEl = active ? state.els.find((e) => e.key === active.key) : undefined;
+  const tip = useMemo(() => {
+    if (!activeEl || !active || active.p >= 1) return null;
+    const plotFn = activeEl.cmd.op === "plot" ? plot(activeEl.cmd.fn) : null;
+    const strokes = strokesFor(activeEl.cmd, rngFrom(SESSION_SEED ^ hash(activeEl.key + JSON.stringify(activeEl.cmd))), plotFn);
+    return progressOf(strokes, active.p).tip;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeEl?.key, activeEl?.cmd, active?.p]);
+
+  useEffect(() => {
+    if (!reportTip) return;
+    if (tip) {
+      boardTip.x = tip[0];
+      boardTip.y = tip[1];
+      boardTip.active = true;
+      boardTip.at = performance.now();
+    } else boardTip.active = false;
+  }, [tip, reportTip]);
+  useEffect(
+    () => () => {
+      if (reportTip) boardTip.active = false;
+    },
+    [reportTip],
+  );
+
+  const main = state.els.filter((e) => e.layer === "main");
+  const notes = state.els.filter((e) => e.layer === "note");
+  const hasNoteText = notes.some((e) => e.cmd.op === "write" || e.cmd.op === "latex");
+
+  return (
+    <g>
+      <defs>
+        <filter id={`chalk-${uid}`} x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="2" seed="3" result="n" />
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G" result="d" />
+          <feTurbulence type="fractalNoise" baseFrequency="2.6" numOctaves="1" seed="9" result="n2" />
+          <feColorMatrix in="n2" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -1.6 1.25" result="holes" />
+          <feComposite in="d" in2="holes" operator="in" />
+        </filter>
+      </defs>
+      <g filter={`url(#chalk-${uid})`}>
+        {main.map((el) => (
+          <Element key={el.key} el={el} p={active?.key === el.key ? active.p : 1} plot={plot} />
+        ))}
+        <g opacity={state.noteDim ? 0.3 : 1} style={{ transition: "opacity 400ms" }}>
+          {hasNoteText && (
+            <rect
+              x={NOTE_PANEL.x}
+              y={NOTE_PANEL.y}
+              width={NOTE_PANEL.w}
+              height={NOTE_PANEL.h}
+              rx={14}
+              fill="#1d3027"
+              fillOpacity={0.9}
+              stroke={CHALK.orange}
+              strokeWidth={3}
+              strokeDasharray="10 8"
+            />
+          )}
+          {notes.map((el) => (
+            <Element key={el.key} el={el} p={active?.key === el.key ? active.p : 1} plot={plot} />
+          ))}
+        </g>
+        {wiping.map((el) => (
+          <g key={`w-${el.key}`} className="wipe-out">
+            <Element el={el} p={1} plot={plot} />
+          </g>
+        ))}
+      </g>
+      {tip && (
+        <g transform={`translate(${tip[0].toFixed(1)},${tip[1].toFixed(1)}) rotate(-35)`} aria-hidden>
+          <rect x={-3} y={-22} width={9} height={26} rx={2} fill="#f4f1e8" opacity={0.95} />
+          <circle cx={1} cy={2} r={3} fill="#fff" opacity={0.6} />
+        </g>
+      )}
+    </g>
+  );
+}
+
+/** Standalone chalkboard (its own <svg>). */
+export default function Board({ state, active, label, className }: BoardInkProps & { label?: string; className?: string; theme?: BoardTheme }) {
   return (
     <svg
       viewBox={`0 0 ${BOARD_W} ${BOARD_H}`}
@@ -334,33 +221,18 @@ export default function Board({ state, active, theme = "chalk", label, className
       role="img"
       aria-label={label ?? "Doska"}
       className={className}
-      style={{ display: "block", width: "100%", height: "100%", fontFamily: "var(--font-chalk)", fontWeight: 700 }}
+      style={{ display: "block", width: "100%", height: "100%" }}
     >
-      <rect width={BOARD_W} height={BOARD_H} fill={pal.bg} />
-      {/* faint chalk dust grid */}
-      <g stroke={pal.grid} strokeWidth={1}>
-        {Array.from({ length: 9 }, (_, i) => (
-          <line key={`h${i}`} x1={0} x2={BOARD_W} y1={(i + 1) * 62.5} y2={(i + 1) * 62.5} />
-        ))}
-      </g>
-      <g>
-        {state.els
-          .filter((e) => e.layer === "main")
-          .map((el) => (
-            <Element key={el.key} el={el} pal={pal} p={active?.key === el.key ? active.p : 1} />
-          ))}
-      </g>
-      <g opacity={state.noteDim ? 0.3 : 1} style={{ transition: "opacity 400ms" }}>
-        {state.els.some((e) => e.layer === "note" && (e.cmd.op === "write" || e.cmd.op === "latex")) && (
-          <rect x={NOTE_PANEL.x} y={NOTE_PANEL.y} width={NOTE_PANEL.w} height={NOTE_PANEL.h} rx={14} fill={pal.bg} fillOpacity={0.94} stroke={pal.orange} strokeWidth={3} strokeDasharray="10 8" />
-        )}
-        {state.els
-          .filter((e) => e.layer === "note")
-          .map((el) => (
-            <Element key={el.key} el={el} pal={pal} p={active?.key === el.key ? active.p : 1} />
-          ))}
-      </g>
-      {tip && <circle cx={tip[0]} cy={tip[1]} r={8} fill={pal.yellow} className="chalk-glow" />}
+      <rect width={BOARD_W} height={BOARD_H} fill="#253a30" />
+      <defs>
+        <radialGradient id="sb-smudge" cx=".5" cy=".5" r=".5">
+          <stop offset="0" stopColor="#fff" stopOpacity=".05" />
+          <stop offset="1" stopColor="#fff" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <ellipse cx="300" cy="300" rx="380" ry="200" fill="url(#sb-smudge)" />
+      <ellipse cx="760" cy="470" rx="260" ry="140" fill="url(#sb-smudge)" />
+      <BoardInk state={state} active={active} />
     </svg>
   );
 }

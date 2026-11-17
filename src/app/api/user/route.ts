@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { createSession, destroySession, json, bad, userIdFor } from "@/lib/server/session";
 import { createUser, deleteUser, getMastery, getUser, lessonsFinished, publicUser, updateUser } from "@/lib/server/repo";
-import { CHARACTER_BY_ID, isUnlocked, type CharacterId } from "@/config/characters";
+import { CHARACTER_BY_ID, CHARACTER_IDS, isUnlocked, type CharacterId } from "@/config/characters";
 
 const CreateBody = z.object({
   nickname: z.string().trim().min(1).max(24),
   grade: z.coerce.number().int().min(5).max(9),
-  characterId: z.enum(["blokbek", "agent-shox", "robo-rayhon", "chaqmoq"]),
+  characterId: z.enum(CHARACTER_IDS),
 });
 
 export async function GET(req: Request) {
@@ -43,7 +43,7 @@ export async function PATCH(req: Request) {
   if (body.data.characterId) {
     const c = body.data.characterId as CharacterId;
     if (!CHARACTER_BY_ID[c]) return bad("Qahramon topilmadi");
-    if (!isUnlocked(c, user.xp)) return bad("Bu qahramon hali yopiq", 403);
+    if (!isUnlocked(c, user.xp, user.streakDays)) return bad("Bu qahramon hali yopiq", 403);
     patch.characterId = c;
   }
   if (body.data.grade) patch.grade = body.data.grade;
