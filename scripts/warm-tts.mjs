@@ -18,22 +18,26 @@ await build({
   logLevel: "silent",
 });
 const { DEMO_LESSONS, mockInterrupt } = await import("file://" + out);
-const voices = ["blokbek", "agent-shox", "lola", "ziyo", "sardor", "ravshan", "diyorbek", "shadow"];
-const phrases = new Set();
-for (const l of Object.values(DEMO_LESSONS)) for (const s of l.segments) phrases.add(s.say);
-for (const s of mockInterrupt("Nega maxrajlarni oltiga keltirdik?", "frac-add-unlike")) phrases.add(s.say);
-for (const p of [
-  "Deyarli! Yana bir bor o'ylab ko'r.",
-  "Hechqisi yo'q, yana urinib ko'r!",
-  "Yaqin qolding! Doskaga qara.",
-  "Hechqisi yo'q! Xohlasang, ko'rsatib beraman.",
-  "Tushunarli bo'ldimi? Davom etamizmi?",
-  "Yaxshi savol! Hozir ko'rsataman.",
-  "Qiziq savol! Bir soniya o'ylab olay.",
-  "To'g'ri javob: 6. Keling, davom etamiz!",
-  "To'g'ri javob: 2. Keling, davom etamiz!",
-]) phrases.add(p);
-const list = [...phrases];
+// MVP: only the playable tutors (the others are "Tez orada")
+const voices = ["blokbek", "lola", "ziyo"];
+/** phrases carry their emotion: the server picks speed + speech tag per emotion (src/lib/ai/prosody.ts) */
+const phrases = new Map(); // key → { text, emotion, lead }
+const add = (text, emotion = "neutral", lead = false) => phrases.set(`${emotion}|${lead}|${text}`, { text, emotion, lead });
+for (const l of Object.values(DEMO_LESSONS)) for (const s of l.segments) add(s.say, s.emotion);
+mockInterrupt("Nega maxrajlarni oltiga keltirdik?", "frac-add-unlike").forEach((s, i) => add(s.say, s.emotion, i === 0));
+const COMMON = [
+  ["Deyarli! Yana bir bor o'ylab ko'r.", "encouraging"],
+  ["Hechqisi yo'q, yana urinib ko'r!", "encouraging"],
+  ["Yaqin qolding! Doskaga qara.", "encouraging"],
+  ["Hechqisi yo'q! Xohlasang, ko'rsatib beraman.", "encouraging"],
+  ["Tushunarli bo'ldimi? Davom etamizmi?", "encouraging"],
+  ["Hmm… yaxshi savol! Hozir ko'rsataman.", "thinking"],
+  ["Qiziq savol! Qani, o'ylab ko'raylik…", "thinking"],
+  ["To'g'ri javob: 6. Keling, davom etamiz!", "encouraging"],
+  ["To'g'ri javob: 2. Keling, davom etamiz!", "encouraging"],
+];
+for (const [t, e] of COMMON) add(t, e);
+const list = [...phrases.values()];
 console.log(`${list.length} phrases × ${voices.length} voices → ${base}`);
 /** fetch with 3 retries (the network sometimes resets long runs) */
 async function get(u, init) {
@@ -48,32 +52,35 @@ async function get(u, init) {
     }
   }
 }
+const ttsUrl = (v, p) => `${base}/api/tts?voice=${encodeURIComponent(v)}&text=${encodeURIComponent(p.text)}${p.emotion !== "neutral" ? "&emotion=" + p.emotion : ""}${p.lead ? "&lead=1" : ""}`;
 let ok = 0, fail = 0;
-// each tutor's own greeting ("Ovozini eshit" on the choose-tutor screen)
+// each tutor's own greeting ("Ovozini eshit" on the choose-tutor screen, spoken "happy")
 const GREETINGS = {
   blokbek: "Salom! Men Blokbek. Matematikani blokma-blok quramiz!",
-  "agent-shox": "Agent Shox. Har bir masala — bu missiya. Rejani tuzamiz.",
   lola: "Salom, men Lola. Xato qilsang ham qo'rqma — birga tushunamiz.",
   ziyo: "Men Ziyo! Doim so'rayman: nega? Keling, birga bilib olamiz!",
-  sardor: "Sardor. Qisqa va aniq: mantiq bilan yechamiz.",
-  ravshan: "Ravshan — tez hisob ustasi. Sizga sirli usullarni o'rgataman!",
-  diyorbek: "Diyorbek. Har bir formulaning ortida haqiqiy hayot bor.",
-  shadow: "Sirli masalalar seni kutmoqda…",
 };
+const fracs = DEMO_LESSONS["frac-add-unlike"].segments.map((s) => ({ text: s.say, emotion: s.emotion, lead: false }));
+const common = COMMON.map(([text, emotion]) => ({ text, emotion, lead: false }));
 for (const v of voices) {
-  // Blokbek is the demo character: warm everything. Others: warm the fractions lesson only.
-  const greet = GREETINGS[v] ? [GREETINGS[v]] : [];
-  const mine = v === "blokbek" ? [...list, ...greet] : [...greet, ...DEMO_LESSONS["frac-add-unlike"].segments.map((s) => s.say), "Yaxshi savol! Hozir ko'rsataman.", "Qiziq savol! Bir soniya o'ylab olay.", "Tushunarli bo'ldimi? Davom etamizmi?"];
-  for (const text of mine) {
-    const u = `${base}/api/tts?voice=${encodeURIComponent(v)}&text=${encodeURIComponent(text)}`;
-    const { r } = await get(u);
-    const c = r.headers.get("x-tts-cache");
-    if (r.status === 200) ok++;
-    else fail++;
-    process.stdout.write(r.status === 200 ? (c === "hit" ? "." : "+") : "x");
-  }
+  // Blokbek is the demo character: warm everything. Others: the fractions lesson + common phrases.
+  const greet = GREETINGS[v] ? [{ text: GREETINGS[v], emotion: "happy", lead: false }] : [];
+  const mine = v === "blokbek" ? [...list, ...greet] : [...greet, ...fracs, ...common];
+  // 4 at a time
+  const q = [...mine];
+  await Promise.all(Array.from({ length: 4 }, async () => {
+    while (q.length) {
+      const p = q.shift();
+      const { r } = await get(ttsUrl(v, p));
+      const c = r.headers.get("x-tts-cache");
+      if (r.status === 200) ok++;
+      else fail++;
+      process.stdout.write(r.status === 200 ? (c === "hit" ? "." : "+") : "x");
+    }
+  }));
 }
-console.log(`\nok=${ok} fail=${fail}`);
+console.log(`
+ok=${ok} fail=${fail}`);
 
 // Warm the LLM answers (KV cache) + their audio for the demo questions (CLAUDE.md §15 step 5).
 const DEMO_QUESTIONS = ["Nega maxrajlarni ko'paytirdik?", "Nega maxrajlarni oltiga keltirdik?", "EKUK nima?"];
@@ -84,9 +91,10 @@ for (const question of DEMO_QUESTIONS) {
     body: JSON.stringify({ mode: "interrupt", skillId: "frac-add-unlike", characterId: "blokbek", grade: 6, question, segment: "", board: [], history: [] }),
   });
   const text = new TextDecoder().decode(body);
-  const says = [...text.matchAll(/^data: (\{.*\})$/gm)].map((m) => JSON.parse(m[1]).say).filter(Boolean);
-  for (const say of says) {
-    const { r: a } = await get(`${base}/api/tts?voice=blokbek&text=${encodeURIComponent(say)}`);
+  const says = [...text.matchAll(/^data: (\{.*\})$/gm)].map((m) => JSON.parse(m[1])).filter((j) => j.say);
+  for (const [i, j] of says.entries()) {
+    // same URL the lesson player uses: emotion + the short pause before the first answer segment
+    const { r: a } = await get(ttsUrl("blokbek", { text: j.say, emotion: j.emotion ?? "neutral", lead: i === 0 }));
     process.stdout.write(a.status === 200 ? "+" : "x");
   }
   console.log(` ${question} → ${says.length} segments`);

@@ -17,7 +17,7 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
   const hear = () => {
     unlockAudio();
     setTalking(true);
-    const s = speak(sel.hi, sel.id);
+    const s = speak(sel.hi, sel.id, { emotion: "happy" });
     void s.ended.then(() => setTalking(false));
   };
 

@@ -196,11 +196,12 @@ async function playSegment(track: "main" | "note", index: number, resume?: { t: 
 
   // prefetch the next one while this plays
   const next = list[index + 1];
-  if (next) prefetchSpeech(next.say, s.voice);
+  if (next) prefetchSpeech(next.say, s.voice, { emotion: next.emotion });
 
   const layer: Layer = seg.layer ?? (track === "note" ? "note" : "main");
   tl = { gen: my, track, index, layer, cmds: seg.board, slots: null, applied: resume?.applied ?? 0, offset: resume?.t ?? 0, start: now(), running: false, speechEnded: false };
-  const sp = speak(seg.say, s.voice, { rate: s.rate, fromMs: resume?.audioMs, muted: s.muted });
+  // emotion → speed/tags on the server; the first answer to a learner question starts with a short pause
+  const sp = speak(seg.say, s.voice, { rate: s.rate, fromMs: resume?.audioMs, muted: s.muted, emotion: seg.emotion, lead: track === "note" && index === 0 && !resume });
   speech = sp;
   const dur = await sp.started;
   if (my !== gen || !tl) return;
@@ -408,7 +409,7 @@ export async function ask(question: string, voice = false, simpler = false) {
   if (!simpler) {
     const filler = FILLERS[Math.floor(Math.random() * FILLERS.length)];
     speech?.stop();
-    const fs = speak(filler, get().voice, { rate: get().rate, muted: get().muted });
+    const fs = speak(filler, get().voice, { rate: get().rate, muted: get().muted, emotion: "thinking" });
     speech = fs;
     fillerDone = Promise.race([fs.ended, new Promise<void>((r) => setTimeout(r, 4000))]);
     set({ caption: filler });
@@ -490,7 +491,7 @@ export function explainAgain() {
   void ask(lastQuestion, false, true);
 }
 
-export const FILLERS = ["Yaxshi savol! Hozir ko'rsataman.", "Qiziq savol! Bir soniya o'ylab olay."];
+export const FILLERS = ["Hmm… yaxshi savol! Hozir ko'rsataman.", "Qiziq savol! Qani, o'ylab ko'raylik…"];
 
 const ENCOURAGE = ["Deyarli! Yana bir bor o'ylab ko'r.", "Hechqisi yo'q, yana urinib ko'r!", "Yaqin qolding! Doskaga qara."];
 
@@ -531,7 +532,7 @@ export async function submitAnswer(given: string) {
     const say = misses >= 2 ? "Hechqisi yo'q! Xohlasang, ko'rsatib beraman." : ENCOURAGE[misses % ENCOURAGE.length];
     set({ misses, feedback: { kind: "wrong", text: T.lesson.tryAgain }, caption: say, emotion: "encouraging" });
     speech?.stop();
-    speech = speak(say, s.voice, { rate: s.rate, muted: s.muted });
+    speech = speak(say, s.voice, { rate: s.rate, muted: s.muted, emotion: "encouraging" });
   }
 }
 
@@ -542,7 +543,7 @@ export function showMe() {
   const say = `To'g'ri javob: ${s.expect.answer}. Keling, davom etamiz!`;
   speech?.stop();
   set({ caption: say, expect: null, feedback: null, emotion: "encouraging" });
-  const sp = speak(say, s.voice, { rate: s.rate, muted: s.muted });
+  const sp = speak(say, s.voice, { rate: s.rate, muted: s.muted, emotion: "encouraging" });
   speech = sp;
   void sp.ended.then(() => {
     fire({ type: "ANSWER_CORRECT" });

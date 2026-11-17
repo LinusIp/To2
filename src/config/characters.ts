@@ -46,7 +46,15 @@ export interface CharacterConfig {
   unlockXp: number;
   color: string;
   voxel: VoxelCfg;
+  /**
+   * VoiceLab TTS: model (lison = v1 flat; lison-v2 = "Expressive", takes [happy]/[excited]/[calm]
+   * tags, 1.5 credits/char) and base speed (v2 speaks ~1.4× slower than v1 at speed 1).
+   * Voice ids live in src/lib/ai/index.ts (overridable with the VOICE_IDS var). A/B in REPORT.md.
+   */
+  tts?: { model: "lison" | "lison-v2"; speed: number };
 }
+
+export const DEFAULT_TTS = { model: "lison", speed: 1 } as const;
 
 const C = (c: Omit<CharacterConfig, "unlockXp">): CharacterConfig => ({ ...c, unlockXp: c.unlock === "streak" ? 9999 : c.unlock });
 
@@ -60,6 +68,7 @@ export const CHARACTERS: CharacterConfig[] = [
     catchphrases_uz: ["Keling, blokma-blok quramiz!", "Zo'r qurilish!", "Yana bitta blok qo'shamiz."],
     unlock: 0,
     status: "playable",
+    tts: { model: "lison-v2", speed: 1.28 }, // Javohir — friendly builder
     color: "#2f6bff",
     voxel: { skin: "#c98b5e", hair: "#2b1d14", hairStyle: "messy", top: { c: "#24262d", side: "#1b1d22", kind: "hoodie", print: "To2", hem: true, cuff: "#e0873a" }, pants: ["#34446a", "#3d5080"], shoes: "#f2f2f2", sole: "#3b6fd9", acc: ["neckphones"] },
   }),
@@ -84,6 +93,7 @@ export const CHARACTERS: CharacterConfig[] = [
     catchphrases_uz: ["Xato — bu o'rganish!", "Juda yaxshi!", "Sekin-asta, birga."],
     unlock: 0,
     status: "playable",
+    tts: { model: "lison-v2", speed: 1.22 }, // Gulya — warm, patient (female)
     color: "#e0457b",
     voxel: { skin: "#d9a273", hair: "#241812", hairStyle: "long", female: true, top: { c: "#f1ede6", side: "#d9d3c8", kind: "vest", vest: "#e0457b" }, pants: ["#34446a", "#3d5080"], shoes: "#ffffff", sole: "#e0457b", acc: ["longhair", "flower"] },
   }),
@@ -96,6 +106,7 @@ export const CHARACTERS: CharacterConfig[] = [
     catchphrases_uz: ["Nega shunday ekan?", "Keling, tekshirib ko'ramiz!", "Qiziq-a?"],
     unlock: 0,
     status: "playable",
+    tts: { model: "lison-v2", speed: 1.3 }, // Rustam — curious, young
     color: "#3c9a3c",
     voxel: { skin: "#d39a6c", hair: "#2b1d14", hairStyle: "hood", hood: "#3c9a3c", top: { c: "#3c9a3c", side: "#2f7d2f", kind: "hoodie" }, pants: ["#2f3a2f", "#36433a"], shoes: "#f2f2f2", sole: "#3c9a3c", acc: ["hoodup", "headphones"] },
   }),

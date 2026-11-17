@@ -9,7 +9,7 @@ export interface STT {
 }
 
 export interface TTS {
-  synthesize(text: string, voiceId: string): Promise<{ audio: ArrayBuffer; mime: string }>;
+  synthesize(text: string, voiceId: string, opts?: { model?: string; speed?: number }): Promise<{ audio: ArrayBuffer; mime: string }>;
 }
 
 export interface LLM {

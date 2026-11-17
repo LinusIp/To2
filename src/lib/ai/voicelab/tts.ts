@@ -2,18 +2,24 @@
 import type { TTS } from "../types";
 import { sleep, vlFetch, type VoiceLabConfig } from "./client";
 
-async function idem(text: string, voiceId: string) {
-  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(voiceId + "|" + text));
+async function idem(body: string) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(body));
   return "to2-" + [...new Uint8Array(d)].slice(0, 16).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 export function voicelabTTS(cfg: VoiceLabConfig): TTS {
   return {
-    async synthesize(text, voiceId) {
+    async synthesize(text, voiceId, opts) {
+      // model_id: lison (v1, default) or lison-v2 (expressive, speech tags); speed 0.5–2.0
+      const req: Record<string, unknown> = { text: text.slice(0, 4900), language: cfg.lang, voice_id: voiceId };
+      if (opts?.model) req.model_id = opts.model;
+      if (opts?.speed && opts.speed !== 1) req.speed = opts.speed;
+      const body = JSON.stringify(req);
       const res = await vlFetch(cfg, "/v1/tts", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Idempotency-Key": await idem(text, voiceId) },
-        body: JSON.stringify({ text: text.slice(0, 4900), language: cfg.lang, voice_id: voiceId }),
+        // same key only for an identical body (VoiceLab rejects a reused key with a changed body)
+        headers: { "Content-Type": "application/json", "Idempotency-Key": await idem(body) },
+        body,
         timeoutMs: 20_000,
       });
       if (res.status === 200) return { audio: await res.arrayBuffer(), mime: res.headers.get("content-type") ?? "audio/wav" };

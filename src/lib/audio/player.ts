@@ -27,14 +27,23 @@ export function unlockAudio() {
   });
 }
 
-export function ttsUrl(text: string, voice: string) {
-  return `/api/tts?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(text)}`;
+/** Tone of a line: emotion drives speed/tags server-side; lead = short "thinking" pause first. */
+export interface Tone {
+  emotion?: string;
+  lead?: boolean;
+}
+
+export function ttsUrl(text: string, voice: string, tone: Tone = {}) {
+  const em = tone.emotion && tone.emotion !== "neutral" ? `&emotion=${encodeURIComponent(tone.emotion)}` : "";
+  return `/api/tts?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(text)}${em}${tone.lead ? "&lead=1" : ""}`;
 }
 
 const prefetched = new Set<string>();
 /** Warm the HTTP cache (and the server's KV/R2 cache) for the next segment. */
-export function prefetchSpeech(text: string, voice: string) {
-  const u = ttsUrl(text, voice);
+export function prefetchSpeech(text: string, voice: string, tone: Tone = {}) {
+  // wait=long: nobody is waiting on a prefetch, so the server holds out for the expressive voice
+  // (and caches it); the real request then gets it from cache
+  const u = ttsUrl(text, voice, tone) + "&wait=long";
   if (prefetched.has(u)) return;
   prefetched.add(u);
   void fetch(u).catch(() => prefetched.delete(u));
@@ -56,7 +65,7 @@ export interface Speech {
 }
 
 /** Speak `text` with the character voice via /api/tts. `fromMs` seeks (resume after interruption). */
-export function speak(text: string, voice: string, opts: { rate?: number; fromMs?: number; muted?: boolean } = {}): Speech {
+export function speak(text: string, voice: string, opts: { rate?: number; fromMs?: number; muted?: boolean } & Tone = {}): Speech {
   const a = audioEl();
   let rate = opts.rate ?? 1;
   let fallback = false;
@@ -104,7 +113,7 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
     };
     a.onended = () => finish();
     a.playbackRate = rate;
-    a.src = ttsUrl(text, voice);
+    a.src = ttsUrl(text, voice, { emotion: opts.emotion, lead: opts.lead });
     const seek = () => {
       if (opts.fromMs) a.currentTime = opts.fromMs / 1000;
     };

@@ -18,7 +18,7 @@ export const INTERRUPT_EXAMPLE = JSON.stringify([
     type: "explain",
     layer: "note",
     emotion: "thinking",
-    say: "Yaxshi savol! Bo'laklar bir xil o'lchamda bo'lsagina ularni sanab qo'shish mumkin.",
+    say: "Hmm… yaxshi savol! Bo'laklar bir xil o'lchamda bo'lsa, ularni sanab qo'shamiz.",
     board: [
       { op: "highlight", target: "fb1", color: "orange" },
       { op: "highlight", target: "fb2", color: "orange" },
@@ -30,7 +30,7 @@ export const INTERRUPT_EXAMPLE = JSON.stringify([
     type: "explain",
     layer: "note",
     emotion: "neutral",
-    say: "Olti — ikkiga ham, uchga ham bo'linadigan eng kichik son. Shuning uchun ikkala kasrni oltidan birlarga aylantirdik.",
+    say: "Olti, ikkiga ham, uchga ham bo'linadi. U eng kichigi. Shuning uchun ikkala kasrni oltidan birlarga aylantirdik.",
     board: [{ op: "write", id: "n6", x: 600, y: 520, text: "6 : 2 = 3   6 : 3 = 2", size: "s", color: "orange" }],
   },
   { id: "n3", type: "check", layer: "note", emotion: "encouraging", say: "Tushunarli bo'ldimi? Davom etamizmi?", board: [] },

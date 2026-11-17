@@ -53,7 +53,7 @@ export default function Diagnostic() {
   useEffect(() => {
     if (!p) return;
     voice.current?.stop();
-    voice.current = speak(p.q.replace(/\s*=\s*\?$/, " nechaga teng?"), ch.id);
+    voice.current = speak(p.q.replace(/\s*=\s*\?$/, " nechaga teng?"), ch.id, { emotion: "encouraging" });
     return () => voice.current?.stop();
   }, [p, ch.id]);
 

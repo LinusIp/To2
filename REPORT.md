@@ -178,3 +178,61 @@ Team added `src/lib/board/layout.ts` (main-layer auto-layout on the server). Re-
   "Play lesson script" (talk → turn → write 3 strokes → walk → turn back → praise).
 - ⚠️ Not verified yet: 60 fps / long frames in the Chrome performance panel and screen captures — the in-app browser
   pane was hidden during this run (requestAnimationFrame stops), so no live frame-time numbers or videos.
+
+## ✅ Expressive tutor voices (2026-11-18)
+**Catalog on our key** (`GET /v1/tts/languages`, `GET /v1/voices?language=uz`):
+- Models for `uz`: **`lison`** (Lison v1, "Studio Quality", 1 credit/char, default) and **`lison-v2`** (Lison v2, "Expressive",
+  1.5 credits/char) with speech tags `happy sad excited angry calm whispering sarcastic neutral laugh sigh gasp cry breath cough
+  short pause long pause`. Tag syntax isn't documented; `[excited] …`, `(excited) …` and `<excited> …` all work (none is read
+  aloud, checked with STT). We use `[tag]`. Output is always WAV 24 kHz mono. No SSML, no word timestamps.
+- 20 uz voices (all `system`): Abdulhay Otaxo'jayev, Amir, Botir, Dilnoza, Firdavs Urinov, Gulnoza, Gulya, Jasur, Javohir, Kamola,
+  Lola, Madina, Malika, Nozima, Qora Shoh, Rustam, Safiya, Sardor, Shohruxmirzo, Xurshid. 13 of them also run on lison-v2
+  (Amir, Botir, Dilnoza, Gulya, Jasur, Javohir, Kamola, Madina, Malika, Nozima, Qora Shoh, Rustam, Safiya).
+
+**A/B** (2 lines: excited "Voy, barakalla! …" and thinking "Hmm… qani, o'ylab ko'raylik. Nega …?"; 12 candidate voices × both
+models = 42 clips; pitch variation in semitones from F0 tracking = proxy for "expressive"; intelligibility = STT round-trip CER):
+| voice | model | pitch SD | excited/calm median F0 | CER |
+|---|---|---|---|---|
+| Rustam | lison-v2 | 5.13 | 247 / 110 Hz | 0.00 |
+| Javohir | lison | 4.90 | 153 / 175 Hz | 0.01 |
+| Javohir | lison-v2 | 4.64 | 224 / 125 Hz | 0.02 |
+| Gulya | lison-v2 | 4.52 | 279 / 190 Hz | 0.01 |
+| Madina | lison | 4.44 | 178 / 180 Hz | 0.02 |
+| Safiya (old Lola) | lison | 3.15 | 162 / 169 Hz | 0.01 |
+v1 sounds the same for both moods (F0 barely moves between lines); v2 + tags really changes the tone by emotion.
+**Picks** (in `src/config/characters.ts` → `tts`, voice ids in `src/lib/ai/index.ts` + `cloudflare.config.ts`):
+Blokbek = Javohir · lison-v2 · base speed 1.28; **Lola = Gulya (female)** · lison-v2 · 1.22; Ziyo = Rustam · lison-v2 · 1.3.
+v2 speaks ~1.4× slower than v1 at speed 1, hence the base speeds > 1. The 42 A/B clips are in the session scratchpad, not in git
+— 🔑 team: listen to `docs/voice-samples/*.wav` and adjust voice/speed in config if you prefer another one.
+
+**Speech-ready text**: prompt (`tutor.uz.ts`) asks for 2–3 phrases of ≤ 12 words, `! ? …`, emotion interjections ("Voy!",
+"Barakalla!", "Hmm…", "Qani, o'ylab ko'raylik…", "Hechqisi yo'q,"), no symbols/markdown, in the tutor's own style; the 37
+demo-lesson lines (also the few-shot examples) were rewritten that way. Fresh LLM lessons (3 tutors): 0 phrases > 12 words,
+0 symbols/digits, 4–5 interjections per lesson. ⚠️ one LLM maths slip seen ("beshdan bir yuz" for 5 %) — content, not voice.
+
+**Prosody** (`src/lib/ai/prosody.ts`, tested): split into clips at `. ! ? …` and after a short interjection + comma ("Voy,");
+speed = base × emotion (neutral 1, happy 1.06, excited 1.12, encouraging 0.97, thinking 0.9), × 0.95 on a closing question;
+v2 tags happy→[happy], excited→[excited], encouraging→[calm]; silences 180 ms after ",", 320 ms after ". ! ?", 450 ms after "…";
+250 ms lead-in before the first answer to a learner question. `/api/tts` joins the clips into one WAV (`src/lib/audio/wav.ts`),
+so lip-sync still follows the real audio. Every clip is cached in KV by sha256(voice + model + speed + text); the joined
+segment is cached too.
+**⚠️ Latency → hybrid**: lison-v2 takes **median 6.9 s, p90 11 s per clip** (v1: 0.67 s; 0 of 18 v2 clips under 4.8 s).
+So a live request waits only 350 ms for v2 (= cached); on a miss it gets the same lines on **v1 at once** (~1–1.5 s,
+`cache-control: no-store`) while v2 finishes in the background (`after()` → waitUntil) and lands in KV. Prefetches of the next
+segment (`wait=long`) hold out up to 20 s for v2, so in a running lesson most segments play expressive. Cost of a live miss:
+v1 + v2 (2.5 credits/char); warmed phrases cost nothing. `scripts/warm-tts.mjs` now warms with emotions (3 playable tutors).
+
+**Voice cloning** — possible on our plan (`GET /v1/voice-enrollments/capabilities` → eligible, available). `scripts/clone-voice.ts`
+(`node scripts/clone-voice.ts --character lola --file lola.wav --gender female --age young --consent`) checks the file, uploads
+(`POST /v1/voice-enrollments`, multipart) and writes the new `voice_id` into `src/lib/ai/index.ts` + `cloudflare.config.ts`.
+🔑 Requirements for tonight's recordings (from the docs + our account):
+- **10–30 s** of speech per tutor (NOT 30–60 s: longer is rejected), ONE speaker, ≤ 10 MiB; WAV/MP3/M4A/WebM all fine.
+  Quiet room; lively, varied reading (a question, an exclamation, a calm explanation) — the clone copies the delivery.
+- **Consent**: `consent_accepted=true` = the voice owner accepted https://voicelab.uz/terms and agrees to the clone. Get it in
+  writing from each speaker (for minors: a parent). The script refuses to upload without `--consent`.
+- Paid plan only; **max 5 custom voices per account**; ≤ 5 enrollments/hour; language fixed (uz); clones are private.
+- Optional labels: gender (male/female/neutral), age (young/middle-aged/old), accent. `remove_noise` is on by default.
+- A cloned voice works on both models; re-check it on lison-v2 after cloning (`x-tts-model` header on /api/tts).
+
+**Samples**: `docs/voice-samples/{blokbek,lola,ziyo}.wav` — one thinking + one excited line from each tutor's fresh LLM lesson,
+rendered by the real pipeline on lison-v2 (pitch SD 5.5 / 4.5 / 5.9 semitones; STT reads them back correctly).
