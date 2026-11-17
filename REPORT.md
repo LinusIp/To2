@@ -236,3 +236,61 @@ v1 + v2 (2.5 credits/char); warmed phrases cost nothing. `scripts/warm-tts.mjs` 
 
 **Samples**: `docs/voice-samples/{blokbek,lola,ziyo}.wav` — one thinking + one excited line from each tutor's fresh LLM lesson,
 rendered by the real pipeline on lison-v2 (pitch SD 5.5 / 4.5 / 5.9 semitones; STT reads them back correctly).
+
+## 🔒 Demo lock-down (2026-11-18)
+### Release process — ONE deployer
+- Only the main session deploys. Other sessions (and teammates) commit + push and ask; they never run `deploy.mjs` themselves.
+- The only way to deploy: **`node scripts/release.mjs`** → `git pull --rebase --autostash` → tests → `git push` → build from a
+  **clean git worktree of HEAD** (uncommitted files in the folder never ship) → deploy → poll `/version` until it shows that
+  commit with `dirty:false`, else it fails loudly.
+- **`GET /version`** → `{commit, short, dirty, builtAt}` (+ `x-to2-commit` header), stamped at build time (vite `define`).
+  One request tells what is live.
+### ⚠️ Incident: KV write cap → 500s (fixed)
+- Workers KV on our plan allows **1,000 writes/day** (resets 00:00 UTC = 05:00 Tashkent). The app wrote KV on every rate-limit
+  check, every new guest session, every cached answer and every TTS clip; the TTS warm-ups used up the day and every write
+  then threw → **new users couldn't sign up, uncached TTS returned 500**.
+- Fix: `src/lib/server/store.ts` — all writes go to D1 table `kv_store` (100,000 writes/day, rows ≤ 2 MB; created on first use);
+  reads try D1 then KV, so everything cached earlier stays valid; writes never throw. Rate limit is now in memory per isolate.
+  Verified on production: new guest + session OK; a 624 KB segment written to D1 and served from cache as v2 in 1.1 s.
+- 🔑 Never add `env.KV.put` again. R2 (the natural audio store) is still not enabled on the account.
+### Pinned demo answers
+- `src/lib/ai/pinned.ts`: reviewed answers for "Nega maxrajlarni ko'paytirdik?", "Nega maxrajlarni oltiga keltirdik?" and
+  "EKUK nima?" — one per tutor (Blokbek blocks, Lola warm, Ziyo "nega?"), 2 segments + the check, board notes on the demo board
+  (highlights fb1/fb2/lcm). Matching: normalized question (case, apostrophes ʻ’', punctuation) + aliases ("nega oltiga?",
+  "Nega 6 ga?", "EKUK degani nima?", …). Only on the fractions skill and not for "Yana tushuntir" (that stays live LLM).
+  `/api/tutor` serves them with `meta source=pinned` and stores them in the store under the interrupt cache key.
+  Tests: aliases, schema, ≤ 12 words/phrase, no digits/symbols in `say`, every highlight target exists, notes ≤ 30 chars.
+- Also fixed: the interrupt question normalizer dropped all spaces (`/s+/` instead of `/\s+/`); interrupts now report their source.
+### Spoken maths
+- `src/lib/ai/speakMath.ts`: the diagnostic questions and the "Ko'rsatib ber" answer went to TTS as raw symbols
+  ("1/2 + 1/4 = ?", "EKUB(6; 8)", "8x = 56", "20% i"). Now the voice gets words: "ikkidan bir qo'shuv to'rtdan bir nechaga
+  teng?", "olti va sakkizning EKUBi", "sakkiz iks teng ellik olti", "saksonning yigirma foizi" (screen text unchanged). Tested.
+- `scripts/warm-tts.mjs` now also walks every right/wrong diagnostic path for grade 6 (the demo grade; `DIAG_GRADES=5,6,7`
+  for more) → 41 spoken questions, plus the answer reveals; `--list` prints the phrases without synthesizing.
+### Demo path check (`node scripts/demo-check.mjs [runs]` → `docs/demo-check.json`)
+Walks the demo on production like the app: onboarding → greeting → diagnostic (8 spoken questions, fixed answer pattern) →
+roadmap → lesson (frac-add-unlike, segment i+1 prefetched while i plays) → filler → "Nega maxrajlarni ko'paytirdik?" →
+rest of the lesson. Logs each segment's source and each audio clip as cached-v2 / live-v2 / v1-fallback.
+
+**Baseline, 2026-11-18 02:00 (production f686c2c, 1 run per tutor, before the diagnostic was warmed)** — `docs/demo-check.json`:
+| tutor | run | lesson source | question source | audio clips | cached-v2 | live-v2 | v1-fallback |
+|---|---|---|---|---|---|---|---|
+| blokbek | 1 | demo | pinned | 24 | 16 | 0 | 8 |
+| lola | 1 | demo | pinned | 24 | 16 | 0 | 8 |
+| ziyo | 1 | demo | pinned | 24 | 16 | 0 | 8 |
+Overall 66.7 % cached-v2, 0 % live-v2, 33.3 % v1-fallback; cached-v2 latency median 330 ms, p90 700 ms.
+Segments were 100 % deterministic (lesson = demo, question = pinned). Every non-cached clip was a spoken diagnostic question
+(8 per run) — fixed afterwards by speakMath + warming all 41 grade-6 questions.
+
+**⚠️ Incident while re-warming: error 1102 (Worker CPU limit) → random 503s on TTS, cached lines included — fixed in 0311f2a.**
+D1 hands a BLOB to the Worker as a JSON array with one number per byte; reading a 200–600 KB WAV that way costs about the
+free plan's whole ~10 ms CPU budget, so ~30 of 221 warm-up lines failed on every run (a different set each time). Audio is
+now stored as base64 TEXT (`src/lib/server/bytes.ts`, native decode, tested); old BLOB rows are skipped in SQL and count as a
+miss. Released in a638f8e. Consequence: everything cached in D1 before a638f8e is regenerated on first request (lines still in
+KV are unaffected).
+
+**Not yet done:** the final 3× run per tutor. Deliberately postponed: Lola's and Ziyo's voices are about to change (→ Malika,
+Botir), which re-generates their audio anyway, and a full re-warm costs credits (budget: ask before > 5,000). The main
+session re-warms (dry-run first) and runs `node scripts/demo-check.mjs 3` after the voice change.
+Limits that remain by design: the diagnostic is warmed for grade 6 only (`DIAG_GRADES=5,6,7` for more); "Yana tushuntir"
+and any non-demo question are live LLM answers.
