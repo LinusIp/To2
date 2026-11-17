@@ -1,6 +1,8 @@
-// TTS audio cache keyed by sha256(voiceId + text). R2 when bound, else KV
-// (R2 is not enabled on the hackathon account yet — see REPORT.md).
+// TTS audio cache keyed by sha256(voiceId + text). Stored through src/lib/server/store.ts:
+// D1 for writes (KV's 1,000 writes/day ran out), D1 then KV for reads (older entries live in KV).
+// R2 would be the natural home (not enabled on the hackathon account — see REPORT.md).
 import type { AppEnv } from "@/lib/env";
+import { storeGetBytes, storePut } from "@/lib/server/store";
 
 export async function audioKey(voiceId: string, text: string) {
   const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(voiceId + text));
@@ -13,9 +15,8 @@ export async function getCachedAudio(env: AppEnv, key: string): Promise<{ audio:
     if (!o) return null;
     return { audio: await o.arrayBuffer(), mime: o.httpMetadata?.contentType ?? "audio/wav" };
   }
-  const r = await env.KV.getWithMetadata<{ mime?: string }>(key, "arrayBuffer");
-  if (!r.value) return null;
-  return { audio: r.value, mime: r.metadata?.mime ?? "audio/wav" };
+  const r = await storeGetBytes(key);
+  return r ? { audio: r.bytes, mime: r.mime || "audio/wav" } : null;
 }
 
 export async function putCachedAudio(env: AppEnv, key: string, audio: ArrayBuffer, mime: string) {
@@ -23,6 +24,7 @@ export async function putCachedAudio(env: AppEnv, key: string, audio: ArrayBuffe
     await env.AUDIO.put(key, audio, { httpMetadata: { contentType: mime } });
     return;
   }
-  // KV values ≤ 25 MiB; a 2-sentence WAV is ~250 KB.
-  await env.KV.put(key, audio, { metadata: { mime }, expirationTtl: 60 * 60 * 24 * 60 });
+  // D1 rows hold up to 2 MB; a joined segment WAV is ~0.2–0.8 MB.
+  if (audio.byteLength > 1_900_000) return;
+  await storePut(key, audio, { mime, ttlSec: 60 * 60 * 24 * 60 });
 }

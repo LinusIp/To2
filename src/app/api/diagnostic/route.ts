@@ -1,5 +1,5 @@
 // POST /api/diagnostic {action:"start"} | {action:"answer", answer} | {action:"skip"}
-// The diagnostic session (history + current problem) lives in KV; the answer is never sent to the client.
+// The diagnostic session (history + current problem) lives in the D1 store (src/lib/server/store.ts); the answer is never sent to the client.
 import { z } from "zod";
 import { getEnv } from "@/lib/env";
 import { generateProblem, seeded, type Problem } from "@/data/problems";
@@ -8,6 +8,7 @@ import { checkAnswer } from "@/lib/learning/checker";
 import { DIAG_LENGTH, diagnosticMastery, nextSkill, type DiagAnswer } from "@/lib/learning/diagnostic";
 import { buildRoadmap } from "@/lib/learning/roadmap";
 import { bad, json, userIdFor } from "@/lib/server/session";
+import { storeDelete, storeGetJson, storePut } from "@/lib/server/store";
 import { addXp, getUser, saveRoadmap, setMasteryBulk } from "@/lib/server/repo";
 
 interface DiagSession {
@@ -35,7 +36,6 @@ export async function POST(req: Request) {
   if (!user) return bad("Avval ro'yxatdan o'ting", 401);
   const b = Body.safeParse(await req.json().catch(() => null));
   if (!b.success) return bad("So'rov noto'g'ri");
-  const kv = getEnv().KV;
   const key = `diag:${user.id}`;
 
   const finish = async (s: DiagSession) => {
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     const rm = buildRoadmap(mastery, s.grade, { touched: s.history.map((h) => h.skillId) });
     await saveRoadmap(user.id, rm);
     await addXp(user.id, 20);
-    await kv.delete(key);
+    await storeDelete(key);
     return json({ done: true, weakCount: rm.weakCount, currentId: rm.currentId, correct: s.history.filter((h) => h.correct).length, total: s.history.length });
   };
 
@@ -53,11 +53,11 @@ export async function POST(req: Request) {
     const s: DiagSession = { grade: user.grade, history: [], current: null, seed: 1000 + user.grade };
     const skillId = nextSkill(s.grade, s.history)!;
     s.current = generateProblem(skillId, seeded(s.seed));
-    await kv.put(key, JSON.stringify(s), { expirationTtl: 3600 });
+    await storePut(key, JSON.stringify(s), { ttlSec: 3600 });
     return json({ problem: publicProblem(s.current, 0) });
   }
 
-  const s = await kv.get<DiagSession>(key, "json");
+  const s = await storeGetJson<DiagSession>(key);
   if (!s || !s.current) return bad("Diagnostika topilmadi", 404);
 
   if (b.data.action === "skip") {
@@ -76,6 +76,6 @@ export async function POST(req: Request) {
     return json({ ...body, correct, answer: lastAnswer });
   }
   s.current = generateProblem(nxt, seeded(s.seed + s.history.length * 31));
-  await kv.put(key, JSON.stringify(s), { expirationTtl: 3600 });
+  await storePut(key, JSON.stringify(s), { ttlSec: 3600 });
   return json({ correct, answer: lastAnswer, problem: publicProblem(s.current, s.history.length) });
 }

@@ -11,6 +11,8 @@ const BOOTSTRAP = [
   `CREATE INDEX IF NOT EXISTS attempts_user_idx ON attempts (user_id, created_at)`,
   `CREATE TABLE IF NOT EXISTS lessons (id text PRIMARY KEY NOT NULL, user_id text NOT NULL, skill_id text NOT NULL, started_at integer NOT NULL, finished_at integer, segments_json text)`,
   `CREATE TABLE IF NOT EXISTS roadmaps (user_id text PRIMARY KEY NOT NULL, nodes_json text NOT NULL, generated_at integer NOT NULL)`,
+  // key-value store (sessions, caches, TTS audio): KV allows only 1,000 writes/day on our plan, D1 100,000
+  `CREATE TABLE IF NOT EXISTS kv_store (key text PRIMARY KEY NOT NULL, value blob NOT NULL, mime text, expires_at integer)`,
 ];
 
 let bootstrapped: Promise<void> | null = null;

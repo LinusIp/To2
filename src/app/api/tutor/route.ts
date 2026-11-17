@@ -13,6 +13,7 @@ import { cannedLesson } from "@/lib/ai/canned";
 import { getSkill } from "@/data/skills";
 import { getCharacter } from "@/config/characters";
 import { CANONICAL, matchPinned, normalizeQuestion, pinnedAnswer } from "@/lib/ai/pinned";
+import { storeGetJson, storeGetText, storePut } from "@/lib/server/store";
 import { emptyBoard, fitToBoard, freeArea, noteLayouter } from "@/lib/board/model";
 import { mainLayouter } from "@/lib/board/layout";
 import { bad, clientKey, rateLimit, userIdFor } from "@/lib/server/session";
@@ -110,7 +111,7 @@ export async function POST(req: Request) {
           for (const s of demo.segments) await send("segment", s);
           return;
         }
-        const cached = !b.fresh ? await env.KV.get<Seg[]>(cacheKey, "json") : null;
+        const cached = !b.fresh ? await storeGetJson<Seg[]>(cacheKey) : null;
         if (cached?.length) {
           await send("meta", { source: "cache" });
           for (const s of cached) await send("segment", s);
@@ -146,7 +147,7 @@ export async function POST(req: Request) {
           for (const s of demo?.segments ?? cannedLesson(skill)) await send("segment", s);
           return;
         }
-        if (got.filter((s) => s.type === "ask").length >= 1) await env.KV.put(cacheKey, JSON.stringify(got), { expirationTtl: 60 * 60 * 24 * 7 });
+        if (got.filter((s) => s.type === "ask").length >= 1) await storePut(cacheKey, JSON.stringify(got), { ttlSec: 60 * 60 * 24 * 7 });
         return;
       }
 
@@ -170,7 +171,7 @@ export async function POST(req: Request) {
         for (const s of segs) await send("segment", s);
         const key = await intKeyFor(CANONICAL[pin]);
         const json = JSON.stringify(segs);
-        if ((await env.KV.get(key)) !== json) await env.KV.put(key, json); // no TTL: pinned
+        if ((await storeGetText(key)) !== json) await storePut(key, json); // no TTL: pinned
         return;
       }
       if (ai.mock || !(await rateLimit(`llm:${clientKey(req, userId)}`, 30))) {
@@ -180,7 +181,7 @@ export async function POST(req: Request) {
       }
       // Same question on the same skill → instant cached answer (LLM response cache in KV).
       const intKey = await intKeyFor(question);
-      const cachedInt = await env.KV.get<Seg[]>(intKey, "json");
+      const cachedInt = await storeGetJson<Seg[]>(intKey);
       if (cachedInt?.length) {
         await send("meta", { source: "cache" });
         for (const s of cachedInt) await send("segment", s);
@@ -222,7 +223,7 @@ export async function POST(req: Request) {
         await send("segment", CHECK);
         sent.push(CHECK);
       }
-      if (sent.length >= 2) await env.KV.put(intKey, JSON.stringify(sent), { expirationTtl: 60 * 60 * 24 * 7 });
+      if (sent.length >= 2) await storePut(intKey, JSON.stringify(sent), { ttlSec: 60 * 60 * 24 * 7 });
     } catch (e) {
       console.error("[tutor]", (e as Error).message);
       await send("error", { message: "tutor_failed" }).catch(() => {});
