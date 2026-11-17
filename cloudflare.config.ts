@@ -30,8 +30,8 @@ export default defineConfig({
         JSON.stringify({
           "blokbek": "voice_fa56cecf-9b0b-45ba-9ec3-494efb5b301f",
           "agent-shox": "voice_ba303813-3023-48aa-a454-4b5705669d35",
-          "lola": "voice_7b350d91-4e56-4bc3-869c-8cd6ba646c3c",
-          "ziyo": "voice_be56058a-8f15-48bb-904b-4fe92531d5b1",
+          "lola": "voice_83a39d68-22bc-4062-b86e-0a9dd998ba7a",
+          "ziyo": "voice_5e592ada-eca8-42e3-98fa-469c1c8fc999",
           "sardor": "voice_xdQMoRJkjHbPIB-jounXzKq8",
           "ravshan": "voice_5e592ada-eca8-42e3-98fa-469c1c8fc999",
           "diyorbek": "voice_8bae02c6-d078-4757-9d62-0fce6da23cf7",

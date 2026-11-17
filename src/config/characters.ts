@@ -93,7 +93,7 @@ export const CHARACTERS: CharacterConfig[] = [
     catchphrases_uz: ["Xato — bu o'rganish!", "Juda yaxshi!", "Sekin-asta, birga."],
     unlock: 0,
     status: "playable",
-    tts: { model: "lison-v2", speed: 1.22 }, // Gulya — warm, patient (female)
+    tts: { model: "lison-v2", speed: 1.1 }, // Malika — warm, patient (female); speed test in docs/voice-samples/lola
     color: "#e0457b",
     voxel: { skin: "#d9a273", hair: "#241812", hairStyle: "long", female: true, top: { c: "#f1ede6", side: "#d9d3c8", kind: "vest", vest: "#e0457b" }, pants: ["#34446a", "#3d5080"], shoes: "#ffffff", sole: "#e0457b", acc: ["longhair", "flower"] },
   }),
@@ -106,7 +106,7 @@ export const CHARACTERS: CharacterConfig[] = [
     catchphrases_uz: ["Nega shunday ekan?", "Keling, tekshirib ko'ramiz!", "Qiziq-a?"],
     unlock: 0,
     status: "playable",
-    tts: { model: "lison-v2", speed: 1.3 }, // Rustam — curious, young
+    tts: { model: "lison-v2", speed: 1.0 }, // Botir — curious, young; ~1.0 keeps numbers clear (docs/voice-samples/ziyo)
     color: "#3c9a3c",
     voxel: { skin: "#d39a6c", hair: "#2b1d14", hairStyle: "hood", hood: "#3c9a3c", top: { c: "#3c9a3c", side: "#2f7d2f", kind: "hoodie" }, pants: ["#2f3a2f", "#36433a"], shoes: "#f2f2f2", sole: "#3c9a3c", acc: ["hoodup", "headphones"] },
   }),
