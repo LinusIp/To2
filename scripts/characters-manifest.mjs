@@ -1,10 +1,11 @@
 // Blender renders in public/characters → src/config/characterRenders.json (+ WebP copies, ~10× smaller).
-// Runs before every build. Files must be named <id>_<pose>_<frame>.png (frame: full | half | face).
+// Runs before every build. Files must be named <id>_<pose>_<frame>.png (pose: letters/digits, e.g. think1;
+// frame: full | half | face).
 import fs from "node:fs";
 import path from "node:path";
 
 const dir = "public/characters";
-const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => /^[a-z-]+_[a-z]+_(full|half|face)\.png$/.test(f)) : [];
+const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => /^[a-z-]+_[a-z0-9]+_(full|half|face)\.png$/.test(f)) : [];
 
 let sharp = null;
 try {

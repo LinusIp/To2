@@ -498,7 +498,7 @@ export function addLights(scene: THREE.Scene, studio = false) {
   scene.add(rim);
 }
 
-export type Pose = "idle" | "wave" | "point" | "thumbs" | "cheer" | "sig";
+export type Pose = "idle" | "wave" | "point" | "thumbs" | "cheer" | "sig" | "think1" | "think2";
 
 /** Static poses for portraits (from the mobile prototype). */
 export function applyPose(ch: VoxelChar, p: Pose) {
