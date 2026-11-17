@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>To2 qahramon</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}
+@keyframes talk{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.9)}}
+@keyframes point{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-4deg)}}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
+.br{animation:breathe 3.4s ease-in-out infinite}
+.talk{transform-box:fill-box;transform-origin:center top;animation:talk .26s ease-in-out infinite}
+.pt{transform-box:view-box;transform-origin:84px 64px;animation:point 2.6s ease-in-out infinite}
+.bl{transform-box:fill-box;transform-origin:center;animation:blink 4.2s linear infinite}
+@media (prefers-reduced-motion: reduce){.br,.pt,.bl{animation:none}}
+</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; filter: {{filter}}">
+<sc-if value="{{isBlok}}" hint-placeholder-val="{{ true }}">
+<svg width="{{w}}" height="{{h}}" viewBox="0 -8 130 236" shape-rendering="crispEdges" role="img" aria-label="Blokbek — ustoz qahramon">
+<rect x="26" y="214" width="70" height="6" fill="#000000" opacity="0.22"></rect>
+<g class="br">
+<rect x="34" y="130" width="22" height="62" fill="#34446a"></rect>
+<rect x="56" y="130" width="22" height="62" fill="#3d5080"></rect>
+<polygon points="78,130 86,125 86,187 78,192" fill="#26334f"></polygon>
+<rect x="32" y="188" width="24" height="14" fill="#f2f2f2"></rect>
+<rect x="56" y="188" width="24" height="14" fill="#ffffff"></rect>
+<polygon points="80,188 88,183 88,197 80,202" fill="#c9c9c9"></polygon>
+<rect x="32" y="198" width="24" height="4" fill="#2f6bff"></rect>
+<rect x="56" y="198" width="24" height="4" fill="#2f6bff"></rect>
+<rect x="14" y="58" width="16" height="70" fill="#1a1c22"></rect>
+<rect x="14" y="116" width="16" height="6" fill="#f28c28"></rect>
+<rect x="14" y="128" width="16" height="12" fill="#c98b5e"></rect>
+<rect x="30" y="58" width="52" height="76" fill="#22242b"></rect>
+<polygon points="82,58 90,53 90,129 82,134" fill="#15161a"></polygon>
+<polygon points="30,58 38,53 90,53 82,58" fill="#2e3139"></polygon>
+<rect x="49" y="60" width="2" height="16" fill="#e6e6e6"></rect>
+<rect x="61" y="60" width="2" height="16" fill="#e6e6e6"></rect>
+<rect x="44" y="84" width="2" height="12" fill="#ffffff"></rect>
+<rect x="44" y="84" width="4" height="2" fill="#ffffff"></rect>
+<rect x="44" y="94" width="4" height="2" fill="#ffffff"></rect>
+<text x="60" y="95" font-family="Fredoka, sans-serif" font-weight="700" font-size="12" fill="#ffffff" text-anchor="middle">To2</text>
+<rect x="30" y="122" width="8" height="8" fill="#f28c28"></rect>
+<rect x="38" y="122" width="4" height="8" fill="#ffd85c"></rect>
+<rect x="42" y="122" width="8" height="8" fill="#b4410f"></rect>
+<rect x="50" y="122" width="8" height="8" fill="#f28c28"></rect>
+<rect x="58" y="122" width="4" height="8" fill="#ffd85c"></rect>
+<rect x="62" y="122" width="8" height="8" fill="#b4410f"></rect>
+<rect x="70" y="122" width="8" height="8" fill="#f28c28"></rect>
+<rect x="78" y="122" width="4" height="8" fill="#ffd85c"></rect>
+<rect x="34" y="55" width="44" height="5" fill="#1aa3b8"></rect>
+<rect x="29" y="52" width="9" height="11" fill="#0e6f80"></rect>
+<rect x="74" y="52" width="9" height="11" fill="#0e6f80"></rect>
+<g class="pt">
+<polygon points="82,60 104,24 116,31 92,74" fill="#22242b"></polygon>
+<polygon points="100,30 104,24 116,31 112,37" fill="#f28c28"></polygon>
+<polygon points="104,24 110,13 121,19 116,31" fill="#c98b5e"></polygon>
+<polygon points="110,13 113,4 118,6 116,15" fill="#c98b5e"></polygon>
+<polygon points="113,2 117,-6 121,-4 117,4" fill="#ffffff"></polygon>
+</g>
+<rect x="34" y="8" width="44" height="46" fill="#c98b5e"></rect>
+<polygon points="78,8 86,3 86,49 78,54" fill="#a8703f"></polygon>
+<polygon points="34,8 42,3 86,3 78,8" fill="#2b1d14"></polygon>
+<polygon points="78,8 86,3 86,22 78,27" fill="#2b1d14"></polygon>
+<rect x="34" y="8" width="44" height="10" fill="#2b1d14"></rect>
+<rect x="32" y="0" width="12" height="10" fill="#2b1d14"></rect>
+<rect x="44" y="-4" width="14" height="10" fill="#33231a"></rect>
+<rect x="58" y="-2" width="12" height="8" fill="#2b1d14"></rect>
+<rect x="70" y="0" width="12" height="8" fill="#33231a"></rect>
+<rect x="34" y="18" width="12" height="7" fill="#2b1d14"></rect>
+<rect x="34" y="25" width="5" height="8" fill="#2b1d14"></rect>
+<rect x="56" y="18" width="10" height="5" fill="#2b1d14"></rect>
+<rect x="70" y="18" width="8" height="8" fill="#2b1d14"></rect>
+<rect x="43" y="{{browL}}" width="10" height="3" fill="#2b1d14"></rect>
+<rect x="59" y="{{browR}}" width="10" height="3" fill="#2b1d14"></rect>
+<g class="bl">
+<rect x="44" y="28" width="8" height="6" fill="#ffffff"></rect>
+<rect x="60" y="28" width="8" height="6" fill="#ffffff"></rect>
+<rect x="{{pupL}}" y="28" width="4" height="{{pupH}}" fill="#17181d"></rect>
+<rect x="{{pupR}}" y="28" width="4" height="{{pupH}}" fill="#17181d"></rect>
+</g>
+<rect x="55" y="34" width="4" height="6" fill="#a8703f"></rect>
+<g class="{{mouthClass}}">
+<rect x="{{mX}}" y="{{mY}}" width="{{mW}}" height="{{mH}}" fill="#5a2318"></rect>
+<rect x="{{tX}}" y="{{mY}}" width="{{tW}}" height="{{tH}}" fill="#ffffff"></rect>
+</g>
+<rect x="62" y="42" width="3" height="3" fill="#5a2318" opacity="{{smirk}}"></rect>
+</g>
+</svg>
+</sc-if>
+<sc-if value="{{isShox}}" hint-placeholder-val="{{ false }}">
+<svg width="{{w}}" height="{{h}}" viewBox="0 -8 130 236" shape-rendering="crispEdges" role="img" aria-label="Agent Shox — ustoz qahramon">
+<rect x="26" y="214" width="70" height="6" fill="#000000" opacity="0.22"></rect>
+<g class="br">
+<rect x="34" y="130" width="22" height="58" fill="#4b4f45"></rect>
+<rect x="56" y="130" width="22" height="58" fill="#565b4f"></rect>
+<polygon points="78,130 86,125 86,183 78,188" fill="#3a3d35"></polygon>
+<rect x="36" y="150" width="10" height="12" fill="#3f433a"></rect>
+<rect x="64" y="150" width="10" height="12" fill="#474b41"></rect>
+<rect x="32" y="186" width="24" height="16" fill="#1e1f1c"></rect>
+<rect x="56" y="186" width="24" height="16" fill="#26272a"></rect>
+<polygon points="80,186 88,181 88,197 80,202" fill="#111210"></polygon>
+<rect x="14" y="58" width="16" height="68" fill="#3f4d2c"></rect>
+<rect x="14" y="126" width="16" height="14" fill="#1e1f1c"></rect>
+<rect x="30" y="58" width="52" height="76" fill="#4a5a34"></rect>
+<polygon points="82,58 90,53 90,129 82,134" fill="#39462a"></polygon>
+<polygon points="30,58 38,53 90,53 82,58" fill="#57683f"></polygon>
+<rect x="34" y="64" width="44" height="50" fill="#2c3324"></rect>
+<rect x="36" y="98" width="12" height="12" fill="#3a432c"></rect>
+<rect x="50" y="98" width="12" height="12" fill="#3a432c"></rect>
+<rect x="64" y="98" width="12" height="12" fill="#3a432c"></rect>
+<rect x="62" y="70" width="12" height="8" fill="#ffc83d"></rect>
+<rect x="30" y="126" width="52" height="6" fill="#1e1f1c"></rect>
+<g class="pt">
+<polygon points="82,60 104,24 116,31 92,74" fill="#4a5a34"></polygon>
+<polygon points="104,24 110,13 121,19 116,31" fill="#1e1f1c"></polygon>
+<polygon points="110,13 113,4 118,6 116,15" fill="#1e1f1c"></polygon>
+</g>
+<rect x="34" y="8" width="44" height="46" fill="#d9a273"></rect>
+<polygon points="78,8 86,3 86,49 78,54" fill="#b9824f"></polygon>
+<polygon points="34,8 42,3 86,3 78,8" fill="#1e1f1c"></polygon>
+<rect x="34" y="8" width="44" height="6" fill="#1e1f1c"></rect>
+<polygon points="78,8 86,3 86,14 78,19" fill="#1e1f1c"></polygon>
+<rect x="34" y="4" width="44" height="4" fill="#2f855a"></rect>
+<rect x="28" y="20" width="8" height="18" fill="#1f5f3f"></rect>
+<rect x="30" y="38" width="3" height="8" fill="#17181d"></rect>
+<rect x="30" y="44" width="16" height="3" fill="#17181d"></rect>
+<rect x="44" y="42" width="5" height="5" fill="#17181d"></rect>
+<rect x="40" y="23" width="36" height="2" fill="#17181d"></rect>
+<rect x="40" y="25" width="36" height="9" fill="#22d3ee"></rect>
+<rect x="44" y="27" width="8" height="2" fill="#e0faff"></rect>
+<rect x="40" y="40" width="34" height="12" fill="#c48f61"></rect>
+<g class="{{mouthClass}}">
+<rect x="52" y="44" width="14" height="3" fill="#5c2a1d"></rect>
+</g>
+</g>
+</svg>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"who":{"editor":"enum","options":["blokbek","shox"],"default":"blokbek"},"size":{"editor":"int","min":40,"max":500,"default":160},"talking":{"editor":"boolean","default":true},"emotion":{"editor":"enum","options":["neutral","happy","thinking","listening"],"default":"happy"},"silhouette":{"editor":"boolean","default":false},"$preview":{"width":160,"height":290}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const w = Number(this.props.size ?? 160) || 160;
+    const who = this.props.who ?? 'blokbek';
+    const talking = this.props.talking === undefined ? true : (this.props.talking === true || this.props.talking === 'true');
+    const sil = this.props.silhouette === true || this.props.silhouette === 'true';
+    const e = this.props.emotion ?? 'happy';
+    const F = {
+      neutral:   { browL: 23, browR: 21, pupL: 48, pupR: 64, pupH: 6, mX: 50, mY: 44, mW: 13, mH: 3, tX: 50, tW: 0,  tH: 0, smirk: 1 },
+      happy:     { browL: 21, browR: 21, pupL: 48, pupR: 64, pupH: 6, mX: 47, mY: 42, mW: 20, mH: 8, tX: 48, tW: 18, tH: 3, smirk: 0 },
+      thinking:  { browL: 23, browR: 17, pupL: 49, pupR: 65, pupH: 3, mX: 53, mY: 45, mW: 9,  mH: 3, tX: 53, tW: 0,  tH: 0, smirk: 0 },
+      listening: { browL: 20, browR: 20, pupL: 46, pupR: 62, pupH: 6, mX: 54, mY: 43, mW: 6,  mH: 5, tX: 54, tW: 0,  tH: 0, smirk: 0 }
+    }[e] || {};
+    return Object.assign({
+      w: w,
+      h: Math.round(w * 236 / 130),
+      isBlok: who !== 'shox',
+      isShox: who === 'shox',
+      mouthClass: talking ? 'talk' : '',
+      filter: sil ? 'brightness(0) opacity(.45)' : 'none'
+    }, F);
+  }
+}
+</script>
+</body>
+</html>

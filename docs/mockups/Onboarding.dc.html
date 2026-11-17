@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>To2 — ustozni tanlash</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&amp;family=Manrope:wght@500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#ffffff}a:hover{color:#5b8cff}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #121729; font-family: Manrope, system-ui, sans-serif; color: #ffffff; display: flex; flex-direction: column; gap: 14px; padding: 18px 16px 16px; overflow: hidden">
+
+<div style="display: flex; align-items: center; justify-content: space-between">
+<div style="font-family: Fredoka, sans-serif; font-weight: 700; font-size: 30px; line-height: 1">To<span style="color: #5b8cff">2</span></div>
+<div role="img" aria-label="Qadam 1 dan 3" style="display: flex; gap: 4px"><div style="width: 26px; height: 6px; background: #2f6bff; border-radius: 3px"></div><div style="width: 26px; height: 6px; background: #34437a; border-radius: 3px"></div><div style="width: 26px; height: 6px; background: #34437a; border-radius: 3px"></div></div>
+</div>
+
+<div>
+<h1 style="margin: 0; font-family: Fredoka, sans-serif; font-weight: 600; font-size: 30px; line-height: 1.1">Ustozingni tanla</h1>
+<p style="margin: 6px 0 0; font-size: 15px; font-weight: 600; color: #aab4d4; line-height: 1.4">U senga o'zbek tilida gapirib, doskada chizib tushuntiradi.</p>
+</div>
+
+<div style="position: relative; height: 300px; flex: none; overflow: hidden; border-radius: 24px; box-shadow: 0 0 0 3px #2f6bff, 0 12px 30px rgba(0,0,0,.45)">
+<div style="position: absolute; left: -330px; top: -20px; width: 640px; height: 400px">
+<dc-import name="Scene" hint-size="640px,400px"></dc-import>
+</div>
+<div style="position: absolute; left: 14px; bottom: -14px; width: 150px; height: 272px">
+<dc-import name="Character" who="blokbek" size="150" emotion="happy" talking="{{ false }}" hint-size="150px,272px"></dc-import>
+</div>
+<div style="position: absolute; right: 12px; top: 14px; width: 186px; display: flex; flex-direction: column; gap: 8px; padding: 14px; background: rgba(27,34,56,.94); box-shadow: inset 0 0 0 2px #34437a; border-radius: 18px">
+<div style="font-family: Fredoka, sans-serif; font-weight: 600; font-size: 24px; line-height: 1">Blokbek</div>
+<div style="font-size: 13px; font-weight: 600; color: #c9d3f0; line-height: 1.35">Hammasini blokma-blok quradi. Do'stona va sabrli.</div>
+<div style="display: flex; flex-wrap: wrap; gap: 5px">
+<span style="padding: 2px 8px; background: #262f4d; border-radius: 999px; font-size: 11px; font-weight: 700">Bloklar</span>
+<span style="padding: 2px 8px; background: #262f4d; border-radius: 999px; font-size: 11px; font-weight: 700">Qurilish</span>
+</div>
+<button type="button" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 40px; margin-top: 2px; border: 0; background: #262f4d; box-shadow: inset 0 0 0 2px #3d4b80; border-radius: 999px; font-family: Manrope, sans-serif; font-weight: 800; font-size: 13px; color: #ffffff; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"></path><path d="M16 9a4 4 0 0 1 0 6"></path></svg>Ovozini eshit</button>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<button type="button" aria-pressed="true" style="display: flex; flex-direction: column; align-items: center; gap: 4px; height: 104px; padding: 6px 0 0; overflow: hidden; border: 0; background: #1b2238; box-shadow: inset 0 0 0 3px #2f6bff; border-radius: 16px; color: #ffffff; font-family: Manrope, sans-serif; font-size: 11px; font-weight: 800; cursor: pointer">
+<div style="width: 40px; height: 72px"><dc-import name="Character" who="blokbek" size="40" emotion="neutral" talking="{{ false }}" hint-size="40px,72px"></dc-import></div>Blokbek</button>
+<button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; height: 104px; padding: 6px 0 0; overflow: hidden; border: 0; background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 16px; color: #c9d3f0; font-family: Manrope, sans-serif; font-size: 11px; font-weight: 700; cursor: pointer">
+<div style="width: 40px; height: 72px"><dc-import name="Character" who="shox" size="40" talking="{{ false }}" hint-size="40px,72px"></dc-import></div>Agent Shox</button>
+<button type="button" disabled style="display: flex; flex-direction: column; align-items: center; gap: 4px; height: 104px; padding: 6px 0 0; overflow: hidden; border: 0; background: #161c30; box-shadow: inset 0 0 0 2px #262f4d; border-radius: 16px; color: #aab4d4; font-family: Manrope, sans-serif; font-size: 11px; font-weight: 700">
+<div style="width: 40px; height: 72px"><dc-import name="Character" who="blokbek" size="40" talking="{{ false }}" silhouette="{{ true }}" hint-size="40px,72px"></dc-import></div>300 XP</button>
+<button type="button" disabled style="display: flex; flex-direction: column; align-items: center; gap: 4px; height: 104px; padding: 6px 0 0; overflow: hidden; border: 0; background: #161c30; box-shadow: inset 0 0 0 2px #262f4d; border-radius: 16px; color: #aab4d4; font-family: Manrope, sans-serif; font-size: 11px; font-weight: 700">
+<div style="width: 40px; height: 72px"><dc-import name="Character" who="shox" size="40" talking="{{ false }}" silhouette="{{ true }}" hint-size="40px,72px"></dc-import></div>600 XP</button>
+</div>
+
+<div>
+<div id="grade" style="font-size: 14px; font-weight: 800; margin-bottom: 8px">Nechanchi sinfdasan?</div>
+<div role="radiogroup" aria-labelledby="grade" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px">
+<button type="button" role="radio" aria-checked="false" style="height: 48px; border: 0; background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 14px; font-family: Fredoka, sans-serif; font-weight: 600; font-size: 20px; color: #ffffff; cursor: pointer">5</button>
+<button type="button" role="radio" aria-checked="false" style="height: 48px; border: 0; background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 14px; font-family: Fredoka, sans-serif; font-weight: 600; font-size: 20px; color: #ffffff; cursor: pointer">6</button>
+<button type="button" role="radio" aria-checked="false" style="height: 48px; border: 0; background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 14px; font-family: Fredoka, sans-serif; font-weight: 600; font-size: 20px; color: #ffffff; cursor: pointer">7</button>
+<button type="button" role="radio" aria-checked="true" style="height: 48px; border: 0; background: #2f6bff; border-radius: 14px; font-family: Fredoka, sans-serif; font-weight: 600; font-size: 20px; color: #ffffff; cursor: pointer">8</button>
+<button type="button" role="radio" aria-checked="false" style="height: 48px; border: 0; background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 14px; font-family: Fredoka, sans-serif; font-weight: 600; font-size: 20px; color: #ffffff; cursor: pointer">9</button>
+</div>
+</div>
+
+<div style="flex: 1"></div>
+<a href="Diagnostic.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 10px; height: 60px; background: #2f6bff; border-radius: 999px; text-decoration: none; font-family: Manrope, sans-serif; font-weight: 800; font-size: 18px; color: #ffffff">Sarguzashtni boshlash<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+<div style="text-align: center; font-size: 12px; font-weight: 600; color: #aab4d4">Ustozni keyin ham almashtirsa bo'ladi</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

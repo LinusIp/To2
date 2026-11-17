@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Design tokens and components</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&amp;family=Manrope:wght@500;600;700;800&amp;family=Kalam:wght@700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1200px; height: 900px; box-sizing: border-box; padding: 32px; background: #121729; font-family: Manrope, system-ui, sans-serif; color: #ffffff; display: flex; flex-direction: column; gap: 18px">
+<div>
+<div style="font-family: Fredoka, sans-serif; font-weight: 600; font-size: 30px">Design tokens &amp; components</div>
+<div style="font-size: 15px; font-weight: 600; color: #aab4d4; margin-top: 4px">Put colors/fonts/radii in globals.css (@theme). UI panels float over the scene. Glow only on the active thing.</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; flex: 1; min-height: 0">
+
+<div style="display: flex; flex-direction: column; gap: 18px">
+<div style="background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 20px; padding: 16px 18px">
+<div style="font-family: Fredoka, sans-serif; font-weight: 600; font-size: 18px; margin-bottom: 10px">Colors</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; font-size: 11px; font-weight: 700; color: #c9d3f0">
+<div><div style="height: 38px; background: #121729; border-radius: 10px; box-shadow: inset 0 0 0 2px #34437a"></div>deep #121729</div>
+<div><div style="height: 38px; background: #1b2238; border-radius: 10px; box-shadow: inset 0 0 0 2px #34437a"></div>panel #1b2238</div>
+<div><div style="height: 38px; background: #34437a; border-radius: 10px"></div>line #34437a</div>
+<div><div style="height: 38px; background: #aab4d4; border-radius: 10px"></div>muted #aab4d4</div>
+<div><div style="height: 38px; background: #2f6bff; border-radius: 10px"></div>primary #2f6bff</div>
+<div><div style="height: 38px; background: #ffc83d; border-radius: 10px"></div>gold #ffc83d</div>
+<div><div style="height: 38px; background: #4ade80; border-radius: 10px"></div>success #4ade80</div>
+<div><div style="height: 38px; background: #ff9f43; border-radius: 10px"></div>note #ff9f43</div>
+<div><div style="height: 38px; background: #3b4563; border-radius: 10px"></div>wall #3b4563</div>
+<div><div style="height: 38px; background: #b0773a; border-radius: 10px"></div>wood #b0773a</div>
+<div><div style="height: 38px; background: #233029; border-radius: 10px"></div>board #233029</div>
+<div><div style="height: 38px; background: #8fd0ff; border-radius: 10px"></div>sky #8fd0ff</div>
+</div>
+</div>
+
+<div style="background: #233029; border-radius: 20px; padding: 16px 18px; box-shadow: inset 0 0 0 6px #b0773a">
+<div style="font-family: Fredoka, sans-serif; font-weight: 600; font-size: 18px; margin-bottom: 8px; color: #ffffff">Chalk has meaning</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 16px; font-family: Kalam, cursive; font-size: 22px; line-height: 1.3">
+<div style="color: #f5f3ea">main work</div>
+<div style="color: #ffd85c">answer / question</div>
+<div style="color: #ff9f43">interruption note</div>
+<div style="color: #7cc7ff">part A</div>
+<div style="color: #ff9bb0">part B</div>
+<div style="color: #8be28b">check ✓</div>
+</div>
+</div>
+
+<div style="background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 20px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+<div style="font-family: Fredoka, sans-serif; font-weight: 600; font-size: 18px; margin-bottom: 4px">Type</div>
+<div style="display: flex; align-items: baseline; gap: 14px"><span style="font-family: Fredoka, sans-serif; font-weight: 700; font-size: 44px; line-height: 1">To<span style="color: #5b8cff">2</span></span><span style="font-size: 12px; color: #aab4d4; font-weight: 700">Fredoka 700 · logo, numbers</span></div>
+<div style="display: flex; align-items: baseline; gap: 14px"><span style="font-family: Fredoka, sans-serif; font-weight: 600; font-size: 26px">Kvadrat tenglamalar</span><span style="font-size: 12px; color: #aab4d4; font-weight: 700">Fredoka 600 · headings</span></div>
+<div style="display: flex; align-items: baseline; gap: 14px"><span style="font-size: 18px; font-weight: 700">Har bir qavsni nolga tenglaymiz.</span><span style="font-size: 12px; color: #aab4d4; font-weight: 700">Manrope 700 · captions/body</span></div>
+<div style="display: flex; align-items: baseline; gap: 14px"><span style="font-family: Kalam, cursive; font-size: 30px; color: #ffd85c">x = 2 yoki x = 3</span><span style="font-size: 12px; color: #aab4d4; font-weight: 700">Kalam 700 · chalk</span></div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 18px">
+<div style="background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 20px; padding: 16px 18px">
+<div style="font-family: Fredoka, sans-serif; font-weight: 600; font-size: 18px; margin-bottom: 12px">Buttons</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<button type="button" style="display: flex; align-items: center; gap: 8px; height: 52px; padding: 0 22px; border: 0; background: #2f6bff; border-radius: 999px; font-family: Manrope, sans-serif; font-weight: 800; font-size: 16px; color: #ffffff"><svg width="16" height="16" viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><path d="M7 4l13 8-13 8z"></path></svg>Primary</button>
+<button type="button" style="height: 52px; padding: 0 22px; border: 0; background: #262f4d; box-shadow: inset 0 0 0 2px #3d4b80; border-radius: 999px; font-family: Manrope, sans-serif; font-weight: 800; font-size: 16px; color: #ffffff">Secondary</button>
+<button type="button" aria-label="Mic idle" style="width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; border: 0; background: #2f6bff; border-radius: 999px; box-shadow: 0 0 0 5px rgba(47,107,255,.25)"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path></svg></button>
+<button type="button" aria-label="Mic listening" style="width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; border: 0; background: #ff5a5a; border-radius: 999px; box-shadow: 0 0 0 6px rgba(255,90,90,.3), 0 0 24px rgba(255,90,90,.6)"><svg width="22" height="22" viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg></button>
+</div>
+<div style="display: flex; gap: 22px; margin-top: 8px; font-size: 12px; font-weight: 700; color: #aab4d4"><span>primary = 1 per screen</span><span>mic idle → listening (tap to stop)</span></div>
+</div>
+
+<div style="background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 20px; padding: 16px 18px">
+<div style="font-family: Fredoka, sans-serif; font-weight: 600; font-size: 18px; margin-bottom: 12px">Step states</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; font-size: 12px; font-weight: 800">
+<div style="display: flex; align-items: center; gap: 8px; padding: 10px; background: #161c30; box-shadow: inset 0 0 0 2px #34437a; border-radius: 14px; color: #c9d3f0"><div style="width: 22px; height: 22px; flex: none; background: #4ade80; border-radius: 999px"></div>done</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 10px; background: #1b2238; box-shadow: 0 0 0 2px #5b8cff, 0 0 18px rgba(91,140,255,.6); border-radius: 14px"><div style="width: 22px; height: 22px; flex: none; background: #2f6bff; border-radius: 999px"></div>active</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 10px; background: #1b2238; box-shadow: 0 0 0 2px #ff9f43; border-radius: 14px"><div style="width: 22px; height: 22px; flex: none; background: #ff9f43; border-radius: 999px"></div>paused</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 10px; background: #161c30; box-shadow: inset 0 0 0 2px #34437a; border-radius: 14px; color: #aab4d4"><div style="width: 22px; height: 22px; flex: none; background: #34437a; border-radius: 999px"></div>next</div>
+</div>
+</div>
+
+<div style="background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 20px; padding: 16px 18px">
+<div style="font-family: Fredoka, sans-serif; font-weight: 600; font-size: 18px; margin-bottom: 12px">Roadmap tiles</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; text-align: center; font-size: 12px; font-weight: 800; color: #c9d3f0">
+<div><div style="width: 56px; height: 56px; margin: 0 auto 6px; background: #ffffff; border-radius: 16px; box-shadow: 0 6px 0 #c9d3f0"></div>mastered · house + ✓</div>
+<div><div style="width: 56px; height: 56px; margin: 0 auto 6px; background: #ffc83d; border-radius: 16px; box-shadow: 0 0 0 3px #ffc83d, 0 0 0 9px rgba(255,200,61,.3)"></div>current · crane</div>
+<div><div style="width: 56px; height: 56px; margin: 0 auto 6px; box-sizing: border-box; background: rgba(255,255,255,.12); border: 3px dashed #ffffff; border-radius: 16px"></div>next · foundation</div>
+<div><div style="width: 56px; height: 56px; margin: 0 auto 6px; background: #262f4d; box-shadow: inset 0 0 0 2px #3d4b80; border-radius: 16px"></div>locked · lock</div>
+</div>
+</div>
+
+<div style="background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 20px; padding: 16px 18px; font-size: 13px; line-height: 1.6; color: #c9d3f0">
+<div style="font-family: Fredoka, sans-serif; font-weight: 600; font-size: 18px; color: #ffffff; margin-bottom: 6px">Shape &amp; motion</div>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #ffffff">radius</span> panels 20 · buttons pill/circle · targets ≥ 44 px<br>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #ffffff">panel</span> #1b2238 + inset 2px #34437a + shadow 0 8 24 rgba(0,0,0,.35)<br>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #ffffff">motion</span> UI 200 ms ease-out · springs for pops · chalk stroke ∝ audio length · reduced-motion keeps lip-sync only
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

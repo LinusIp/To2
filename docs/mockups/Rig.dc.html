@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Character rig spec</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&amp;family=Manrope:wght@500;600;700;800&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1200px; height: 800px; box-sizing: border-box; padding: 32px; background: #121729; font-family: Manrope, system-ui, sans-serif; color: #ffffff; display: flex; flex-direction: column; gap: 20px">
+<div>
+<div style="font-family: Fredoka, sans-serif; font-weight: 600; font-size: 30px">Character rig — cut-out parts, pivots, states</div>
+<div style="font-size: 15px; font-weight: 600; color: #aab4d4; margin-top: 4px">Animate only transform + opacity. Parts are separate layers; never swap whole-body images. Source: src/config/characters.ts · component: src/components/characters/Rig.tsx</div>
+</div>
+<div style="flex: 1; display: grid; grid-template-columns: 330px 1fr 360px; gap: 20px; min-height: 0">
+
+<div style="position: relative; background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 20px; overflow: hidden">
+<div style="position: absolute; left: 40px; top: 60px; width: 240px; height: 436px">
+<dc-import name="Character" who="blokbek" size="240" emotion="neutral" talking="{{ false }}" hint-size="240px,436px"></dc-import>
+</div>
+<div style="position: absolute; left: 137px; top: 172px; width: 12px; height: 12px; background: #ff9f43; border-radius: 999px; box-shadow: 0 0 0 3px #121729"></div>
+<div style="position: absolute; left: 189px; top: 187px; width: 12px; height: 12px; background: #ff9f43; border-radius: 999px; box-shadow: 0 0 0 3px #121729"></div>
+<div style="position: absolute; left: 226px; top: 117px; width: 12px; height: 12px; background: #ff9f43; border-radius: 999px; box-shadow: 0 0 0 3px #121729"></div>
+<div style="position: absolute; left: 75px; top: 179px; width: 12px; height: 12px; background: #ff9f43; border-radius: 999px; box-shadow: 0 0 0 3px #121729"></div>
+<div style="position: absolute; left: 137px; top: 309px; width: 12px; height: 12px; background: #ff9f43; border-radius: 999px; box-shadow: 0 0 0 3px #121729"></div>
+<div style="position: absolute; left: 248px; top: 104px; font-size: 12px; font-weight: 800; color: #ffc48a">elbow</div>
+<div style="position: absolute; left: 206px; top: 196px; font-size: 12px; font-weight: 800; color: #ffc48a">shoulder R</div>
+<div style="position: absolute; left: 150px; top: 158px; font-size: 12px; font-weight: 800; color: #ffc48a">neck</div>
+<div style="position: absolute; left: 14px; top: 196px; font-size: 12px; font-weight: 800; color: #ffc48a">shoulder L</div>
+<div style="position: absolute; left: 152px; top: 306px; font-size: 12px; font-weight: 800; color: #ffc48a">hip</div>
+<div style="position: absolute; left: 16px; bottom: 14px; right: 16px; font-size: 12px; font-weight: 600; color: #aab4d4">Orange dots = pivots. The chalk hand follows the board's chalk tip with 2-bone IK (shoulder R → elbow → hand).</div>
+</div>
+
+<div style="background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 20px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+<div style="font-family: Fredoka, sans-serif; font-weight: 600; font-size: 18px; margin-bottom: 6px">Parts (one layer each)</div>
+<div style="display: grid; grid-template-columns: 130px 110px 1fr; gap: 6px 12px; font-size: 13px; line-height: 1.35">
+<div style="font-weight: 800; color: #8fb0ff">Part</div><div style="font-weight: 800; color: #8fb0ff">Pivot</div><div style="font-weight: 800; color: #8fb0ff">Moves</div>
+<div style="font-family: 'JetBrains Mono', monospace">torso</div><div>hip</div><div style="color: #c9d3f0">breathe scaleY 1→1.012 (3.5 s), lean ±2°</div>
+<div style="font-family: 'JetBrains Mono', monospace">head</div><div>neck</div><div style="color: #c9d3f0">sway ±1.5°, nod on loud syllables, tilt when listening</div>
+<div style="font-family: 'JetBrains Mono', monospace">hair</div><div>neck</div><div style="color: #c9d3f0">follows head + 60 ms lag (soft overshoot)</div>
+<div style="font-family: 'JetBrains Mono', monospace">upperArmR</div><div>shoulder R</div><div style="color: #c9d3f0">IK toward chalk tip, spring k=170 d=22</div>
+<div style="font-family: 'JetBrains Mono', monospace">foreArmR + chalk</div><div>elbow</div><div style="color: #c9d3f0">IK second bone; tap board while "thinking"</div>
+<div style="font-family: 'JetBrains Mono', monospace">armL</div><div>shoulder L</div><div style="color: #c9d3f0">idle swing ±3°, to chin when thinking</div>
+<div style="font-family: 'JetBrains Mono', monospace">legs</div><div>hip</div><div style="color: #c9d3f0">static; weight shift on celebrate</div>
+<div style="font-family: 'JetBrains Mono', monospace">eyes</div><div>—</div><div style="color: #c9d3f0">open / half / closed + pupil offset (look at board / learner)</div>
+<div style="font-family: 'JetBrains Mono', monospace">brows</div><div>—</div><div style="color: #c9d3f0">translateY per emotion</div>
+<div style="font-family: 'JetBrains Mono', monospace">mouth</div><div>—</div><div style="color: #c9d3f0">6 shapes, picked from audio amplitude</div>
+</div>
+<div style="margin-top: auto; padding: 12px 14px; background: #161c30; border-radius: 14px; font-size: 13px; line-height: 1.5; color: #c9d3f0">
+<b style="color: #ffffff">Timing:</b> blink 120 ms every 2.5–5 s (random) · state crossfade 150–250 ms · lip-sync attack 30 ms / release 90 ms · celebrate jump 6 px, 400 ms spring · pause on interrupt ≤ 100 ms
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 16px">
+<div style="background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 20px; padding: 16px">
+<div style="font-family: Fredoka, sans-serif; font-weight: 600; font-size: 18px; margin-bottom: 10px">Emotion states</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; text-align: center; font-size: 12px; font-weight: 700; color: #c9d3f0">
+<div><div style="width: 60px; height: 109px; margin: 0 auto"><dc-import name="Character" who="blokbek" size="60" emotion="neutral" talking="{{ false }}" hint-size="60px,109px"></dc-import></div>neutral</div>
+<div><div style="width: 60px; height: 109px; margin: 0 auto"><dc-import name="Character" who="blokbek" size="60" emotion="happy" talking="{{ false }}" hint-size="60px,109px"></dc-import></div>happy</div>
+<div><div style="width: 60px; height: 109px; margin: 0 auto"><dc-import name="Character" who="blokbek" size="60" emotion="thinking" talking="{{ false }}" hint-size="60px,109px"></dc-import></div>thinking</div>
+<div><div style="width: 60px; height: 109px; margin: 0 auto"><dc-import name="Character" who="blokbek" size="60" emotion="listening" talking="{{ false }}" hint-size="60px,109px"></dc-import></div>listening</div>
+</div>
+</div>
+<div style="background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 20px; padding: 16px">
+<div style="font-family: Fredoka, sans-serif; font-weight: 600; font-size: 18px; margin-bottom: 10px">Mouth shapes (lip-sync)</div>
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; text-align: center; font-size: 11px; font-weight: 700; color: #c9d3f0">
+<div><div style="height: 40px; display: flex; align-items: center; justify-content: center; background: #c98b5e; border-radius: 8px"><div style="width: 20px; height: 4px; background: #5a2318"></div></div>closed</div>
+<div><div style="height: 40px; display: flex; align-items: center; justify-content: center; background: #c98b5e; border-radius: 8px"><div style="width: 18px; height: 8px; background: #5a2318"></div></div>small</div>
+<div><div style="height: 40px; display: flex; align-items: center; justify-content: center; background: #c98b5e; border-radius: 8px"><div style="width: 20px; height: 14px; background: #5a2318"></div></div>open</div>
+<div><div style="height: 40px; display: flex; align-items: center; justify-content: center; background: #c98b5e; border-radius: 8px"><div style="width: 26px; height: 18px; background: #5a2318; border-top: 4px solid #ffffff; box-sizing: border-box"></div></div>wide</div>
+<div><div style="height: 40px; display: flex; align-items: center; justify-content: center; background: #c98b5e; border-radius: 8px"><div style="width: 26px; height: 10px; background: #5a2318; border-top: 3px solid #ffffff; box-sizing: border-box"></div></div>smile</div>
+<div><div style="height: 40px; display: flex; align-items: center; justify-content: center; background: #c98b5e; border-radius: 8px"><div style="width: 10px; height: 12px; background: #5a2318"></div></div>o</div>
+</div>
+</div>
+<div style="background: #1b2238; box-shadow: inset 0 0 0 2px #34437a; border-radius: 20px; padding: 16px; display: flex; gap: 14px; align-items: center">
+<div style="width: 56px; height: 102px; flex: none"><dc-import name="Character" who="shox" size="56" talking="{{ false }}" hint-size="56px,102px"></dc-import></div>
+<div style="font-size: 13px; font-weight: 600; color: #c9d3f0; line-height: 1.45"><b style="color: #ffffff">Agent Shox</b> uses the same rig and part names, so one Rig.tsx drives every character. Locked characters render as silhouettes.</div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

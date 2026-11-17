@@ -1,0 +1,58 @@
+[
+  { "id": "nat-place-value", "title_uz": "Natural sonlar va xona birliklari", "grade": 5, "prereqs": [], "section": "Natural sonlar" },
+  { "id": "nat-add-sub", "title_uz": "Natural sonlarni qo'shish va ayirish", "grade": 5, "prereqs": ["nat-place-value"], "section": "Natural sonlar" },
+  { "id": "nat-mul", "title_uz": "Natural sonlarni ko'paytirish", "grade": 5, "prereqs": ["nat-add-sub"], "section": "Natural sonlar" },
+  { "id": "nat-div", "title_uz": "Natural sonlarni bo'lish", "grade": 5, "prereqs": ["nat-mul"], "section": "Natural sonlar" },
+  { "id": "nat-order-ops", "title_uz": "Amallar tartibi", "grade": 5, "prereqs": ["nat-mul", "nat-div"], "section": "Natural sonlar" },
+  { "id": "nat-powers", "title_uz": "Sonning kvadrati va kubi", "grade": 5, "prereqs": ["nat-mul"], "section": "Natural sonlar" },
+
+  { "id": "div-rules", "title_uz": "Bo'linish belgilari", "grade": 5, "prereqs": ["nat-div"], "section": "Bo'linish va EKUK/EKUB" },
+  { "id": "primes", "title_uz": "Tub va murakkab sonlar", "grade": 5, "prereqs": ["div-rules"], "section": "Bo'linish va EKUK/EKUB" },
+  { "id": "gcd", "title_uz": "EKUB — eng katta umumiy bo'luvchi", "grade": 6, "prereqs": ["primes"], "section": "Bo'linish va EKUK/EKUB" },
+  { "id": "lcm", "title_uz": "EKUK — eng kichik umumiy karrali", "grade": 6, "prereqs": ["primes"], "section": "Bo'linish va EKUK/EKUB" },
+
+  { "id": "frac-intro", "title_uz": "Oddiy kasr: surat va maxraj", "grade": 5, "prereqs": ["nat-div"], "section": "Kasrlar" },
+  { "id": "frac-add-like", "title_uz": "Maxrajlari bir xil kasrlarni qo'shish", "grade": 5, "prereqs": ["frac-intro"], "section": "Kasrlar" },
+  { "id": "frac-equivalent", "title_uz": "Teng kasrlar va kasrni qisqartirish", "grade": 6, "prereqs": ["frac-intro", "gcd"], "section": "Kasrlar" },
+  { "id": "frac-compare", "title_uz": "Kasrlarni taqqoslash", "grade": 6, "prereqs": ["frac-equivalent", "lcm"], "section": "Kasrlar" },
+  { "id": "frac-add-unlike", "title_uz": "Maxrajlari har xil kasrlarni qo'shish", "grade": 6, "prereqs": ["frac-equivalent", "lcm", "frac-add-like"], "section": "Kasrlar" },
+  { "id": "frac-sub-unlike", "title_uz": "Maxrajlari har xil kasrlarni ayirish", "grade": 6, "prereqs": ["frac-add-unlike"], "section": "Kasrlar" },
+  { "id": "frac-mixed", "title_uz": "Aralash sonlar", "grade": 6, "prereqs": ["frac-add-unlike"], "section": "Kasrlar" },
+  { "id": "frac-mul", "title_uz": "Kasrlarni ko'paytirish", "grade": 6, "prereqs": ["frac-equivalent"], "section": "Kasrlar" },
+  { "id": "frac-div", "title_uz": "Kasrlarni bo'lish", "grade": 6, "prereqs": ["frac-mul"], "section": "Kasrlar" },
+
+  { "id": "dec-intro", "title_uz": "O'nli kasrlar", "grade": 5, "prereqs": ["frac-intro", "nat-place-value"], "section": "O'nli kasrlar" },
+  { "id": "dec-add-sub", "title_uz": "O'nli kasrlarni qo'shish va ayirish", "grade": 5, "prereqs": ["dec-intro"], "section": "O'nli kasrlar" },
+  { "id": "dec-mul-div", "title_uz": "O'nli kasrlarni ko'paytirish va bo'lish", "grade": 5, "prereqs": ["dec-add-sub", "nat-mul"], "section": "O'nli kasrlar" },
+  { "id": "frac-to-dec", "title_uz": "Oddiy kasrni o'nli kasrga aylantirish", "grade": 6, "prereqs": ["dec-intro", "frac-equivalent"], "section": "O'nli kasrlar" },
+
+  { "id": "pct-intro", "title_uz": "Foiz tushunchasi", "grade": 5, "prereqs": ["dec-intro"], "section": "Foizlar" },
+  { "id": "pct-of-number", "title_uz": "Sonning foizini topish", "grade": 6, "prereqs": ["pct-intro", "dec-mul-div"], "section": "Foizlar" },
+  { "id": "pct-find-whole", "title_uz": "Foiziga ko'ra sonni topish", "grade": 6, "prereqs": ["pct-of-number"], "section": "Foizlar" },
+  { "id": "ratio", "title_uz": "Nisbat va proporsiya", "grade": 6, "prereqs": ["frac-equivalent"], "section": "Foizlar" },
+
+  { "id": "int-intro", "title_uz": "Musbat va manfiy sonlar", "grade": 6, "prereqs": ["nat-add-sub"], "section": "Manfiy sonlar" },
+  { "id": "int-add-sub", "title_uz": "Butun sonlarni qo'shish va ayirish", "grade": 6, "prereqs": ["int-intro"], "section": "Manfiy sonlar" },
+  { "id": "int-mul-div", "title_uz": "Butun sonlarni ko'paytirish va bo'lish", "grade": 6, "prereqs": ["int-add-sub", "nat-mul"], "section": "Manfiy sonlar" },
+
+  { "id": "expr-eval", "title_uz": "Harfiy ifodaning qiymatini topish", "grade": 7, "prereqs": ["nat-order-ops", "int-mul-div"], "section": "Ifodalar" },
+  { "id": "expr-like-terms", "title_uz": "O'xshash hadlarni ixchamlash", "grade": 7, "prereqs": ["expr-eval"], "section": "Ifodalar" },
+  { "id": "expr-distribute", "title_uz": "Qavslarni ochish", "grade": 7, "prereqs": ["expr-like-terms"], "section": "Ifodalar" },
+
+  { "id": "eq-one-step", "title_uz": "Bir qadamli tenglamalar", "grade": 6, "prereqs": ["nat-add-sub", "nat-div"], "section": "Chiziqli tenglamalar" },
+  { "id": "eq-two-step", "title_uz": "Ikki qadamli chiziqli tenglamalar", "grade": 7, "prereqs": ["eq-one-step", "int-add-sub"], "section": "Chiziqli tenglamalar" },
+  { "id": "eq-both-sides", "title_uz": "Ikki tomonida noma'lum bor tenglamalar", "grade": 7, "prereqs": ["eq-two-step", "expr-like-terms"], "section": "Chiziqli tenglamalar" },
+  { "id": "eq-word", "title_uz": "Tenglama tuzib masala yechish", "grade": 7, "prereqs": ["eq-two-step"], "section": "Chiziqli tenglamalar" },
+  { "id": "eq-system", "title_uz": "Ikki noma'lumli tenglamalar sistemasi", "grade": 8, "prereqs": ["eq-both-sides"], "section": "Chiziqli tenglamalar" },
+
+  { "id": "geo-perimeter", "title_uz": "Ko'pburchak perimetri", "grade": 5, "prereqs": ["nat-add-sub"], "section": "Geometriya" },
+  { "id": "geo-area-rect", "title_uz": "To'g'ri to'rtburchak yuzi", "grade": 5, "prereqs": ["nat-mul"], "section": "Geometriya" },
+  { "id": "geo-area-triangle", "title_uz": "Uchburchak yuzi", "grade": 6, "prereqs": ["geo-area-rect", "nat-div"], "section": "Geometriya" },
+  { "id": "geo-circle", "title_uz": "Aylana uzunligi va doira yuzi", "grade": 6, "prereqs": ["dec-mul-div", "geo-area-rect"], "section": "Geometriya" },
+  { "id": "geo-pythagoras", "title_uz": "Pifagor teoremasi", "grade": 8, "prereqs": ["nat-powers", "eq-one-step"], "section": "Geometriya" },
+
+  { "id": "coord-plane", "title_uz": "Koordinata tekisligi", "grade": 6, "prereqs": ["int-intro"], "section": "Koordinatalar va grafiklar" },
+  { "id": "lin-func", "title_uz": "Chiziqli funksiya y = kx + b", "grade": 7, "prereqs": ["coord-plane", "expr-eval"], "section": "Koordinatalar va grafiklar" },
+  { "id": "lin-graph", "title_uz": "Chiziqli funksiya grafigi", "grade": 7, "prereqs": ["lin-func"], "section": "Koordinatalar va grafiklar" },
+  { "id": "quad-func", "title_uz": "Kvadrat funksiya y = x²", "grade": 8, "prereqs": ["lin-graph", "nat-powers"], "section": "Koordinatalar va grafiklar" }
+]

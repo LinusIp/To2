@@ -213,21 +213,57 @@ Game-**inspired**, but **100% original** characters — **do not** use Minecraft
 
 | id | Name | Vibe | Teaching style |
 |---|---|---|---|
-| `blokbek` | **Blokbek** | blocky voxel builder/miner (sandbox-game vibe) | "Let's build it block by block" — great for area, volume, fractions-as-blocks |
-| `agent-shox` | **Agent Shox** | tactical squad leader with headset & visor (team-shooter vibe, **no guns**) | "Mission briefing" — problems are missions, steps are objectives |
+| `blokbek` | **Blokbek** | voxel teen in a black To2 hoodie (sandbox-game vibe) | "Let's build it block by block" — great for area, volume, fractions-as-blocks |
+| `agent-shox` | **Agent Shox** | tactical squad leader with headset & visor (team-shooter vibe, **no weapons**) | "Mission briefing" — problems are missions, steps are objectives |
 | `robo-rayhon` | **Robo-Rayhon** | friendly robot (sci-fi vibe) | precise, logical, loves equations |
 | `chaqmoq` | **Chaqmoq** | street racer / speedster (racing-game vibe) | speed rounds, mental math |
 
-**Art direction (team reference: blocky sandbox-game look).** The *style* — chunky voxel/pixel blocks, square heads, bright sky, grass blocks, cubic trees — is what we want for engagement. The *specific* characters must be our own: never reproduce a known game character's face, outfit colours (e.g. teal shirt + purple trousers), tools (diamond pickaxe), mobs, logos or fonts. Make them recognisably **Uzbek**:
-- **Blokbek** — voxel boy with a block-pixel **do'ppi** (skullcap) pattern, orange vest with ikat-pattern pixels, holds a giant **pixel pencil/ruler**; world = blocky Samarkand-style domes + grass blocks.
-- **Agent Shox** — square-head squad leader, green headset + visor, mission tablet in hand (no weapon); world = mission HUD, radar, objectives list.
-- **Robo-Rayhon** — cube robot with a screen face showing emotions; world = space station.
-- **Chaqmoq** — racer with a block helmet; world = race track, speed lines.
-Render as layered SVG (head / body / arms / mouth parts) so parts can be animated: idle bob, blink, mouth open/close from audio amplitude, arm "pointing at board", celebrate jump + block-particle confetti. Optional stretch: low-poly 3D in three.js — only if M0–M5 are done.
+**Art direction (team reference image).** Cosy **classroom scene** + a **voxel teen tutor** pointing at a big chalkboard, speech bubble at the top, step list on the right, a voice bar at the bottom. Characters look like cool teenagers (age 15–17 vibe), **not kids' cartoons**: block proportions with the head ≈ ¼ of the height, 3D-shaded sides, streetwear, confident expressions, no blush, no bouncing. Never reproduce a known game character (face, skin colours, outfit, tools, textures, fonts). Uzbek identity in details (ikat pattern hem/cuffs, Samarkand-blue tiles in the scene, Uzbek posters).
+- **Blokbek** (default) — black To2 hoodie with an **ikat-pattern hem and cuff**, messy dark hair, teal headphones around the neck, white sneakers; friendly confident smile; holds chalk and points at the board.
+- **Agent Shox** — tactical jacket + vest, gloves, cyan visor, headset with mic; calm, serious; turns problems into "missions".
+- **Robo-Rayhon**, **Chaqmoq** — shown as locked silhouettes in the MVP (unlock by XP).
 
 Implementation: one SVG per character in `src/components/characters/`, each with states `idle | talking | thinking | happy | celebrate`, driven by `emotion` + an `isSpeaking` amplitude value (0–1) for the mouth. Character config (`name`, `voiceId`, `catchphrases_uz[]`, colours) in `src/config/characters.ts`. Unlocks: Blokbek & Robo-Rayhon free; others unlocked by XP.
 
 ---
+
+## 6b. Scene & animation (2D, must feel smooth and alive)
+
+**Decision:** layered 2D scene (no real-time 3D). Target look = the team's reference render: voxel teen tutor in a cosy classroom, big chalkboard, speech bubble, step list, bottom voice bar. Target performance: **60 fps on a mid-range Android, ≤ 2 s first load on 4G**.
+
+### Scene layers (back → front), all absolutely positioned in one 16:9 stage that scales to fit
+1. `bg` — painted classroom per character world (WebP ≤ 200 KB, plus a blurred 20 KB placeholder).
+2. `board` — our SVG board (§5) placed exactly over the chalkboard area of the background (store its rect in % per background in `src/config/scenes.ts`).
+3. `character` — the rigged character (below).
+4. `ui` — speech bubble, step list, XP, bottom voice bar (HTML).
+5. `fx` — one `<canvas>` for particles (chalk dust, block confetti).
+Mobile portrait uses the same layers recomposed: board on top full-width, character smaller bottom-left overlapping, bubble beside it, voice bar at the bottom.
+
+### Character = cut-out rig, NOT pose swapping
+Swapping whole images looks choppy. Instead the character is cut into parts (easy for a voxel character — the parts are boxes):
+`torso`, `head`, `hair/hat`, `upperArmL/R`, `foreArmL/R + hand` (right hand holds chalk), `legs`, eyes (`open`, `half`, `closed`), brows, mouths (`closed`, `small`, `open`, `wide`, `smile`, `o`).
+Parts are transparent PNG/WebP (render them from Blender or cut from an AI image) or simple SVG boxes, each with a pivot point in `src/config/characters.ts`. Animate ONLY `transform` and `opacity` (GPU) with **motion** springs:
+- **Idle (never frozen):** breathing (torso scaleY 1→1.012, 3.5 s loop), slight head sway (±1.5°), random **blink** every 2.5–5 s (120 ms).
+- **Talking / lip-sync:** Web Audio `AnalyserNode` on the TTS audio → smoothed amplitude (attack 30 ms, release 90 ms) → choose mouth `closed/small/open/wide`; head nods slightly on loud syllables.
+- **Pointing at the board:** 2-bone IK (upper arm + forearm, ~30 lines of math) so the chalk hand **follows the chalk tip** while the board draws. Smoothed with a spring so it never snaps.
+- **Emotions** from `segment.emotion`: brows + mouth + small body pose blend (happy = bounce + smile, thinking = hand to chin + eyes up, excited = jump 6 px + block-confetti, encouraging = nod).
+- **Listening** (mic open): leans 2° toward the learner, eyebrows up, eyes follow the mic wave.
+- **Thinking** (waiting for AI): taps chalk on the board / scratches head, small "..." in the bubble — this covers the 1–3 s AI wait.
+- Every state change crossfades over 150–250 ms; nothing jumps.
+(Optional upgrade if a teammate can animate: author the same rig in **Rive** with a state machine and drive inputs `talking`, `amplitude`, `emotion`, `pointX/Y` — same interface, `src/components/characters/Rig.tsx` stays the API.)
+
+### Board animation
+- Strokes draw with `stroke-dashoffset` and ease-out; text/LaTeX reveals left→right with a mask that moves **with the chalk tip**; tiny chalk-dust particles at the tip; 1–2 px hand jitter so it looks hand-drawn.
+- Highlight = chalk circle drawn around the element; erase = quick wipe animation.
+
+### Ambient life (subtle)
+- 2–3 px parallax drift between `bg`, `board`, `character` on idle; dust motes in the window light; step list items slide in as the tutor reaches them; XP counts up; correct answer = block-confetti + a short sound.
+
+### Performance rules
+- Only `transform`/`opacity` animations, `will-change` on the rig parts, one rAF loop for lip-sync + IK + particles, no layout reads inside it.
+- Max ~150 particles; pause everything when the tab is hidden.
+- Preload the next scene + character parts; images sized for 2× DPR max.
+- Test with Chrome DevTools CPU throttling 4× and a real cheap Android before the demo. Respect `prefers-reduced-motion` (keep lip-sync, drop parallax/particles).
 
 ## 7. Learning engine (roadmap + weak points)
 
@@ -332,13 +368,15 @@ Layouts (mockups in `docs/mockups/`):
 - **Tablet (768–1279px)**: landscape-first; board ~70% left, character + chat/captions column right; stylus/finger scratchpad toggle; side rail nav.
 - **Desktop (≥ 1280px)**: left sidebar nav + mini roadmap, centre board, right column character + transcript + answer input.
 
-**Mockups (source of truth for the look):** https://claude.ai/artifact/H3mU9qcfDgd76MRFyuTw5k — Mobile lesson, Mobile roadmap, Tablet mission (Agent Shox), Web lesson, plus the Character and Board building blocks. Match them.
+**Mockups (source of truth for the look):** https://claude.ai/artifact/H3mU9qcfDgd76MRFyuTw5k — Web lesson, Tablet interruption state, Mobile lesson, Mobile diagnostic expedition, Mobile roadmap world, Mobile onboarding, Character rig sheet, Design tokens, plus the Scene / Character / Board building blocks. Match them. **The same files are in `docs/mockups/` (see its README) — read those, you cannot open the claude.ai link.**
 
-**Design tokens** (put in `src/app/globals.css` as Tailwind v4 `@theme`):
-- ink `#1b1a17` · paper `#f3efe6` · sky `#cfe8ff` · grass `#3fae49` (dark `#2f8f3a`) · gold `#ffc83d` · orange `#f28c28` · muted text `#5c584f` · locked `#e4dfd3`/`#8a857a`
-- chalkboard `#1f2d27`, wood frame `#a0662e`; chalk: white `#f5f3ea`, yellow `#ffd85c`, blue `#7cc7ff`, pink `#ff9bb0`, green `#8be28b`
-- Fonts (Google): **Pixelify Sans** (headings, numbers, HUD, buttons) · **Nunito** 600–800 (body) · **Kalam** 700 (chalk on the board)
-- Blocks: `border: 3px solid ink`, radius 10–16px, **hard offset shadow** `4px 4px 0 ink` on primary things only; pressed state = shadow 0 + translate(4px,4px).
+**Design tokens** (put in `src/app/globals.css` as Tailwind v4 `@theme`; the "Tokens" artboard in the mockups shows them all):
+- App/chrome: deep `#121729` · panel `#1b2238` (UI panels float over the scene) · panel line `#34437a` · text `#ffffff` · muted text `#aab4d4`
+- Primary blue `#2f6bff` (hover `#5b8cff`) for mic, play, primary buttons, active step glow · gold `#ffc83d` (stars, XP) · success `#4ade80` · interruption/note orange `#ff9f43`
+- Scene: wall `#3b4563`, wood `#b0773a`/`#8a5a2c`, floor `#6b4a2e`, window sky `#8fd0ff`, lamp `#ffe7a3`
+- Chalkboard `#233029`; chalk meaning: white = main work, **yellow = the answer / current question**, blue & pink = parts being compared, **orange = answer to an interruption (note layer)**, green = check mark
+- Fonts (Google): **Fredoka** 600/700 (logo, headings, numbers, buttons) · **Manrope** 500/700 (body, captions) · **Kalam** 700 (chalk)
+- Shapes: panels radius 20, buttons pill or circle, 44px+ targets. Panel shadow `0 8px 24px rgba(0,0,0,.35)` + 2px inner line `#34437a`. **Glow only on the active thing** (current step, mic while listening) — never on everything.
 
 **Fun, but NOT "AI slop" — forbidden:** purple/blue gradient washes, glassmorphism, emoji as icons, generic stock illustrations, left-border accent cards, "✨ AI-powered" badges, lorem ipsum, fake stats. Fun comes from the characters, the chalkboard, chunky pixel UI, XP/streak/missions and micro-animations (character bob + lip-sync, chalk strokes drawing in, node pulse, block-confetti on success).
 
@@ -403,7 +441,7 @@ REPORT.md              # your running log (see §12)
 
 | # | Time | Milestone | Done when |
 |---|---|---|---|
-| M0 | 0:00–0:45 | Scaffold vinext + Tailwind + shadcn, wrangler bindings, Drizzle schema + migration, `MOCK_AI` flag, deploy "hello" to Workers | live URL works |
+| M0 | 0:00–0:45 | **VoiceLab speed test first** (`scripts/bench-voicelab.ts`: 10× STT on a 4 s Uzbek clip, 10× LLM short answer, 10× TTS one sentence → median/p90 ms into REPORT.md). Then scaffold vinext + Tailwind + shadcn, wrangler bindings, Drizzle schema + migration, `MOCK_AI` flag, deploy "hello" to Workers | live URL works |
 | M1 | 0:45–2:30 | **Board renderer** + BoardCommand zod schema + 4 hand-written demo lessons playing in mock mode | fractions lesson plays with animation |
 | M2 | 2:30–4:00 | **Characters** (2 first: Blokbek, Agent Shox) with states + lip-sync; audio player; TTS route + R2 cache | character "talks" while board draws |
 | M3 | 4:00–6:00 | **Real AI loop**: STT route + mic button, `/api/tutor` streaming SSE with LLM + JSON validation/retry, answer checking with mathjs, **barge-in: pause → answer on note layer → resume** | interrupt the tutor mid-sentence by voice in Uzbek → spoken + drawn answer → lesson resumes where it stopped |
