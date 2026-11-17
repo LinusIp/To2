@@ -153,7 +153,7 @@ export default function LipsyncDebug({ tutor, onVoice }: { tutor: string; onVoic
       </div>
       <canvas ref={canvas} width={1000} height={140} className="h-[140px] w-full rounded-[10px]" />
       <div className="mt-1 text-[12px] text-mut">
-        green = audible (analyser) · yellow = fed to the mouth (envelope, read 30 ms ahead) · strip = mouth frame (dark = rest). Offset &gt; 0 means the mouth leads.
+        green = audible (analyser) · yellow = fed to the mouth (envelope, read 45 ms ahead) · strip = mouth frame (dark = rest). Offset &gt; 0 means the mouth leads.
       </div>
     </section>
   );

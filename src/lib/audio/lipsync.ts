@@ -4,7 +4,7 @@
 //
 // Source of the amplitude — always the audio that is actually playing, never a timer or the text:
 //   1. "envelope": the per-clip envelope the server sends with the WAV (x-tts-env, 20 ms steps,
-//      normalised per clip), sampled at audio.currentTime + 30 ms → the mouth leads, never lags;
+//      normalised per clip), sampled at audio.currentTime + LEAD_MS (45 ms) → the mouth leads, never lags;
 //   2. "analyser": a live Web Audio AnalyserNode on the <audio> element (no envelope available);
 //   3. no audio (muted / TTS down / captions only) → the mouth stays closed.
 import { envelopeAt } from "./envelope";
@@ -12,7 +12,9 @@ import { envelopeAt } from "./envelope";
 export const mouth = { amp: 0, speaking: false, source: "none" as "envelope" | "analyser" | "none" };
 
 /** how far the mouth leads the audio */
-export const LEAD_MS = 30;
+// 30 ms lead + ~15 ms to cover the 25 ms attack smoothing: measured on all 3 tutors' greetings the
+// mouth then never opens after the sound (worst +5 ms), typically 30–65 ms before it (REPORT.md)
+export const LEAD_MS = 45;
 
 let ctx: AudioContext | null = null;
 let analyser: AnalyserNode | null = null;
