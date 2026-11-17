@@ -34,6 +34,7 @@ const ANNOT = new Set(["rect", "circle", "ellipse", "line", "arrow", "tick"]);
 const LABEL_W = 160;
 const LABEL_H = 64;
 const SIZES = ["l", "m", "s"] as const;
+const SHAPE_OPS = new Set(["rect", "circle", "ellipse", "line"]);
 
 /** clearance a label keeps from a chalk line (lines wobble up to ±4 px) */
 const LINE_CLEAR = 8;
@@ -125,6 +126,10 @@ const NOTE_BOX: Box = { x: NOTE_PANEL.x - 6, y: NOTE_PANEL.y - 6, w: NOTE_PANEL.
 export function mainLayouter() {
   // what is on the board right now (main layer), by element id
   let placed = new Map<string, Box>();
+  // what kind of drawing each id is (an op never changes for an id within a lesson)
+  const opOf = new Map<string, string>();
+  // how far the layout moved each element from the LLM's coordinates
+  const delta = new Map<string, [number, number]>();
   // top of the most recently written content: moved drawings go at or below it
   let cursor = 0;
 
@@ -165,9 +170,12 @@ export function mainLayouter() {
   const forget = (target: string) => {
     if (target === "all") {
       placed = new Map();
+      delta.clear();
       cursor = 0;
+    } else if (target !== "note") {
+      placed.delete(target);
+      delta.delete(target);
     }
-    else if (target !== "note") placed.delete(target);
   };
 
   return <T extends { board: BoardCommand[]; layer?: string }>(seg: T): T => {
@@ -185,6 +193,7 @@ export function mainLayouter() {
     const items: Item[] = [];
     const replaced = new Set<string>();
     const resized = new Map<number, DrawCommand>();
+    const anchorDelta = new Map<string, [number, number]>();
     for (let i = 0; i < cmds.length; i++) {
       const c0 = cmds[i];
       if (!isDraw(c0)) continue;
@@ -193,20 +202,59 @@ export function mainLayouter() {
       if (c !== c0) resized.set(i, c);
       if (placed.has(c.id)) replaced.add(c.id); // same id = rewrite in place
       const box = measure(c);
+      opOf.set(c.id, c.op);
       // a frame (rect/circle/ellipse) is an annotation only if it surrounds what it touches —
       // a new rectangle that merely grazes old text is a new diagram and may be moved;
       // lines/arrows/ticks are annotations when they touch (underline, connector, check mark)
       const frame = c.op === "rect" || c.op === "circle" || c.op === "ellipse";
-      const anchored =
-        ANNOT.has(c.op) &&
-        [...placed.entries()].some(([id, b]) => {
+      // lines that meet other new lines end-to-end are a drawn shape (triangle, polygon), not an underline
+      const polygon =
+        c.op === "line" &&
+        cmds.some(
+          (o, j) =>
+            j !== i &&
+            o.op === "line" &&
+            [o.from, o.to].some((p) => [c.from, c.to].some((q) => Math.hypot(p[0] - q[0], p[1] - q[1]) < 8)),
+        );
+      // Annotations are recognised in the LLM's own coordinates: compare against where each
+      // element was ORIGINALLY drawn (placed box minus the shift the layout gave it). The
+      // annotation then gets the same shift, so a trace around a moved rectangle follows it.
+      const target = !ANNOT.has(c.op)
+        ? undefined
+        : [...placed.entries()].find(([id, pb]) => {
           if (replaced.has(id)) return false;
+          const [sx, sy] = delta.get(id) ?? [0, 0];
+          const b = { x: pb.x - sx, y: pb.y - sy, w: pb.w, h: pb.h };
+          const op = opOf.get(id) ?? "";
+          // a polygon is an annotation only when it traces an existing shape (perimeter drawn
+          // around a rectangle); touching old text just means it landed in the wrong place
+          if (polygon) {
+            if (!SHAPE_OPS.has(op) || c.op !== "line") return false;
+            // traced = both ends of this side lie on that shape's outline
+            const onEdge = (p: [number, number]) =>
+              p[0] > b.x - 12 && p[0] < b.x + b.w + 12 && p[1] > b.y - 12 && p[1] < b.y + b.h + 12 &&
+              Math.min(Math.abs(p[0] - b.x), Math.abs(p[0] - (b.x + b.w)), Math.abs(p[1] - b.y), Math.abs(p[1] - (b.y + b.h))) < 12;
+            return onEdge(c.from) && onEdge(c.to);
+          }
           if (!frame) return hit(box, b, 4);
+          // frames go around content (an answer, a number), never around another line or shape
+          if (!CONTENT.has(op)) return false;
           const cx = b.x + b.w / 2;
           const cy = b.y + b.h / 2;
           return cx > box.x && cx < box.x + box.w && cy > box.y && cy < box.y + box.h;
-        });
-      items.push({ i, cmd: c, box, anchored });
+        })?.[0];
+      let cmd = c;
+      let ibox = box;
+      if (target) {
+        const [sx, sy] = delta.get(target) ?? [0, 0];
+        if (sx || sy) {
+          cmd = shift(c, sx, sy);
+          ibox = { ...box, x: box.x + sx, y: box.y + sy };
+          resized.set(i, cmd);
+        }
+        anchorDelta.set(c.id, [sx, sy]);
+      }
+      items.push({ i, cmd, box: ibox, anchored: !!target });
     }
 
     // 1b) a label that cuts into the shape it labels ("4 sm" written on the square's edge) is
@@ -231,26 +279,38 @@ export function mainLayouter() {
       }
       // sides drawn as lines (a triangle): bounding boxes of diagonals are useless, so measure
       // the distance to the segment itself and step the label away along the line's normal
-      for (const ln of items) {
-        if (ln.cmd.op !== "line") continue;
-        const { from: a, to: b } = ln.cmd;
+      // (one loop over all lines: stepping away from one side must not push it into another)
+      const lines = items.filter((ln) => ln.cmd.op === "line").map((ln) => ln.cmd as Extract<DrawCommand, { op: "line" }>);
+      let mx = 0;
+      let my = 0;
+      for (let k = 0; k < 24 && lines.length; k++) {
+        let near: (typeof lines)[number] | null = null;
+        let nd = LINE_CLEAR;
+        for (const ln of lines) {
+          const d = segBoxDist(ln.from, ln.to, it.box);
+          if (d < nd) {
+            nd = d;
+            near = ln;
+          }
+        }
+        if (!near) break;
+        const { from: a, to: b } = near;
         const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
         let nx = -(b[1] - a[1]) / len;
         let ny = (b[0] - a[0]) / len;
-        const c = { x: it.box.x + it.box.w / 2, y: it.box.y + it.box.h / 2 };
-        if ((c.x - a[0]) * nx + (c.y - a[1]) * ny < 0) {
+        const cx = it.box.x + it.box.w / 2;
+        const cy = it.box.y + it.box.h / 2;
+        if ((cx - a[0]) * nx + (cy - a[1]) * ny < 0) {
           nx = -nx;
           ny = -ny;
         }
-        let k = 0;
-        while (k < 15 && segBoxDist(a, b, it.box) < LINE_CLEAR) {
-          it.box = { ...it.box, x: it.box.x + nx * 4, y: it.box.y + ny * 4 };
-          k++;
-        }
-        if (k) {
-          it.cmd = shift(it.cmd, Math.round(nx * 4 * k), Math.round(ny * 4 * k));
-          resized.set(it.i, it.cmd);
-        }
+        it.box = { ...it.box, x: it.box.x + nx * 4, y: it.box.y + ny * 4 };
+        mx += nx * 4;
+        my += ny * 4;
+      }
+      if (mx || my) {
+        it.cmd = shift(it.cmd, Math.round(mx), Math.round(my));
+        resized.set(it.i, it.cmd);
       }
     }
 
@@ -284,6 +344,8 @@ export function mainLayouter() {
       for (const cl of ordered) {
         const obs: Box[] = [NOTE_BOX];
         for (const [id, b] of board) if (!replaced.has(id) || !cl.some((it) => it.cmd.id === id)) obs.push(b);
+        // this segment's annotations stay where they are, so nothing else may land on them
+        if (strict) for (const it of items) if (it.anchored) obs.push(it.box);
         const boxes = cl.map((it) => it.box);
         const spot = findSpot(boxes, obs, cur) ?? (strict ? null : clampOffset(union(boxes)));
         if (!spot) return null;
@@ -304,7 +366,14 @@ export function mainLayouter() {
     }
     placed = res.board;
     cursor = res.cur;
-    for (const it of items) if (it.anchored) placed.set(it.cmd.id, it.box);
+    if (wipe) delta.clear();
+    for (const it of items) {
+      const o = res.off.get(it.i);
+      const r = resized.get(it.i) !== undefined && it.anchored ? (anchorDelta.get(it.cmd.id) ?? [0, 0]) : [0, 0];
+      // total shift from the LLM's coordinates = pre-shift (anchored follow) + placement offset
+      delta.set(it.cmd.id, [r[0] + (o?.[0] ?? 0), r[1] + (o?.[1] ?? 0)]);
+      if (it.anchored) placed.set(it.cmd.id, it.box);
+    }
 
     // 4) emit
     const out: BoardCommand[] = [];

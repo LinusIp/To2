@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { BoardCommand, DrawCommand } from "@/lib/ai/schema";
 import { DEMO_LESSONS } from "@/lib/ai/mock/lessons";
 import { layoutMainSegments, measure, mainLayouter, segBoxDist } from "./layout";
-import { BOARD_H, BOARD_W, NOTE_PANEL, isDraw } from "./model";
+import { BOARD_H, BOARD_W, NOTE_PANEL, applyCommand, emptyBoard, fitToBoard, isDraw } from "./model";
+import { rngFrom, strokesFor } from "@/components/board/handwriting";
 
 type Seg = { board: BoardCommand[]; layer?: string };
 const overlaps = (a: { x: number; y: number; w: number; h: number }, b: typeof a) =>
@@ -198,6 +199,66 @@ describe("main-layer layout", () => {
 
   it("geo-perimeter p1 then p5 lays out cleanly as one lesson", () => {
     expect(anyOverlap(layoutMainSegments([GEO_P1, GEO_P5]))).toEqual([]);
+  });
+
+  // Three real geo-perimeter lessons from VoiceLab's LLM (17 Nov), as cached in KV (after fitToBoard).
+  // Checked against the REAL chalk strokes, not bounding boxes.
+  describe("real LLM lessons (geo-perimeter)", () => {
+    const pts = (c: DrawCommand) => strokesFor(c, rngFrom(7)).flatMap((s) => s.pts);
+    const chalkGap = (a: [number, number][], b: [number, number][]) => {
+      let m = Infinity;
+      for (const p of a) for (const q of b) m = Math.min(m, Math.hypot(p[0] - q[0], p[1] - q[1]));
+      return m;
+    };
+    for (const name of ["geo-perimeter-llm-1", "geo-perimeter-llm-2", "geo-perimeter-llm-3"]) {
+      it(`${name}: no text touches other chalk, labels stay with their shape`, async () => {
+        const raw = (await import(`./__fixtures__/${name}.json`)).default as Seg[];
+        const out = layoutMainSegments(raw.map((s) => ({ ...s, board: s.board.map(fitToBoard) })));
+        let st = emptyBoard();
+        const bad: string[] = [];
+        const lost: string[] = [];
+        for (const s of out) {
+          const shapesHere = s.board.filter((c) => isDraw(c) && ["rect", "circle", "ellipse", "line"].includes(c.op)) as DrawCommand[];
+          for (const c of s.board) {
+            if (isDraw(c)) {
+              const P = pts(c);
+              for (const e of st.els) {
+                if (e.id === c.id) continue;
+                const text = c.op === "write" || c.op === "latex" || e.cmd.op === "write" || e.cmd.op === "latex";
+                if (text && chalkGap(P, pts(e.cmd)) < 3) bad.push(`${c.id}×${e.id}`);
+              }
+              // a short label next to a shape must not be thrown across the board
+              if (c.op === "write" && c.text.length <= 6 && shapesHere.length)
+                if (Math.min(...shapesHere.map((sh) => chalkGap(P, pts(sh)))) > 70) lost.push(`${c.id} "${c.text}"`);
+            }
+            st = applyCommand(st, c);
+          }
+        }
+        expect(bad).toEqual([]);
+        expect(lost).toEqual([]);
+      });
+    }
+  });
+
+  it("lines tracing a rectangle's perimeter follow the rectangle when the layout moves it", async () => {
+    for (const name of ["geo-perimeter-llm-2", "geo-perimeter-llm-3"]) {
+      const raw = (await import(`./__fixtures__/${name}.json`)).default as Seg[];
+      const out = layoutMainSegments(raw.map((s) => ({ ...s, board: s.board.map(fitToBoard) })));
+      const rect = out[0].board.find((c) => isDraw(c) && c.id === "rect1") as { x: number; y: number; w: number; h: number };
+      const rawRect = raw[0].board.find((c) => isDraw(c) && c.id === "rect1") as { x: number; y: number };
+      expect([rect.x, rect.y]).not.toEqual([rawRect.x, rawRect.y]); // the layout did move it…
+      const corners = [
+        [rect.x, rect.y],
+        [rect.x + rect.w, rect.y],
+        [rect.x + rect.w, rect.y + rect.h],
+        [rect.x, rect.y + rect.h],
+      ];
+      // …and every perimeter line still starts and ends on one of its corners
+      for (const id of ["l1", "l2", "l3", "l4"]) {
+        const ln = out[1].board.find((c) => isDraw(c) && c.id === id) as Extract<DrawCommand, { op: "line" }>;
+        for (const p of [ln.from, ln.to]) expect(Math.min(...corners.map((q) => Math.hypot(p[0] - q[0], p[1] - q[1])))).toBeLessThan(2);
+      }
+    }
   });
 
   it("passes note-layer segments through untouched", () => {

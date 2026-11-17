@@ -50,6 +50,18 @@ Per CLAUDE.md "★ Design update" and `docs/prototypes/`:
 - three.js r180 instead of the prototype's r128 (colour management on, lights ×π to match).
 - Pose `sig` exists in the Blender set but isn't used by the UI yet.
 
+## Board auto-layout hardening (geo-perimeter) ✅
+Team added `src/lib/board/layout.ts` (main-layer auto-layout on the server). Re-running the live geo-perimeter lesson found gaps; fixed and covered by tests on **three real LLM lessons** saved in `src/lib/board/__fixtures__/` (checked against the real chalk strokes, not boxes):
+- a handwritten line wider than the board (1055 px) is stepped down l → m → s instead of being left on top of other writing;
+- only short labels ("5 sm") stick to a shape; full lines of text next to a shape are their own row;
+- labels that cut into their shape — including triangle sides drawn as `line`s — are nudged just outside;
+- a rect/circle counts as an annotation only if it surrounds content; lines meeting end-to-end are a polygon (a new diagram), unless they trace an existing shape's outline;
+- annotations are matched in the LLM's own coordinates and follow their target when the layout moves it (perimeter lines stay on the rectangle);
+- a segment's anchored annotations are obstacles for the rest of that segment.
+- ⚠️ The LLM's coordinates collide often, so the layout moves most drawings (15–20 of ~21 per lesson). Readable, but the board may not look exactly as the prompt intended.
+- Deploy: `scripts/deploy.mjs` now skips `public/models/raw/`, `public/characters/blender/` and `_*.png` (source art; `models/raw/blokbek.glb` is 61 MB, over Cloudflare's 25 MiB asset limit).
+- Push identity pinned: `origin` push URL is `https://LinusIp@github.com/LinusIp/To2.git` (Git Credential Manager only holds LinusIp).
+
 ## 🔑 Team must provide / decide
 - [x] VoiceLab key — `.dev.vars` (local) + Wrangler secret on Worker `to2`.
 - [x] Base URL `https://api.voicelab.uz`, language `uz`, model `aisha-gemma-4` (from docs + live API).
