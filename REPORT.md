@@ -419,3 +419,18 @@ Source: `docs/prototypes/mobile-app-v2/index.html` + `docs/design/target-ui.png`
   cached (≈ 1,420 credits to fill; his old copies became misses with the base64 fix) — waiting for the team: the demo path can't
   be 100 % cached for Blokbek without generating them.
 - Lip-sync offset spot checks: see Block 2 (onsets within −65…+5 ms of the audio for all 3 tutors).
+### Block 7 — Android APK ✅ (CI green)
+- **Download**: run https://github.com/LinusIp/To2/actions/runs/44192356223 → Artifacts → **To2-debug.apk**
+  (direct: https://github.com/LinusIp/To2/actions/runs/44192356223/artifacts — needs a GitHub login). Signed builds appear
+  on Releases as `apk-<short-sha>` once the 4 signing secrets are added; without them the job skips cleanly (verified).
+- `mobile/` (Capacitor 6, JDK 17, `uz.to2.app`): loads `production.json`'s URL (also used by the offline page via
+  `www/config.js`; CI first checks `<url>/version`), bundled offline page, RECORD_AUDIO + MODIFY_AUDIO_SETTINGS (runtime
+  prompt on the first mic press, granted to the WebView in `onPermissionRequest`), autoplay without a gesture, back = in-app
+  history (exits from home), portrait, blue status bar, icon/splash from the To2 wordmark + Blokbek's face.
+- First run failed in `setup-android` (it asks for the retired `tools` package) → fixed (`packages: platform-tools`).
+- **Emulator smoke test (API 30, in CI)**: APK installs, launches, process running, loads the production site; manifest
+  shows RECORD_AUDIO (not granted yet = prompted on first use) and MODIFY_AUDIO_SETTINGS. ⚠️ The screenshot shows the page
+  **unstyled**: that emulator image ships an old Android System WebView (~Chrome 83) which can't parse our Tailwind v4 CSS
+  (cascade layers, oklch/color-mix). Phones with an updated WebView (Play Store auto-update, Chrome ≥ 111) render normally.
+  Not verified in CI: the 3D tutor writing, audio playback and the mic prompt dialog (no UI automation) — check on a phone:
+  install → open → "Boshlash" → lesson → "Darsni boshlash" (tutor talks + writes) → "Savol berish" (mic prompt appears).
