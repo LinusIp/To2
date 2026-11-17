@@ -14,7 +14,7 @@ const BOOTSTRAP = [
   // key-value store (sessions, caches, TTS audio): KV allows only 1,000 writes/day on our plan, D1 100,000
   `CREATE TABLE IF NOT EXISTS kv_store (key text PRIMARY KEY NOT NULL, value blob NOT NULL, mime text, expires_at integer)`,
   // VoiceLab TTS spend, one row per synthesized clip (src/lib/server/credits.ts)
-  `CREATE TABLE IF NOT EXISTS credits_log (id integer PRIMARY KEY AUTOINCREMENT, at integer NOT NULL, day text NOT NULL, tutor text NOT NULL, source text NOT NULL, model text NOT NULL, chars integer NOT NULL, credits real NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS credits_log (id integer PRIMARY KEY AUTOINCREMENT, at integer NOT NULL, day text NOT NULL, tutor text NOT NULL, source text NOT NULL, model text NOT NULL, chars integer NOT NULL, credits real NOT NULL, text text)`,
   `CREATE INDEX IF NOT EXISTS credits_day_idx ON credits_log (day)`,
 ];
 

@@ -11,13 +11,13 @@ export const creditsFor = (model: string, chars: number) => chars * (RATE[model]
 /** Tashkent calendar day (UTC+5), e.g. "2026-11-18". */
 export const dayOf = (ms = Date.now()) => new Date(ms + 5 * 3600_000).toISOString().slice(0, 10);
 
-export async function logCredits(e: { tutor: string; source: string; model: string; chars: number }): Promise<void> {
+export async function logCredits(e: { tutor: string; source: string; model: string; chars: number; text?: string }): Promise<void> {
   try {
     await getDb();
     const credits = creditsFor(e.model, e.chars);
     await getEnv()
-      .DB.prepare("INSERT INTO credits_log (at, day, tutor, source, model, chars, credits) VALUES (?, ?, ?, ?, ?, ?, ?)")
-      .bind(Date.now(), dayOf(), e.tutor, e.source, e.model, e.chars, credits)
+      .DB.prepare("INSERT INTO credits_log (at, day, tutor, source, model, chars, credits, text) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+      .bind(Date.now(), dayOf(), e.tutor, e.source, e.model, e.chars, credits, (e.text ?? "").slice(0, 200))
       .run();
     if (cache && cache.day === dayOf()) cache.total += credits;
   } catch (err) {
@@ -39,6 +39,17 @@ export async function todayCredits(): Promise<number> {
   } catch {
     return cache?.total ?? 0;
   }
+}
+
+/** The clips generated since `sinceMs` (newest last): which lines cost what. */
+export async function creditRows(sinceMs: number, limit = 300) {
+  await getDb();
+  return (
+    await getEnv()
+      .DB.prepare("SELECT at, tutor, source, model, chars, credits, text FROM credits_log WHERE at >= ? ORDER BY at LIMIT ?")
+      .bind(sinceMs, limit)
+      .all<{ at: number; tutor: string; source: string; model: string; chars: number; credits: number; text: string | null }>()
+  ).results;
 }
 
 export async function creditsSummary(day = dayOf()) {

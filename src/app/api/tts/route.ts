@@ -80,7 +80,7 @@ async function clipAudio(env: AppEnv, tts: TTS, voiceId: string, model: TtsModel
     /* treat as a miss */
   }
   const { audio, mime } = await tts.synthesize(text, voiceId, { model, speed });
-  await logCredits({ tutor: who.tutor, source: who.source, model, chars: text.length });
+  await logCredits({ tutor: who.tutor, source: who.source, model, chars: text.length, text });
   try {
     await putCachedAudio(env, key, audio, mime);
   } catch (e) {

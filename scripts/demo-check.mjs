@@ -8,6 +8,15 @@
 // Audio requests mirror the player: segment i+1 is prefetched with wait=long while i plays,
 // then requested normally when its turn comes (that second request is the one we score).
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { build } from "esbuild";
+
+// speak the diagnostic questions EXACTLY like the app (src/app/diagnostic/page.tsx → speakMath), or the
+// check asks for lines the app never plays (and, over the daily cap, pays for them on v1)
+const smOut = path.join(os.tmpdir(), "to2-speakmath.mjs");
+await build({ entryPoints: ["src/lib/ai/speakMath.ts"], bundle: true, format: "esm", platform: "node", outfile: smOut, logLevel: "silent" });
+const { speakMath } = await import("file://" + smOut);
 
 const RUNS = Number(process.argv[2] ?? 3);
 const BASE = process.argv.slice(3).find((a) => a.startsWith("http")) ?? "https://to2.locallabs-io.workers.dev";
@@ -78,7 +87,7 @@ async function run(v, n) {
   // 2. diagnostic (seeded per grade; a fixed answer pattern → the same path every run)
   let p = (await (await api("/api/diagnostic", { action: "start" })).json()).problem;
   for (let i = 0; p && i < 12; i++) {
-    await tts(log, "diagnostic", v, p.q.replace(/\s*=\s*\?$/, " nechaga teng?"), "encouraging");
+    await tts(log, "diagnostic", v, speakMath(p.q), "encouraging");
     const answer = p.choices?.length ? p.choices[0] : "0";
     const r = await (await api("/api/diagnostic", { action: "answer", answer })).json();
     p = r.problem;

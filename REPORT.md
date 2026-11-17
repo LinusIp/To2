@@ -393,3 +393,29 @@ Source: `docs/prototypes/mobile-app-v2/index.html` + `docs/design/target-ui.png`
 - **Expected cost of one judge session once warmed**: demo path ≈ 0 (all cached); each extra free question ≈ 2–3 segments ×
   ~60 chars × (1 v1 + 1.5 v2) ≈ 300–450 credits; a fresh LLM lesson on another skill ≈ 8 segments ≈ 1,200–1,800. A typical
   10-minute judge session with 2 own questions ≈ **0.6–1k credits**.
+### Block 6 — Re-warm + final demo check (2026-11-18)
+- **Re-warm (approved: Lola + Ziyo only)**: 148 lines, **0 failed, 0 v1 fallbacks, 13,550 credits** (dry run said 15,158 —
+  clips shared between lines are paid once). Passed the 15k/day cap only via the one-day exemption
+  (`WARM_CAP_EXEMPT_DAY=2026-11-18`, `src=warm` only). Blokbek: no audio generated (team decision).
+- **Credits**: today 17,207 (warm 13,550 · live 2,410 · prefetch 636 · speed tests 612). Remaining on the plan ≈ 250,000 −
+  ~54,000 − today ≈ **179,000** (TODO(team): confirm on voicelab.uz). Today is now over the cap → new uncached lines play on v1.
+- **3× demo check on production** (`node scripts/demo-check.mjs 3 --no-gen=blokbek`, `docs/demo-check.json`):
+
+| tutor | run | lesson | question | clips | cached-v2 | v1 (cap) | skipped (Blokbek, not cached) | max audio start |
+|---|---|---|---|---|---|---|---|---|
+| blokbek | 1 · 2 · 3 | demo | pinned | 24 | 14 | 0 | 10 | 612 · 305 · 302 ms |
+| lola | 1 · 2 · 3 | demo | pinned | 24 | 16 | 8 | 0 | 1,366 · 793 · 769 ms |
+| ziyo | 1 · 2 · 3 | demo | pinned | 24 | 16 | 8 | 0 | 1,404 · 848 · 858 ms |
+
+  Segments: 100 % deterministic (lesson = demo, question = pinned). cached-v2 audio start: median 287 ms, p90 394 ms.
+- **Why the check spent 514 credits (should be ~0)**: the check script spoke the 8 diagnostic questions as raw text
+  ("1/2 + 1/4 nechaga teng?") while the app speaks them via speakMath ("ikkidan bir qo'shuv…"); over the cap those raw lines
+  were made on v1 (Lola 257 + Ziyo 257 credits, 18 clips, 22:34–22:35 UTC). Those lines are never played by the app → not cached
+  on purpose; the check now uses speakMath. (The ~2,100 credits at 22:21–22:23 UTC, Blokbek included, came from someone playing
+  lessons on production right after the release, not from the check.) `/dev/credits?since=<ms>` now lists each generated clip
+  with its text (new `text` column).
+- **Spot-check of exactly those lines as the app requests them** (`check=1`, no generation): **Lola 17/17 and Ziyo 17/17 cached**
+  (8 diagnostic + 9 pinned-answer lines). **Blokbek 3/17**: his 8 diagnostic questions and 6 of his 9 pinned-answer lines are not
+  cached (≈ 1,420 credits to fill; his old copies became misses with the base64 fix) — waiting for the team: the demo path can't
+  be 100 % cached for Blokbek without generating them.
+- Lip-sync offset spot checks: see Block 2 (onsets within −65…+5 ms of the audio for all 3 tutors).

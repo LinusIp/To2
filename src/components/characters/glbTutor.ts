@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import models from "@/config/characterModels.json";
+import { BUILD } from "@/lib/build";
 import { PLAYABLE } from "@/config/characters";
 import type { VoxelCfg } from "@/config/characters";
 import type { VoxelChar } from "./voxel";
@@ -39,7 +40,8 @@ export function loadGlb(id: string): Promise<THREE.Group> {
   let p = cache.get(id);
   if (!p) {
     p = getLoader()
-      .loadAsync(`/models/tripo/${id}.glb`)
+      // ?v=<commit>: a new release always fetches the new model (no stale GLB in a phone or CDN cache)
+      .loadAsync(`/models/tripo/${id}.glb?v=${BUILD.commit.slice(0, 7)}`)
       .then((g) => {
         const missing = REQUIRED.filter((n) => !g.scene.getObjectByName(n));
         if (missing.length) throw new Error(`${id}.glb is missing nodes: ${missing.join(", ")}`);

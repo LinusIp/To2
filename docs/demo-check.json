@@ -1,5 +1,5 @@
 {
- "at": "2026-11-17T21:00:18.856Z",
+ "at": "2026-11-17T22:35:55.681Z",
  "base": "https://to2.locallabs-io.workers.dev",
  "logs": [
   {
@@ -21,145 +21,469 @@
     {
      "step": "greeting",
      "kind": "cached-v2",
-     "ms": 974,
+     "ms": 612,
      "text": "Salom! Men Blokbek. Matematikani blokma-blok quram"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 2209,
+     "kind": "skipped-not-cached",
+     "ms": 0,
      "text": "1/2 + 1/4 nechaga teng?"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1499,
+     "kind": "skipped-not-cached",
+     "ms": 0,
      "text": "10/20 kasrini qisqartiring."
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1487,
+     "kind": "skipped-not-cached",
+     "ms": 0,
      "text": "EKUB(6; 8) nechaga teng?"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1511,
+     "kind": "skipped-not-cached",
+     "ms": 0,
      "text": "8x = 56. x nechaga teng?"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1526,
+     "kind": "skipped-not-cached",
+     "ms": 0,
      "text": "448 + 642 nechaga teng?"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1436,
+     "kind": "skipped-not-cached",
+     "ms": 0,
      "text": "8 ta ming, 0 ta yuz va 1 ta birlikdan iborat sonni"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1351,
+     "kind": "skipped-not-cached",
+     "ms": 0,
      "text": "80 ning 20% i nechaga teng?"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1487,
+     "kind": "skipped-not-cached",
+     "ms": 0,
      "text": "20% ni oddiy kasr ko'rinishida yozing (qisqartirib"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 874,
+     "ms": 407,
      "text": "Salom! Bugun maxrajlari har xil kasrlarni qo'shami"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 450,
+     "ms": 379,
      "text": "Keling, bloklar bilan ko'ramiz. Ko'k chiziq, bu ya"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 284,
+     "ms": 339,
      "text": "Hmm… bo'laklar har xil o'lchamda. Ularni darrov qo"
     },
     {
      "step": "filler",
      "kind": "cached-v2",
-     "ms": 322,
+     "ms": 295,
      "text": "Qiziq savol! Qani, o'ylab ko'raylik…"
     },
     {
      "step": "question",
-     "kind": "cached-v2",
-     "ms": 492,
+     "kind": "skipped-not-cached",
+     "ms": 0,
      "text": "Hmm… zo'r savol! Ikki va uchning umumiy bo'luvchis"
     },
     {
      "step": "question",
-     "kind": "cached-v2",
-     "ms": 303,
+     "kind": "skipped-not-cached",
+     "ms": 0,
      "text": "Shunda EKUK ularning ko'paytmasi bo'ladi. Ikki kar"
     },
     {
      "step": "question",
      "kind": "cached-v2",
-     "ms": 203,
+     "ms": 303,
      "text": "Tushunarli bo'ldimi? Davom etamizmi?"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 403,
+     "ms": 336,
      "text": "Qani, o'ylab ko'raylik. Ikkiga ham, uchga ham bo'l"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 310,
+     "ms": 307,
      "text": "Voy, to'g'ri, olti! Endi har bir chiziqni olti bo'"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 330,
+     "ms": 344,
      "text": "Ko'k bloklarni sanaymiz. Bir, ikki, uch. Demak, bi"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 297,
+     "ms": 420,
      "text": "Endi sen ayt. Bir uchdan bir nechta oltidan birga "
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 266,
+     "ms": 296,
      "text": "Barakalla! Ikkita oltidan bir. Pushti bloklar ham "
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 274,
+     "ms": 344,
      "text": "Endi bloklar bir xil! Uchta qo'shuv ikkita, beshta"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 235,
+     "ms": 430,
      "text": "O'zing sinab ko'r! Bir to'rtdan bir qo'shuv bir ik"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 218,
+     "ms": 360,
+     "text": "Zo'r! Uchta to'rtdan bir. Sen kasrlarni blokma-blo"
+    }
+   ]
+  },
+  {
+   "tutor": "blokbek",
+   "run": 2,
+   "segments": [
+    {
+     "step": "lesson",
+     "source": "demo",
+     "n": 11
+    },
+    {
+     "step": "question",
+     "source": "pinned",
+     "n": 3
+    }
+   ],
+   "audio": [
+    {
+     "step": "greeting",
+     "kind": "cached-v2",
+     "ms": 211,
+     "text": "Salom! Men Blokbek. Matematikani blokma-blok quram"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "1/2 + 1/4 nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "10/20 kasrini qisqartiring."
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "EKUB(6; 8) nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "8x = 56. x nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "448 + 642 nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "8 ta ming, 0 ta yuz va 1 ta birlikdan iborat sonni"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "80 ning 20% i nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "20% ni oddiy kasr ko'rinishida yozing (qisqartirib"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 259,
+     "text": "Salom! Bugun maxrajlari har xil kasrlarni qo'shami"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 244,
+     "text": "Keling, bloklar bilan ko'ramiz. Ko'k chiziq, bu ya"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 269,
+     "text": "Hmm… bo'laklar har xil o'lchamda. Ularni darrov qo"
+    },
+    {
+     "step": "filler",
+     "kind": "cached-v2",
+     "ms": 305,
+     "text": "Hmm… yaxshi savol! Hozir ko'rsataman."
+    },
+    {
+     "step": "question",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "Hmm… zo'r savol! Ikki va uchning umumiy bo'luvchis"
+    },
+    {
+     "step": "question",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "Shunda EKUK ularning ko'paytmasi bo'ladi. Ikki kar"
+    },
+    {
+     "step": "question",
+     "kind": "cached-v2",
+     "ms": 216,
+     "text": "Tushunarli bo'ldimi? Davom etamizmi?"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 242,
+     "text": "Qani, o'ylab ko'raylik. Ikkiga ham, uchga ham bo'l"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 230,
+     "text": "Voy, to'g'ri, olti! Endi har bir chiziqni olti bo'"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 294,
+     "text": "Ko'k bloklarni sanaymiz. Bir, ikki, uch. Demak, bi"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 236,
+     "text": "Endi sen ayt. Bir uchdan bir nechta oltidan birga "
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 255,
+     "text": "Barakalla! Ikkita oltidan bir. Pushti bloklar ham "
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 244,
+     "text": "Endi bloklar bir xil! Uchta qo'shuv ikkita, beshta"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 206,
+     "text": "O'zing sinab ko'r! Bir to'rtdan bir qo'shuv bir ik"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 248,
+     "text": "Zo'r! Uchta to'rtdan bir. Sen kasrlarni blokma-blo"
+    }
+   ]
+  },
+  {
+   "tutor": "blokbek",
+   "run": 3,
+   "segments": [
+    {
+     "step": "lesson",
+     "source": "demo",
+     "n": 11
+    },
+    {
+     "step": "question",
+     "source": "pinned",
+     "n": 3
+    }
+   ],
+   "audio": [
+    {
+     "step": "greeting",
+     "kind": "cached-v2",
+     "ms": 294,
+     "text": "Salom! Men Blokbek. Matematikani blokma-blok quram"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "1/2 + 1/4 nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "10/20 kasrini qisqartiring."
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "EKUB(6; 8) nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "8x = 56. x nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "448 + 642 nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "8 ta ming, 0 ta yuz va 1 ta birlikdan iborat sonni"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "80 ning 20% i nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "20% ni oddiy kasr ko'rinishida yozing (qisqartirib"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 302,
+     "text": "Salom! Bugun maxrajlari har xil kasrlarni qo'shami"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 294,
+     "text": "Keling, bloklar bilan ko'ramiz. Ko'k chiziq, bu ya"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 253,
+     "text": "Hmm… bo'laklar har xil o'lchamda. Ularni darrov qo"
+    },
+    {
+     "step": "filler",
+     "kind": "cached-v2",
+     "ms": 245,
+     "text": "Qiziq savol! Qani, o'ylab ko'raylik…"
+    },
+    {
+     "step": "question",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "Hmm… zo'r savol! Ikki va uchning umumiy bo'luvchis"
+    },
+    {
+     "step": "question",
+     "kind": "skipped-not-cached",
+     "ms": 0,
+     "text": "Shunda EKUK ularning ko'paytmasi bo'ladi. Ikki kar"
+    },
+    {
+     "step": "question",
+     "kind": "cached-v2",
+     "ms": 192,
+     "text": "Tushunarli bo'ldimi? Davom etamizmi?"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 231,
+     "text": "Qani, o'ylab ko'raylik. Ikkiga ham, uchga ham bo'l"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 225,
+     "text": "Voy, to'g'ri, olti! Endi har bir chiziqni olti bo'"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 249,
+     "text": "Ko'k bloklarni sanaymiz. Bir, ikki, uch. Demak, bi"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 234,
+     "text": "Endi sen ayt. Bir uchdan bir nechta oltidan birga "
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 244,
+     "text": "Barakalla! Ikkita oltidan bir. Pushti bloklar ham "
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 272,
+     "text": "Endi bloklar bir xil! Uchta qo'shuv ikkita, beshta"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 215,
+     "text": "O'zing sinab ko'r! Bir to'rtdan bir qo'shuv bir ik"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 222,
      "text": "Zo'r! Uchta to'rtdan bir. Sen kasrlarni blokma-blo"
     }
    ]
@@ -183,67 +507,229 @@
     {
      "step": "greeting",
      "kind": "cached-v2",
-     "ms": 304,
+     "ms": 245,
      "text": "Salom, men Lola. Xato qilsang ham qo'rqma — birga "
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1584,
+     "kind": "cap-v1",
+     "ms": 1366,
      "text": "1/2 + 1/4 nechaga teng?"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1515,
+     "kind": "cap-v1",
+     "ms": 1129,
      "text": "10/20 kasrini qisqartiring."
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1478,
+     "kind": "cap-v1",
+     "ms": 1142,
      "text": "EKUB(6; 8) nechaga teng?"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1452,
+     "kind": "cap-v1",
+     "ms": 1221,
      "text": "8x = 56. x nechaga teng?"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1444,
+     "kind": "cap-v1",
+     "ms": 1152,
      "text": "448 + 642 nechaga teng?"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1655,
+     "kind": "cap-v1",
+     "ms": 1207,
      "text": "8 ta ming, 0 ta yuz va 1 ta birlikdan iborat sonni"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1508,
+     "kind": "cap-v1",
+     "ms": 1109,
      "text": "80 ning 20% i nechaga teng?"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1505,
+     "kind": "cap-v1",
+     "ms": 1198,
      "text": "20% ni oddiy kasr ko'rinishida yozing (qisqartirib"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 1058,
+     "ms": 807,
      "text": "Salom! Bugun maxrajlari har xil kasrlarni qo'shami"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 700,
+     "ms": 619,
+     "text": "Keling, bloklar bilan ko'ramiz. Ko'k chiziq, bu ya"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 390,
+     "text": "Hmm… bo'laklar har xil o'lchamda. Ularni darrov qo"
+    },
+    {
+     "step": "filler",
+     "kind": "cached-v2",
+     "ms": 220,
+     "text": "Qiziq savol! Qani, o'ylab ko'raylik…"
+    },
+    {
+     "step": "question",
+     "kind": "cached-v2",
+     "ms": 353,
+     "text": "Juda yaxshi savol! Ikki va uch hech qanday umumiy "
+    },
+    {
+     "step": "question",
+     "kind": "cached-v2",
+     "ms": 257,
+     "text": "Shuning uchun EKUK ikki karra uchga teng, ya'ni ol"
+    },
+    {
+     "step": "question",
+     "kind": "cached-v2",
+     "ms": 201,
+     "text": "Tushunarli bo'ldimi? Davom etamizmi?"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 326,
+     "text": "Qani, o'ylab ko'raylik. Ikkiga ham, uchga ham bo'l"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 325,
+     "text": "Voy, to'g'ri, olti! Endi har bir chiziqni olti bo'"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 302,
+     "text": "Ko'k bloklarni sanaymiz. Bir, ikki, uch. Demak, bi"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 285,
+     "text": "Endi sen ayt. Bir uchdan bir nechta oltidan birga "
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 276,
+     "text": "Barakalla! Ikkita oltidan bir. Pushti bloklar ham "
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 306,
+     "text": "Endi bloklar bir xil! Uchta qo'shuv ikkita, beshta"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 292,
+     "text": "O'zing sinab ko'r! Bir to'rtdan bir qo'shuv bir ik"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 240,
+     "text": "Zo'r! Uchta to'rtdan bir. Sen kasrlarni blokma-blo"
+    }
+   ]
+  },
+  {
+   "tutor": "lola",
+   "run": 2,
+   "segments": [
+    {
+     "step": "lesson",
+     "source": "demo",
+     "n": 11
+    },
+    {
+     "step": "question",
+     "source": "pinned",
+     "n": 3
+    }
+   ],
+   "audio": [
+    {
+     "step": "greeting",
+     "kind": "cached-v2",
+     "ms": 226,
+     "text": "Salom, men Lola. Xato qilsang ham qo'rqma — birga "
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 219,
+     "text": "1/2 + 1/4 nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 210,
+     "text": "10/20 kasrini qisqartiring."
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 214,
+     "text": "EKUB(6; 8) nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 226,
+     "text": "8x = 56. x nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 245,
+     "text": "448 + 642 nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 266,
+     "text": "8 ta ming, 0 ta yuz va 1 ta birlikdan iborat sonni"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 225,
+     "text": "80 ning 20% i nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 240,
+     "text": "20% ni oddiy kasr ko'rinishida yozing (qisqartirib"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 793,
+     "text": "Salom! Bugun maxrajlari har xil kasrlarni qo'shami"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 297,
      "text": "Keling, bloklar bilan ko'ramiz. Ko'k chiziq, bu ya"
     },
     {
@@ -255,73 +741,235 @@
     {
      "step": "filler",
      "kind": "cached-v2",
-     "ms": 347,
-     "text": "Qiziq savol! Qani, o'ylab ko'raylik…"
+     "ms": 262,
+     "text": "Hmm… yaxshi savol! Hozir ko'rsataman."
     },
     {
      "step": "question",
      "kind": "cached-v2",
-     "ms": 437,
+     "ms": 301,
      "text": "Juda yaxshi savol! Ikki va uch hech qanday umumiy "
     },
     {
      "step": "question",
      "kind": "cached-v2",
-     "ms": 314,
+     "ms": 262,
      "text": "Shuning uchun EKUK ikki karra uchga teng, ya'ni ol"
     },
     {
      "step": "question",
      "kind": "cached-v2",
-     "ms": 206,
+     "ms": 201,
      "text": "Tushunarli bo'ldimi? Davom etamizmi?"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 428,
+     "ms": 342,
      "text": "Qani, o'ylab ko'raylik. Ikkiga ham, uchga ham bo'l"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 447,
+     "ms": 348,
      "text": "Voy, to'g'ri, olti! Endi har bir chiziqni olti bo'"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 520,
+     "ms": 285,
      "text": "Ko'k bloklarni sanaymiz. Bir, ikki, uch. Demak, bi"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 458,
+     "ms": 276,
      "text": "Endi sen ayt. Bir uchdan bir nechta oltidan birga "
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 435,
+     "ms": 267,
      "text": "Barakalla! Ikkita oltidan bir. Pushti bloklar ham "
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 445,
+     "ms": 309,
      "text": "Endi bloklar bir xil! Uchta qo'shuv ikkita, beshta"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 333,
+     "ms": 255,
      "text": "O'zing sinab ko'r! Bir to'rtdan bir qo'shuv bir ik"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
+     "ms": 228,
+     "text": "Zo'r! Uchta to'rtdan bir. Sen kasrlarni blokma-blo"
+    }
+   ]
+  },
+  {
+   "tutor": "lola",
+   "run": 3,
+   "segments": [
+    {
+     "step": "lesson",
+     "source": "demo",
+     "n": 11
+    },
+    {
+     "step": "question",
+     "source": "pinned",
+     "n": 3
+    }
+   ],
+   "audio": [
+    {
+     "step": "greeting",
+     "kind": "cached-v2",
+     "ms": 226,
+     "text": "Salom, men Lola. Xato qilsang ham qo'rqma — birga "
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 250,
+     "text": "1/2 + 1/4 nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 228,
+     "text": "10/20 kasrini qisqartiring."
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 213,
+     "text": "EKUB(6; 8) nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 226,
+     "text": "8x = 56. x nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 272,
+     "text": "448 + 642 nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 271,
+     "text": "8 ta ming, 0 ta yuz va 1 ta birlikdan iborat sonni"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 210,
+     "text": "80 ning 20% i nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 263,
+     "text": "20% ni oddiy kasr ko'rinishida yozing (qisqartirib"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 769,
+     "text": "Salom! Bugun maxrajlari har xil kasrlarni qo'shami"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 327,
+     "text": "Keling, bloklar bilan ko'ramiz. Ko'k chiziq, bu ya"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 273,
+     "text": "Hmm… bo'laklar har xil o'lchamda. Ularni darrov qo"
+    },
+    {
+     "step": "filler",
+     "kind": "cached-v2",
+     "ms": 225,
+     "text": "Qiziq savol! Qani, o'ylab ko'raylik…"
+    },
+    {
+     "step": "question",
+     "kind": "cached-v2",
+     "ms": 280,
+     "text": "Juda yaxshi savol! Ikki va uch hech qanday umumiy "
+    },
+    {
+     "step": "question",
+     "kind": "cached-v2",
+     "ms": 253,
+     "text": "Shuning uchun EKUK ikki karra uchga teng, ya'ni ol"
+    },
+    {
+     "step": "question",
+     "kind": "cached-v2",
+     "ms": 196,
+     "text": "Tushunarli bo'ldimi? Davom etamizmi?"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 311,
+     "text": "Qani, o'ylab ko'raylik. Ikkiga ham, uchga ham bo'l"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 301,
+     "text": "Voy, to'g'ri, olti! Endi har bir chiziqni olti bo'"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 289,
+     "text": "Ko'k bloklarni sanaymiz. Bir, ikki, uch. Demak, bi"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
      "ms": 259,
+     "text": "Endi sen ayt. Bir uchdan bir nechta oltidan birga "
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 247,
+     "text": "Barakalla! Ikkita oltidan bir. Pushti bloklar ham "
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 291,
+     "text": "Endi bloklar bir xil! Uchta qo'shuv ikkita, beshta"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 296,
+     "text": "O'zing sinab ko'r! Bir to'rtdan bir qo'shuv bir ik"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 275,
      "text": "Zo'r! Uchta to'rtdan bir. Sen kasrlarni blokma-blo"
     }
    ]
@@ -345,145 +993,469 @@
     {
      "step": "greeting",
      "kind": "cached-v2",
-     "ms": 373,
+     "ms": 296,
      "text": "Men Ziyo! Doim so'rayman: nega? Keling, birga bili"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1463,
+     "kind": "cap-v1",
+     "ms": 1295,
      "text": "1/2 + 1/4 nechaga teng?"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1669,
+     "kind": "cap-v1",
+     "ms": 1092,
      "text": "10/20 kasrini qisqartiring."
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1600,
+     "kind": "cap-v1",
+     "ms": 1072,
      "text": "EKUB(6; 8) nechaga teng?"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1489,
+     "kind": "cap-v1",
+     "ms": 1404,
      "text": "8x = 56. x nechaga teng?"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1406,
+     "kind": "cap-v1",
+     "ms": 1195,
      "text": "448 + 642 nechaga teng?"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1630,
+     "kind": "cap-v1",
+     "ms": 1203,
      "text": "8 ta ming, 0 ta yuz va 1 ta birlikdan iborat sonni"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1352,
+     "kind": "cap-v1",
+     "ms": 1061,
      "text": "80 ning 20% i nechaga teng?"
     },
     {
      "step": "diagnostic",
-     "kind": "v1-fallback",
-     "ms": 1371,
+     "kind": "cap-v1",
+     "ms": 1188,
      "text": "20% ni oddiy kasr ko'rinishida yozing (qisqartirib"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 1001,
+     "ms": 902,
      "text": "Salom! Bugun maxrajlari har xil kasrlarni qo'shami"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 409,
+     "ms": 358,
      "text": "Keling, bloklar bilan ko'ramiz. Ko'k chiziq, bu ya"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 293,
+     "ms": 268,
      "text": "Hmm… bo'laklar har xil o'lchamda. Ularni darrov qo"
     },
     {
      "step": "filler",
      "kind": "cached-v2",
-     "ms": 269,
+     "ms": 221,
      "text": "Qiziq savol! Qani, o'ylab ko'raylik…"
     },
     {
      "step": "question",
      "kind": "cached-v2",
-     "ms": 360,
+     "ms": 299,
      "text": "Nega deysanmi? Qiziq-a! Ikki va uch faqat birga bo"
     },
     {
      "step": "question",
      "kind": "cached-v2",
-     "ms": 330,
+     "ms": 252,
      "text": "Shunday sonlarda EKUK ularning ko'paytmasi. Ikki k"
     },
     {
      "step": "question",
      "kind": "cached-v2",
-     "ms": 203,
+     "ms": 195,
      "text": "Tushunarli bo'ldimi? Davom etamizmi?"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 487,
+     "ms": 319,
      "text": "Qani, o'ylab ko'raylik. Ikkiga ham, uchga ham bo'l"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 325,
+     "ms": 310,
      "text": "Voy, to'g'ri, olti! Endi har bir chiziqni olti bo'"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 288,
+     "ms": 400,
      "text": "Ko'k bloklarni sanaymiz. Bir, ikki, uch. Demak, bi"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 315,
+     "ms": 262,
      "text": "Endi sen ayt. Bir uchdan bir nechta oltidan birga "
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 264,
+     "ms": 273,
      "text": "Barakalla! Ikkita oltidan bir. Pushti bloklar ham "
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 347,
+     "ms": 259,
      "text": "Endi bloklar bir xil! Uchta qo'shuv ikkita, beshta"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 304,
+     "ms": 285,
      "text": "O'zing sinab ko'r! Bir to'rtdan bir qo'shuv bir ik"
     },
     {
      "step": "lesson",
      "kind": "cached-v2",
-     "ms": 201,
+     "ms": 416,
+     "text": "Zo'r! Uchta to'rtdan bir. Sen kasrlarni blokma-blo"
+    }
+   ]
+  },
+  {
+   "tutor": "ziyo",
+   "run": 2,
+   "segments": [
+    {
+     "step": "lesson",
+     "source": "demo",
+     "n": 11
+    },
+    {
+     "step": "question",
+     "source": "pinned",
+     "n": 3
+    }
+   ],
+   "audio": [
+    {
+     "step": "greeting",
+     "kind": "cached-v2",
+     "ms": 394,
+     "text": "Men Ziyo! Doim so'rayman: nega? Keling, birga bili"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 371,
+     "text": "1/2 + 1/4 nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 848,
+     "text": "10/20 kasrini qisqartiring."
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 239,
+     "text": "EKUB(6; 8) nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 289,
+     "text": "8x = 56. x nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 285,
+     "text": "448 + 642 nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 276,
+     "text": "8 ta ming, 0 ta yuz va 1 ta birlikdan iborat sonni"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 245,
+     "text": "80 ning 20% i nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 298,
+     "text": "20% ni oddiy kasr ko'rinishida yozing (qisqartirib"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 827,
+     "text": "Salom! Bugun maxrajlari har xil kasrlarni qo'shami"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 325,
+     "text": "Keling, bloklar bilan ko'ramiz. Ko'k chiziq, bu ya"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 266,
+     "text": "Hmm… bo'laklar har xil o'lchamda. Ularni darrov qo"
+    },
+    {
+     "step": "filler",
+     "kind": "cached-v2",
+     "ms": 302,
+     "text": "Hmm… yaxshi savol! Hozir ko'rsataman."
+    },
+    {
+     "step": "question",
+     "kind": "cached-v2",
+     "ms": 286,
+     "text": "Nega deysanmi? Qiziq-a! Ikki va uch faqat birga bo"
+    },
+    {
+     "step": "question",
+     "kind": "cached-v2",
+     "ms": 284,
+     "text": "Shunday sonlarda EKUK ularning ko'paytmasi. Ikki k"
+    },
+    {
+     "step": "question",
+     "kind": "cached-v2",
+     "ms": 272,
+     "text": "Tushunarli bo'ldimi? Davom etamizmi?"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 325,
+     "text": "Qani, o'ylab ko'raylik. Ikkiga ham, uchga ham bo'l"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 298,
+     "text": "Voy, to'g'ri, olti! Endi har bir chiziqni olti bo'"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 321,
+     "text": "Ko'k bloklarni sanaymiz. Bir, ikki, uch. Demak, bi"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 248,
+     "text": "Endi sen ayt. Bir uchdan bir nechta oltidan birga "
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 273,
+     "text": "Barakalla! Ikkita oltidan bir. Pushti bloklar ham "
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 262,
+     "text": "Endi bloklar bir xil! Uchta qo'shuv ikkita, beshta"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 302,
+     "text": "O'zing sinab ko'r! Bir to'rtdan bir qo'shuv bir ik"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 341,
+     "text": "Zo'r! Uchta to'rtdan bir. Sen kasrlarni blokma-blo"
+    }
+   ]
+  },
+  {
+   "tutor": "ziyo",
+   "run": 3,
+   "segments": [
+    {
+     "step": "lesson",
+     "source": "demo",
+     "n": 11
+    },
+    {
+     "step": "question",
+     "source": "pinned",
+     "n": 3
+    }
+   ],
+   "audio": [
+    {
+     "step": "greeting",
+     "kind": "cached-v2",
+     "ms": 343,
+     "text": "Men Ziyo! Doim so'rayman: nega? Keling, birga bili"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 250,
+     "text": "1/2 + 1/4 nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 235,
+     "text": "10/20 kasrini qisqartiring."
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 231,
+     "text": "EKUB(6; 8) nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 288,
+     "text": "8x = 56. x nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 291,
+     "text": "448 + 642 nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 268,
+     "text": "8 ta ming, 0 ta yuz va 1 ta birlikdan iborat sonni"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 245,
+     "text": "80 ning 20% i nechaga teng?"
+    },
+    {
+     "step": "diagnostic",
+     "kind": "cap-v1",
+     "ms": 286,
+     "text": "20% ni oddiy kasr ko'rinishida yozing (qisqartirib"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 858,
+     "text": "Salom! Bugun maxrajlari har xil kasrlarni qo'shami"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 373,
+     "text": "Keling, bloklar bilan ko'ramiz. Ko'k chiziq, bu ya"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 258,
+     "text": "Hmm… bo'laklar har xil o'lchamda. Ularni darrov qo"
+    },
+    {
+     "step": "filler",
+     "kind": "cached-v2",
+     "ms": 336,
+     "text": "Qiziq savol! Qani, o'ylab ko'raylik…"
+    },
+    {
+     "step": "question",
+     "kind": "cached-v2",
+     "ms": 239,
+     "text": "Nega deysanmi? Qiziq-a! Ikki va uch faqat birga bo"
+    },
+    {
+     "step": "question",
+     "kind": "cached-v2",
+     "ms": 263,
+     "text": "Shunday sonlarda EKUK ularning ko'paytmasi. Ikki k"
+    },
+    {
+     "step": "question",
+     "kind": "cached-v2",
+     "ms": 285,
+     "text": "Tushunarli bo'ldimi? Davom etamizmi?"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 329,
+     "text": "Qani, o'ylab ko'raylik. Ikkiga ham, uchga ham bo'l"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 279,
+     "text": "Voy, to'g'ri, olti! Endi har bir chiziqni olti bo'"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 324,
+     "text": "Ko'k bloklarni sanaymiz. Bir, ikki, uch. Demak, bi"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 247,
+     "text": "Endi sen ayt. Bir uchdan bir nechta oltidan birga "
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 287,
+     "text": "Barakalla! Ikkita oltidan bir. Pushti bloklar ham "
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 357,
+     "text": "Endi bloklar bir xil! Uchta qo'shuv ikkita, beshta"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 288,
+     "text": "O'zing sinab ko'r! Bir to'rtdan bir qo'shuv bir ik"
+    },
+    {
+     "step": "lesson",
+     "kind": "cached-v2",
+     "ms": 337,
      "text": "Zo'r! Uchta to'rtdan bir. Sen kasrlarni blokma-blo"
     }
    ]
