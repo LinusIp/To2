@@ -52,7 +52,7 @@ async function get(u, init) {
     }
   }
 }
-const ttsUrl = (v, p) => `${base}/api/tts?voice=${encodeURIComponent(v)}&text=${encodeURIComponent(p.text)}${p.emotion !== "neutral" ? "&emotion=" + p.emotion : ""}${p.lead ? "&lead=1" : ""}`;
+const ttsUrl = (v, p) => `${base}/api/tts?voice=${encodeURIComponent(v)}&text=${encodeURIComponent(p.text)}${p.emotion !== "neutral" ? "&emotion=" + p.emotion : ""}${p.lead ? "&lead=1" : ""}&wait=long`; // wait for the expressive (lison-v2) version, not the quick v1 stand-in
 let ok = 0, fail = 0;
 // each tutor's own greeting ("Ovozini eshit" on the choose-tutor screen, spoken "happy")
 const GREETINGS = {
