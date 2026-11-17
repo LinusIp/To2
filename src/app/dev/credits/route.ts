@@ -1,5 +1,5 @@
 // GET /dev/credits[?day=YYYY-MM-DD] → VoiceLab TTS spend: today's total (Tashkent day), by tutor,
-// source (live / prefetch / answer / warm) and model, plus the daily cap. Works in production
+// source (live / prefetch / answer / warm) and model, plus the warning cap and the hard cap. Works in production
 // (totals only, nothing personal) so the team can watch the budget during the demo.
 import { creditRows, creditsSummary } from "@/lib/server/credits";
 

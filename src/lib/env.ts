@@ -11,8 +11,6 @@ export interface AppEnv {
   VOICELAB_BASE_URL?: string;
   VOICELAB_LLM_MODEL?: string;
   VOICELAB_LANG?: string;
-  /** Tashkent date (YYYY-MM-DD) on which src=warm requests may pass the daily credit cap (one-off, team-approved) */
-  WARM_CAP_EXEMPT_DAY?: string;
   VOICE_IDS?: string;
 }
 

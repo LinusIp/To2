@@ -1,6 +1,6 @@
 // One shared <audio> element for all tutor speech (so the Web Audio analyser is wired once).
 // Falls back to a silent timer (captions still show) if TTS audio fails.
-import { attachAnalyser, resumeAudioContext, startMouth, stopMouth } from "./lipsync";
+import { attachAnalyser, resumeAudioContext, startMouth, startTextMouth, stopMouth } from "./lipsync";
 import { decodeEnvelope } from "./envelope";
 
 /** blob URL of the clip playing now (revoked when the next one starts) */
@@ -102,7 +102,7 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
     fbDuration = estimateMs(text, 1);
     fbStart = performance.now();
     fbRunning = true;
-    startMouth(null); // no audio → the mouth stays closed (never animated from a timer)
+    startTextMouth(text, fbDuration, fbOffset, rate); // captions only: the mouth follows the caption text
     resolveStarted(fbDuration);
     const left = (fbDuration - fbOffset) / rate;
     fbTimer = setTimeout(finish, Math.max(0, left));
@@ -142,10 +142,10 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
         if (!done) startFallback();
       }
     })();
-    // If nothing happens within 8s (slow network / TTS down), go silent so the lesson continues.
+    // If nothing plays within 13 s (the server waits up to 11 s for v2), this line goes captions-only.
     setTimeout(() => {
       if (!done && !fallback && a.paused && a.currentTime === 0) startFallback();
-    }, 8000);
+    }, 13_000);
   }
 
   return {
@@ -168,7 +168,7 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
         if (!fbRunning) {
           fbRunning = true;
           fbStart = performance.now();
-          startMouth(null);
+          startTextMouth(text, fbDuration, fbOffset, rate);
           fbTimer = setTimeout(finish, Math.max(0, (fbDuration - fbOffset) / rate));
         }
       } else {

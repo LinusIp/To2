@@ -6,10 +6,12 @@
 //   1. "envelope": the per-clip envelope the server sends with the WAV (x-tts-env, 20 ms steps,
 //      normalised per clip), sampled at audio.currentTime + LEAD_MS (45 ms) → the mouth leads, never lags;
 //   2. "analyser": a live Web Audio AnalyserNode on the <audio> element (no envelope available);
-//   3. no audio (muted / TTS down / captions only) → the mouth stays closed.
+//   3. no audio for a line (captions only: v2 not ready / budget / muted) → a mouth envelope made from
+//      the caption text (vowels open, consonants small, pauses at punctuation) over the caption's
+//      duration, so the tutor still visibly talks (team rule, 18 Nov).
 import { envelopeAt } from "./envelope";
 
-export const mouth = { amp: 0, speaking: false, source: "none" as "envelope" | "analyser" | "none" };
+export const mouth = { amp: 0, speaking: false, source: "none" as "envelope" | "analyser" | "text" | "none" };
 
 /** how far the mouth leads the audio */
 // 30 ms lead + ~15 ms to cover the 25 ms attack smoothing: measured on all 3 tutors' greetings the
@@ -101,6 +103,37 @@ export function startMouth(audio: HTMLAudioElement | null, envelope: Uint8Array 
         lipTrace.live.shift();
       }
     }
+    raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+}
+
+/** Envelope (20 ms steps, 0..255) from caption text spread over `durationMs`: for captions-only lines. */
+export function textEnvelope(text: string, durationMs: number): Uint8Array {
+  const n = Math.max(1, Math.round(durationMs / 20));
+  const chars = [...text];
+  const out = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    const ch = (chars[Math.floor((i / n) * chars.length)] ?? " ").toLowerCase();
+    out[i] = /[aeiouoʼ‘’]/.test(ch) ? 200 : /[a-zЀ-ӿ]/.test(ch) ? 70 : /[.!?…,]/.test(ch) ? 0 : 20;
+  }
+  return out;
+}
+
+/** Captions-only line: drive the mouth from the text envelope along the line's own clock. */
+export function startTextMouth(text: string, durationMs: number, fromMs: number, rate: number) {
+  cancelAnimationFrame(raf);
+  const env = textEnvelope(text, durationMs);
+  const t0 = performance.now();
+  mouth.speaking = true;
+  mouth.source = "text";
+  const tick = () => {
+    if (!mouth.speaking) {
+      mouth.amp = 0;
+      return;
+    }
+    const ms = fromMs + (performance.now() - t0) * rate;
+    mouth.amp = envelopeAt(env, ms / 1000, 0);
     raf = requestAnimationFrame(tick);
   };
   raf = requestAnimationFrame(tick);

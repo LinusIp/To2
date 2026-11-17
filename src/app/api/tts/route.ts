@@ -6,12 +6,13 @@
 // instant and free; the joined WAV is cached too. 204 = no audio (mock / TTS down) → captions only.
 //
 // Latency: lison-v2 ("Expressive") takes ~7 s per clip (p90 11 s) vs ~0.7 s for lison v1. A live
-// request waits at most V2_BUDGET_MS (350 ms) for v2; if it isn't ready, it gets the same lines on v1 now
-// (not HTTP-cached) while v2 keeps generating in the background (after() → waitUntil) and lands in
-// KV, so the next request — or the player after a prefetch (wait=long) — gets the expressive one.
+// request waits at most V2_BUDGET_MS (11 s) for v2 (one retry on failure); if it isn't ready, that line
+// is captions only (204) while v2 keeps generating in the background (after() → waitUntil) and is
+// cached for the next time. A tutor never switches to v1 (one voice model per tutor, team rule).
 //
-// Budget: every synthesized clip is logged (credits_log, see /dev/credits). Over DAILY_CAP credits a
-// day, NEW uncached lines are made on lison v1 only (cached v2 keeps playing). &check=1 = dry run:
+// Budget: every synthesized clip is logged (credits_log, see /dev/credits). Over the warning cap
+// (15,000 a day; 40,000 on the demo days 18–19 Nov) generation continues with a logged warning; over
+// HARD_CAP (40,000 a day) new uncached lines are captions only. Cached audio always plays. &check=1 = dry run:
 // says whether the line is cached and what it would cost, without generating anything.
 // &src=warm|… labels the spend (default: prefetch for wait=long, answer for lead=1, else live).
 import { after } from "next/server";
@@ -23,7 +24,7 @@ import { EMOTIONS, type Emotion } from "@/lib/ai/schema";
 import { CHARACTER_BY_ID, DEFAULT_TTS, type CharacterId } from "@/config/characters";
 import { joinWav } from "@/lib/audio/wav";
 import { clientKey, rateLimit, userIdFor } from "@/lib/server/session";
-import { DAILY_CAP, creditsFor, dayOf, logCredits, todayCredits } from "@/lib/server/credits";
+import { HARD_CAP, creditsFor, dayOf, logCredits, todayCredits, warnCapFor } from "@/lib/server/credits";
 import { cachedExists } from "@/lib/server/exists";
 import { storeGetText, storePut } from "@/lib/server/store";
 import { ENV_STEP_MS, computeEnvelope, encodeEnvelope } from "@/lib/audio/envelope";
@@ -32,7 +33,8 @@ import type { TTS } from "@/lib/ai/types";
 
 // v2 never finished under 4.8 s in our A/B (0/18 clips), so a live request only waits long enough
 // for the all-clips-in-KV path; a miss goes straight to v1 (+ v2 in the background)
-const V2_BUDGET_MS = 350;
+// a live line waits this long for v2 before showing captions only (v2 ~5–11 s per clip; cached: ~0.3 s)
+const V2_BUDGET_MS = 11_000;
 const V2_BUDGET_PREFETCH_MS = 45_000;
 
 /**
@@ -146,49 +148,45 @@ export async function GET(req: Request) {
   if (ai.mock) return new Response(null, { status: 204 });
   if (!(await rateLimit(`tts:${clientKey(req, await userIdFor(req))}`, 60))) return new Response(null, { status: 204 });
 
-  // the expressive version, cached as it completes (keeps running if we answer with v1 first)
+  // One voice model per tutor, always (team rule, 18 Nov): never a v1 stand-in for a v2 tutor.
   const who = { tutor: voice.startsWith("voice_") ? "other" : voice, source };
-  // daily cap: new uncached lines go on v1 only (cheaper, fast); fully cached v2 still plays
-  // the team can lift the cap for ONE day's warm-up: WARM_CAP_EXEMPT_DAY = that Tashkent date and src=warm
-  const warmExempt = source === "warm" && !!env.WARM_CAP_EXEMPT_DAY && env.WARM_CAP_EXEMPT_DAY === dayOf();
-  const overCap = model !== "lison" && missing.length > 0 && !warmExempt && (await todayCredits()) >= DAILY_CAP;
-  if (overCap) {
-    const v1 = prosodyPlan(text, emotion, "lison", 1, { answerLead });
-    try {
-      const fast = await Promise.all(v1.clips.map((c) => clipAudio(env, ai.tts, voiceId, "lison", clipText(c), c.speed, who)));
-      return audioResponse(join(v1, fast.map((x) => x.audio)), "cap-v1", { clips: v1.clips.length, model: "lison", final: false });
-    } catch (e) {
-      console.error("[tts] synth failed", (e as Error).message);
-      return new Response(null, { status: 204, headers: { "x-tts-error": "1" } });
+  const captionsOnly = (why: string) => new Response(null, { status: 204, headers: { "x-tts-error": why, "x-tts-cache": why } });
+  // budget: over the warning cap keep generating (log a warning); over the hard cap: captions only
+  if (missing.length > 0) {
+    const spent = await todayCredits();
+    if (spent >= HARD_CAP) {
+      console.warn(`[tts] daily spend ${spent} ≥ hard cap ${HARD_CAP}: captions only`);
+      return captionsOnly("budget");
     }
+    if (spent >= warnCapFor(dayOf())) console.warn(`[tts] daily spend ${spent} over the warning cap ${warnCapFor(dayOf())} — still generating (v2)`);
   }
 
-  const full = Promise.all(plan.clips.map((c) => clipAudio(env, ai.tts, voiceId, model, clipText(c), c.speed, who))).then(async (r) => {
-    const audio = join(plan, r.map((x) => x.audio));
-    try {
-      await putCachedAudio(env, segKey, audio, "audio/wav");
-    } catch (e) {
-      console.warn("[tts] cache write failed", (e as Error).message);
-    }
-    return { audio, fromCache: r.filter((x) => x.cached).length };
+  // the expressive version, cached as it completes; one retry if VoiceLab fails or times out
+  const makeFull = () =>
+    Promise.all(plan.clips.map((c) => clipAudio(env, ai.tts, voiceId, model, clipText(c), c.speed, who))).then(async (r) => {
+      const audio = join(plan, r.map((x) => x.audio));
+      try {
+        await putCachedAudio(env, segKey, audio, "audio/wav");
+      } catch (e) {
+        console.warn("[tts] cache write failed", (e as Error).message);
+      }
+      return { audio, fromCache: r.filter((x) => x.cached).length };
+    });
+  const full = makeFull().catch((e) => {
+    console.warn("[tts] v2 failed, retrying once:", (e as Error).message);
+    return makeFull();
   });
 
   try {
-    if (model === "lison") {
-      const r = await full;
-      return audioResponse(r.audio, r.fromCache === plan.clips.length ? "clips" : r.fromCache ? "partial" : "miss", { clips: plan.clips.length, model, envKey: segKey + ":env" });
-    }
     const timeout = new Promise<null>((res) => setTimeout(() => res(null), budget));
     const r = await Promise.race([full, timeout]);
     if (r) return audioResponse(r.audio, r.fromCache === plan.clips.length ? "clips" : r.fromCache ? "partial" : "miss", { clips: plan.clips.length, model, envKey: segKey + ":env" });
-
-    // too slow: let v2 finish in the background, answer now with the same lines on v1
-    after(full.catch((e) => console.warn("[tts] background v2 failed", (e as Error).message)));
-    const v1 = prosodyPlan(text, emotion, "lison", 1, { answerLead });
-    const fast = await Promise.all(v1.clips.map((c) => clipAudio(env, ai.tts, voiceId, "lison", clipText(c), c.speed, who)));
-    return audioResponse(join(v1, fast.map((x) => x.audio)), "fallback-v1", { clips: v1.clips.length, model: "lison", final: false });
+    // not ready in time: this line shows captions only (the mouth still moves); v2 finishes in the
+    // background (with its retry) and is cached, so the next time the line plays it has the voice
+    after(full.catch((e) => console.warn("[tts] background v2 failed after retry", (e as Error).message)));
+    return captionsOnly("v2-pending");
   } catch (e) {
-    console.error("[tts] synth failed", (e as Error).message);
-    return new Response(null, { status: 204, headers: { "x-tts-error": "1" } });
+    console.error("[tts] v2 failed after retry:", (e as Error).message);
+    return captionsOnly("v2-failed");
   }
 }

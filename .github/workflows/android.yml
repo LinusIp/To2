@@ -75,7 +75,7 @@ jobs:
             sleep 20
             adb exec-out screencap -p > emulator-1-webview-warning.png
             adb shell uiautomator dump /sdcard/ui.xml && adb pull /sdcard/ui.xml ui.xml || true
-            sh -c 'B=$(grep -io "text=\"Baribir davom etish\"[^>]*bounds=\"[[0-9]*,[0-9]*][[0-9]*,[0-9]*]" ui.xml | grep -o "[[0-9]*,[0-9]*][[0-9]*,[0-9]*]" | tr -d "[]" | tr "," " "); if [ -n "$B" ]; then set -- $B; adb shell input tap $(( ($1 + $3) / 2 )) $(( ($2 + $4) / 2 )); echo "tapped Baribir davom etish"; else echo "no WebView warning shown"; fi'
+            sh -c 'B=$(grep -io "text=\"Baribir davom etish\"[^>]*bounds=\"[[0-9]*,[0-9]*][[0-9]*,[0-9]*]" ui.xml | grep -o "[[0-9]*,[0-9]*][[0-9]*,[0-9]*]" | tr "[]," "   "); if [ -n "$B" ]; then set -- $B; adb shell input tap $(( ($1 + $3) / 2 )) $(( ($2 + $4) / 2 )); echo "tapped Baribir davom etish"; else echo "no WebView warning shown"; fi'
             sleep 30
             adb shell pidof uz.to2.app
             adb exec-out screencap -p > emulator-2-site.png

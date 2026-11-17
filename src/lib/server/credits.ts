@@ -4,7 +4,12 @@
 import { getDb } from "@/db/client";
 import { getEnv } from "@/lib/env";
 
+/** over this a day: keep generating, but log a warning (demo days: 40,000) */
 export const DAILY_CAP = 15_000;
+export const DEMO_DAYS = new Set(["2026-11-18", "2026-11-19"]);
+export const warnCapFor = (day: string) => (DEMO_DAYS.has(day) ? 40_000 : DAILY_CAP);
+/** over this a day: no new generation at all — captions only (cached audio still plays) */
+export const HARD_CAP = 40_000;
 export const RATE: Record<string, number> = { lison: 1, "lison-v2": 1.5 };
 export const creditsFor = (model: string, chars: number) => chars * (RATE[model] ?? 1);
 
@@ -62,8 +67,10 @@ export async function creditsSummary(day = dayOf()) {
   return {
     day,
     today: tot,
-    cap: DAILY_CAP,
-    overCap: (tot?.credits ?? 0) >= DAILY_CAP,
+    warnCap: warnCapFor(day),
+    hardCap: HARD_CAP,
+    overWarnCap: (tot?.credits ?? 0) >= warnCapFor(day),
+    blocked: (tot?.credits ?? 0) >= HARD_CAP,
     byTutor: await by("tutor"),
     bySource: await by("source"),
     byModel: await by("model"),
