@@ -81,7 +81,7 @@ export function nextSkill(grade: number, history: DiagAnswer[]): string | null {
 
 /**
  * Initial mastery from the diagnostic:
- * correct → 0.86 (mastered), wrong → 0.2, prereqs of a correct skill ≥ 0.7,
+ * correct → 0.86 (mastered), wrong → 0.4 (weak), prereqs of a correct skill ≥ 0.7,
  * unasked dependents of a wrong skill stay at the start value.
  */
 export function diagnosticMastery(history: DiagAnswer[]): Record<string, number> {
@@ -93,7 +93,7 @@ export function diagnosticMastery(history: DiagAnswer[]): Record<string, number>
     }
   }
   // wrong answers win over inference
-  for (const h of history) if (!h.correct) m[h.skillId] = 0.2;
+  for (const h of history) if (!h.correct) m[h.skillId] = 0.4;
   for (const k of Object.keys(m)) m[k] = clamp(m[k]);
   return m;
 }

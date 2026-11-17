@@ -98,7 +98,7 @@ describe("diagnostic", () => {
       h.push({ skillId: s, correct: s !== "frac-add-unlike" });
     }
     const m = diagnosticMastery(h);
-    expect(m["frac-add-unlike"]).toBe(0.2);
+    expect(m["frac-add-unlike"]).toBe(0.4);
     const rm = buildRoadmap(m, 6, { touched: h.map((x) => x.skillId) });
     expect(rm.path).toContain("frac-add-unlike");
     expect(rm.currentId).toBe("frac-add-unlike");

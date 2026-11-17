@@ -201,7 +201,7 @@ export const GENERATORS: Record<string, Gen[]> = {
     (r) => { const x = int(r, 2, 9), a = int(r, 2, 5), b = int(r, 1, 9); return { q: `${a}x − ${b} = ${a * x - b}. x = ?`, expect: num(x), hint: `Avval ikkala tomonga ${b} ni qo'shing.` }; },
   ],
   "eq-both-sides": [
-    (r) => { const x = int(r, 1, 8), a = int(r, 4, 8), c = int(r, 1, a - 1), b = int(r, 1, 9); const d = a * x + b - c * x; return { q: `${a}x + ${b} = ${c}x + ${d}. x = ?`, expect: num(x), hint: "x li hadlarni bir tomonga, sonlarni ikkinchi tomonga o'tkazing." }; },
+    (r) => { const x = int(r, 1, 8), a = int(r, 4, 8), c = int(r, 1, a - 1), b = int(r, 1, 9); const d = a * x + b - c * x; return { q: `${a}x + ${b} = ${c === 1 ? "" : c}x + ${d}. x = ?`, expect: num(x), hint: "x li hadlarni bir tomonga, sonlarni ikkinchi tomonga o'tkazing." }; },
   ],
   "eq-word": [
     (r) => { const x = int(r, 3, 15), k = int(r, 2, 4); return { q: `Akamning yoshi mening yoshimdan ${k} marta katta. Ikkalamizniki ${x * (k + 1)} yosh. Men necha yoshdaman?`, expect: num(x), hint: `Mening yoshim x bo'lsin: x + ${k}x = ${x * (k + 1)}.` }; },

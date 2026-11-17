@@ -104,7 +104,7 @@ export const t = {
       locked: "Yopiq",
       optional: "Qo'shimcha",
     },
-    steps: (done: number, total: number) => `${done} / ${total} qadam`,
+    steps: (done: number, total: number) => `Yo'lda ${total} ta mavzu, ${done} tasi tayyor`,
     minutesLeft: (m: number) => `~${m} daqiqa qoldi`,
     mapView: "Grafik ko'rinish",
     listView: "Ro'yxat",

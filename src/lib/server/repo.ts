@@ -187,3 +187,19 @@ export function publicUser(u: UserRow) {
   };
 }
 export type PublicUser = ReturnType<typeof publicUser>;
+
+/** A finished lesson counts as one more correct observation for its skill. */
+export async function bumpMastery(userId: string, skillId: string) {
+  const db = await getDb();
+  const [cur] = await db
+    .select()
+    .from(schema.skillMastery)
+    .where(and(eq(schema.skillMastery.userId, userId), eq(schema.skillMastery.skillId, skillId)))
+    .limit(1);
+  const p = updateMastery(cur?.pMastery ?? P_START, true);
+  await db
+    .insert(schema.skillMastery)
+    .values({ userId, skillId, pMastery: p, attempts: 0, correct: 0, updatedAt: Date.now() })
+    .onConflictDoUpdate({ target: [schema.skillMastery.userId, schema.skillMastery.skillId], set: { pMastery: p, updatedAt: Date.now() } });
+  return p;
+}
