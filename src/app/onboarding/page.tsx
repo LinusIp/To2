@@ -54,19 +54,19 @@ export default function Onboarding() {
   };
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-[640px] flex-col gap-5 bg-ph px-[18px] pt-4 pb-8">
+    <main className="page-in mx-auto flex min-h-dvh max-w-[640px] flex-col gap-6 bg-ph px-[18px] pt-4 pb-8">
       <div className="flex h-[52px] items-center justify-between">
         <Link href="/" aria-label={t.nav.back} className="icon-btn">
           <BackIcon />
         </Link>
-        <h1 className="m-0 text-[22px] font-black">{t.onboarding.characterTitle}</h1>
+        <h1 className="t-h2 m-0">{t.onboarding.characterTitle}</h1>
         <div className="w-11" />
       </div>
 
       <TutorPicker value={ch} onChange={setCh} xp={user?.xp ?? 0} streak={user?.streak ?? 0} />
 
       <div>
-        <div id="grade" className="mb-2 text-[16px] font-black">
+        <div id="grade" className="t-h3 mb-3">
           {t.onboarding.gradeTitle}
         </div>
         <div role="radiogroup" aria-labelledby="grade" className="grid grid-cols-5 gap-2">
@@ -77,7 +77,7 @@ export default function Onboarding() {
               role="radio"
               aria-checked={grade === g}
               onClick={() => setGrade(g)}
-              className={`h-[52px] rounded-2xl text-[20px] font-black ${grade === g ? "bg-blue text-white shadow-[0_8px_18px_rgba(47,107,255,.3)]" : "bg-white text-ink shadow-[0_4px_12px_rgba(31,54,120,.06)]"}`}
+              className={`h-14 rounded-2xl text-[20px] font-black transition-transform duration-100 active:translate-y-[4px] active:shadow-none ${grade === g ? "bounce-in bg-blue text-white shadow-[0_4px_0_var(--color-blue-800)]" : "border-2 border-line bg-white text-ink shadow-[0_4px_0_#dfe5f5]"}`}
             >
               {g}
             </button>
@@ -86,9 +86,9 @@ export default function Onboarding() {
       </div>
 
       <label className="flex flex-col gap-2">
-        <span className="text-[16px] font-black">{t.onboarding.nicknameTitle}</span>
+        <span className="t-h3">{t.onboarding.nicknameTitle}</span>
         <input value={nick} onChange={(e) => setNick(e.target.value.slice(0, 24))} placeholder={t.onboarding.nicknamePlaceholder} className="field" autoComplete="off" />
-        <span className="text-[13px] font-bold text-mut">{t.onboarding.nicknameHint}</span>
+        <span className="t-small text-mut">{t.onboarding.nicknameHint}</span>
       </label>
 
       {err && (
@@ -101,10 +101,10 @@ export default function Onboarding() {
         <button type="button" className="btn btn-primary w-full" disabled={busy} onClick={() => void submit(false)}>
           {t.onboarding.finish} <ArrowIcon />
         </button>
-        <button type="button" className="btn w-full" disabled={busy} onClick={() => void submit(true)}>
+        <button type="button" className="btn btn-ghost w-full" disabled={busy} onClick={() => void submit(true)}>
           {t.onboarding.skipDiagnostic}
         </button>
-        <p className="m-0 text-center text-[12px] font-bold text-mut">
+        <p className="t-caption m-0 text-center font-bold text-mut">
           {t.onboarding.consent}{" "}
           <Link href="/maxfiylik" className="text-blue underline">
             {t.onboarding.consentLink}

@@ -7,6 +7,8 @@ import TutorPicker from "@/components/characters/TutorPicker";
 import { getCharacter, type CharacterId } from "@/config/characters";
 import { useMe } from "@/lib/client/me";
 import type { PublicUser } from "@/lib/server/repo";
+import { toast } from "@/components/ui/Toast";
+import { ui } from "@/i18n/uz-ui";
 
 export default function TutorsPage() {
   const { user, load, setUser } = useMe();
@@ -27,6 +29,7 @@ export default function TutorsPage() {
       setUser(user);
     } else {
       setUser(j.user);
+      toast(ui.tutorSaved(getCharacter(id).name), "success");
       void import("@/components/characters/glbTutor").then((m) => m.preloadGlb(id));
     }
   };

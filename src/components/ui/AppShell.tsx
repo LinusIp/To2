@@ -8,6 +8,7 @@ import { t } from "@/i18n/uz";
 import { useMe } from "@/lib/client/me";
 import { BookIcon, ChartIcon, CupIcon, FlameIcon, GearIcon, HomeIcon, Logo, UserIcon } from "./icons";
 import TutorPortrait from "@/components/characters/TutorPortrait";
+import { Toaster } from "./Toast";
 
 const TABS = [
   { href: "/home", label: t.tabs.home, Icon: HomeIcon, match: ["/home"] },
@@ -37,7 +38,7 @@ export default function AppShell({ children, wide = false, hideTabs = false }: {
               key={href}
               href={href}
               aria-current={on(match) ? "page" : undefined}
-              className={`flex h-12 items-center gap-3 rounded-xl px-3 text-[15px] font-extrabold no-underline ${on(match) ? "bg-soft text-blue" : "text-[#3a4266] hover:bg-soft"}`}
+              className={`relative flex h-12 items-center gap-3 rounded-2xl px-3 text-[15px] font-extrabold no-underline transition-colors duration-150 ${on(match) ? "bg-blue-50 text-blue-700 shadow-[inset_0_0_0_2px_var(--color-blue-100)]" : "text-[#3a4266] hover:bg-soft"}`}
             >
               <Icon size={22} />
               {label}
@@ -46,7 +47,7 @@ export default function AppShell({ children, wide = false, hideTabs = false }: {
         </nav>
         {user && (
           <div className="mt-auto flex flex-col gap-3">
-            <div className="flex items-center gap-2 rounded-2xl bg-soft px-3 py-2.5 text-[14px] font-extrabold">
+            <div className="flex items-center gap-2 rounded-2xl bg-[#fff4dc] px-3 py-2.5 text-[14px] font-extrabold text-[#8a5300] shadow-[0_3px_0_#f7dfa8]">
               <FlameIcon size={20} /> {t.profile.streakDays(user.streak)}
             </div>
             <Link href="/settings" className="flex items-center gap-3 rounded-2xl px-2 py-2 no-underline hover:bg-soft">
@@ -63,13 +64,15 @@ export default function AppShell({ children, wide = false, hideTabs = false }: {
       </aside>
 
       <main className={`min-w-0 flex-1 ${hideTabs ? "" : "pb-[96px] md:pb-0"}`}>
-        <div className={wide ? "w-full" : "mx-auto w-full max-w-[760px]"}>{children}</div>
+        <div key={path} className={`page-in ${wide ? "w-full" : "mx-auto w-full max-w-[760px]"}`}>
+          {children}
+        </div>
       </main>
 
       {!hideTabs && (
         <nav
           aria-label={t.nav.main}
-          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 bg-white px-1.5 pt-2 shadow-[0_-6px_20px_rgba(31,54,120,.06)] md:hidden"
+          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 rounded-t-[24px] bg-white px-1.5 pt-2 shadow-[0_-2px_0_rgba(31,54,120,.04),0_-8px_24px_rgba(31,54,120,.08)] md:hidden"
           style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
         >
           {TABS.map(({ href, label, Icon, match }) => (
@@ -77,14 +80,17 @@ export default function AppShell({ children, wide = false, hideTabs = false }: {
               key={href}
               href={href}
               aria-current={on(match) ? "page" : undefined}
-              className={`flex h-[62px] flex-col items-center justify-center gap-1 text-[12px] font-extrabold no-underline ${on(match) ? "text-blue" : "text-[#8a92b0]"}`}
+              className={`group flex h-[62px] flex-col items-center justify-center gap-1 text-[12px] font-extrabold no-underline ${on(match) ? "text-blue-700" : "text-[#5f6788]"}`}
             >
-              <Icon size={24} />
+              <span className={`grid h-8 w-12 place-items-center rounded-full transition-[background,transform] duration-200 group-active:scale-90 ${on(match) ? "bg-blue-50" : ""}`}>
+                <Icon size={24} />
+              </span>
               {label}
             </Link>
           ))}
         </nav>
       )}
+      <Toaster />
     </div>
   );
 }
@@ -102,7 +108,7 @@ export function ScreenTop({ title, back = "/home", right }: { title: string; bac
       ) : (
         <div className="w-11" />
       )}
-      <h1 className="m-0 text-[22px] font-black">{title}</h1>
+      <h1 className="t-h2 m-0">{title}</h1>
       <div className="flex min-w-11 justify-end">{right}</div>
     </div>
   );
