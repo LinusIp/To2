@@ -604,9 +604,15 @@ Each course = a voxel town; each building on the route = a quest; all buildings 
 - **Logic** (`src/lib/learning/town.ts`, pure, 8 tests): buildings in route order take the personal path (`path.ts`) step
   by step; a **weak** step keeps its topic from a school to the following arena (school + arena first); the temple (final
   test) = the path's goal. First unfinished building = current, the rest locked.
-- **Quest types**: school → `/lesson/<skill>`, library → `/practice/<skill>`, temple → `/practice/<skill>?final=1`.
-  arena → `/practice/<skill>?mode=arena`, workshop → `/practice/<skill>?mode=career` — **TODO(main)**: the games module and
-  "Kasb sinovi" missions are not on this branch; quick-fire practice stands in (the extra query params are ignored today).
+- **Quest types**: school → `/lesson/<skill>`, library → `/practice/<skill>`, temple → `/practice/<skill>?final=1`,
+  arena → `/games/<tower|speed|memory>?skill=<skill>` (stable pick per building), workshop → `/games/mission?skill=<skill>` —
+  the same URLs as `openQuest()` in `feat/games` (`src/lib/games/quest.ts`); not imported, so this branch builds without it.
+  If `/games/…` answers non-OK (feat/games not merged), the pin opens a practice stand-in instead (`questFallback`). Games
+  report answers to `/api/games/answer` (mastery up) → the building completes like any other quest.
+- **Voice (inclusive)**: the town listens for a window event `to2:voice` with `detail.command` = `next` · `prev` · `open` ·
+  `back` (also feat/inclusive's `continue` → open, `home` → back): next/prev move focus along the route (the caption is
+  announced), open starts the focused building, back → `/towns`. **TODO(inclusive owner)**: feat/inclusive's recogniser
+  only runs inside the lesson today — dispatch `to2:voice` from it to drive the town hands-free.
 - **Screens**: `/towns` (the "Darslar" tab now opens it; `/roadmap` stays reachable and is still where the diagnostic lands)
   = town cards with "N/7 bino"; `/town/<id>` = image full width, dashed SVG route, pins: done gold ✓ · current pulsing with
   the chosen tutor's face · locked grey + lock with the area dimmed and a scaffold icon. Header "Shaharni o'qib quring!".
@@ -623,4 +629,4 @@ Each course = a voxel town; each building on the route = a quest; all buildings 
   the aria-live caption is read by screen readers; completion = "mastery went up" (simplest signal without editing lesson
   screens); Fizika/English towns = "Tez orada".
 - ⚠️ Known: completion is only detected when the learner comes back to a town screen in the same tab session; a quest
-  replayed after mastery hits its ceiling may not register; arena/workshop are practice stand-ins.
+  replayed after mastery hits its ceiling may not register; arena/workshop fall back to practice until feat/games is merged.

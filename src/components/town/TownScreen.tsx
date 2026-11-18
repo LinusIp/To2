@@ -1,7 +1,7 @@
 "use client";
 // Town screen: the course town image, a dashed route, and one pin (a real <button>) per building.
 // Pins: done = gold ✓ · current = pulsing + the chosen tutor's face · locked = grey + lock, area dimmed with a scaffold.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { t } from "@/i18n/uz";
@@ -15,7 +15,7 @@ import { TOWN_BY_ID } from "@/config/towns";
 import { CURRICULA } from "@/data/curricula";
 import { P_START } from "@/lib/learning/mastery";
 import { buildPath } from "@/lib/learning/path";
-import { assignQuests, townProgress, type TownData, type TownQuest } from "@/lib/learning/town";
+import { assignQuests, questFallback, townProgress, townVoiceCommand, type TownData, type TownQuest } from "@/lib/learning/town";
 import { loadTown, loadTownProgress, resolvePending, setPending } from "@/lib/client/town";
 
 function Scaffold() {
@@ -66,6 +66,28 @@ export default function TownScreen({ townId }: { townId: string }) {
   const ch = getCharacter(user?.characterId);
   const focused = quests.find((q) => q.n === focus) ?? quests.find((q) => q.status === "current") ?? null;
 
+  // inclusive voice commands ("to2:voice" window event, detail {command: next|prev|open|back}) — no-op if nobody sends them
+  const voiceRef = useRef<(raw: unknown) => void>(() => {});
+  voiceRef.current = (raw: unknown) => {
+    const cmd = townVoiceCommand(raw);
+    if (!cmd || !quests.length) return;
+    const cur = focused?.n ?? 1;
+    if (cmd === "back") return router.push("/towns");
+    if (cmd === "open") {
+      if (focused) void open(focused);
+      return;
+    }
+    const n = cmd === "next" ? Math.min(quests.length, cur + 1) : Math.max(1, cur - 1);
+    setFocus(n);
+    pinRefs.current[n]?.focus();
+  };
+  const pinRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  useEffect(() => {
+    const h = (e: Event) => voiceRef.current((e as CustomEvent).detail);
+    window.addEventListener("to2:voice", h);
+    return () => window.removeEventListener("to2:voice", h);
+  }, []);
+
   if (!meta || !curriculum) {
     return (
       <AppShell>
@@ -75,11 +97,18 @@ export default function TownScreen({ townId }: { townId: string }) {
     );
   }
 
-  const open = (q: TownQuest) => {
+  const open = async (q: TownQuest) => {
     setFocus(q.n);
     if (!q.href || !q.skillId) return;
     setPending({ town: townId, n: q.n, skillId: q.skillId, p0: mastery[q.skillId] ?? P_START });
-    router.push(q.href);
+    let href = q.href;
+    // arena / workshop → games module; if /games isn't deployed yet, the practice stand-in opens instead
+    const fb = questFallback(q.kind, q.skillId, townId, q.n);
+    if (fb) {
+      const ok = await fetch(href.split("?")[0], { method: "HEAD" }).then((r) => r.ok).catch(() => false);
+      if (!ok) href = fb;
+    }
+    router.push(href);
   };
   const label = (q: TownQuest) => t.town.pin(q.n, t.town.kind[q.kind], q.status !== "locked");
 
@@ -123,8 +152,11 @@ export default function TownScreen({ townId }: { townId: string }) {
                       title={label(q)}
                       aria-disabled={q.status === "locked" || undefined}
                       data-testid={`pin-${q.n}`}
+                      ref={(el) => {
+                        pinRefs.current[q.n] = el;
+                      }}
                       onFocus={() => setFocus(q.n)}
-                      onClick={() => open(q)}
+                      onClick={() => void open(q)}
                       className={
                         q.status === "done"
                           ? `${base} border-white bg-[#ffc83d] text-[#5a3b00] shadow-[0_4px_10px_rgba(0,0,0,.25)]`
@@ -174,7 +206,7 @@ export default function TownScreen({ townId }: { townId: string }) {
                   {focused.status === "locked" ? (
                     <p className="m-0 text-[13px] font-extrabold text-mut">{t.town.lockedHint}</p>
                   ) : (
-                    <button type="button" className="btn btn-primary w-full" onClick={() => open(focused)}>
+                    <button type="button" className="btn btn-primary w-full" onClick={() => void open(focused)}>
                       {t.town.go} <ArrowIcon />
                     </button>
                   )}

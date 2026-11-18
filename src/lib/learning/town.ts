@@ -48,21 +48,65 @@ export function parseTown(raw: unknown): TownData {
   return { course: t.course, image: t.image, quests, route: t.route.filter(inUnit) };
 }
 
-/** Where a quest of this kind opens, for this skill. */
+/** Arena games of the games module (feat/games: src/lib/games/quest.ts, ARENA_GAMES). */
+export const ARENA_GAMES = ["tower", "speed", "memory"] as const;
+
+/** Stable pick of an arena game per building (same pin → same game; varies across buildings). */
+export function arenaGame(skillId: string, n: number): (typeof ARENA_GAMES)[number] {
+  let h = n;
+  for (const ch of skillId) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return ARENA_GAMES[h % ARENA_GAMES.length];
+}
+
+/**
+ * Where a quest of this kind opens, for this skill.
+ * arena / workshop use the games module's URLs (same as its questHref: /games/<game>?skill=…, /games/mission?skill=…);
+ * `questFallback` is the practice stand-in used when /games isn't deployed.
+ */
 export function questHref(kind: QuestKind, skillId: string, course: string, n: number): string {
   const q = `town=${encodeURIComponent(course)}&q=${n}`;
+  const sk = encodeURIComponent(skillId);
   switch (kind) {
     case "school":
-      return `/lesson/${skillId}?${q}`;
+      return `/lesson/${sk}?${q}`;
     case "library":
-      return `/practice/${skillId}?${q}`;
-    // TODO(main): games module + "Kasb sinovi" missions are not on this branch yet → quick-fire practice stands in
+      return `/practice/${sk}?${q}`;
     case "arena":
-      return `/practice/${skillId}?mode=arena&${q}`;
+      return `/games/${arenaGame(skillId, n)}?skill=${sk}&${q}`;
     case "workshop":
-      return `/practice/${skillId}?mode=career&${q}`;
+      return `/games/mission?skill=${sk}&${q}`;
     case "temple":
-      return `/practice/${skillId}?final=1&${q}`;
+      return `/practice/${sk}?final=1&${q}`;
+  }
+}
+
+export function questFallback(kind: QuestKind, skillId: string, course: string, n: number): string | null {
+  if (kind !== "arena" && kind !== "workshop") return null;
+  return `/practice/${encodeURIComponent(skillId)}?mode=${kind === "arena" ? "arena" : "career"}&town=${encodeURIComponent(course)}&q=${n}`;
+}
+
+/** Inclusive voice commands for the town screen (window event "to2:voice", detail {command}). */
+export type TownVoice = "next" | "prev" | "open" | "back";
+export function townVoiceCommand(raw: unknown): TownVoice | null {
+  const c = typeof raw === "string" ? raw : (raw as { command?: unknown; type?: unknown } | null)?.command ?? (raw as { type?: unknown } | null)?.type;
+  switch (c) {
+    case "next":
+    case "keyingi":
+      return "next";
+    case "prev":
+    case "previous":
+    case "oldingi":
+      return "prev";
+    case "open":
+    case "continue": // feat/inclusive VoiceCommand "continue" ("davom et")
+    case "och":
+      return "open";
+    case "back":
+    case "home": // feat/inclusive VoiceCommand "home"
+    case "ortga":
+      return "back";
+    default:
+      return null;
   }
 }
 

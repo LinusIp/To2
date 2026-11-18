@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import raw from "../../../public/ui/town-math.json";
-import { assignQuests, parseTown, questHref, townProgress, type TownData } from "./town";
+import { ARENA_GAMES, arenaGame, assignQuests, parseTown, questFallback, questHref, townProgress, townVoiceCommand, type TownData } from "./town";
 import { buildPath, type Curriculum } from "./path";
 import { CURRICULA } from "@/data/curricula";
 import { TOWNS } from "@/config/towns";
@@ -61,8 +61,10 @@ describe("assignQuests", () => {
   it("each kind opens the right quest type", () => {
     expect(questHref("school", "lcm", "math", 1)).toMatch(/^\/lesson\/lcm\?/);
     expect(questHref("library", "lcm", "math", 1)).toMatch(/^\/practice\/lcm\?town/);
-    expect(questHref("arena", "lcm", "math", 1)).toContain("mode=arena");
-    expect(questHref("workshop", "lcm", "math", 1)).toContain("mode=career");
+    expect(questHref("arena", "lcm", "math", 2)).toMatch(/^\/games\/(tower|speed|memory)\?skill=lcm&town=math&q=2$/);
+    expect(questHref("workshop", "lcm", "math", 5)).toBe("/games/mission?skill=lcm&town=math&q=5");
+    expect(questFallback("arena", "lcm", "math", 2)).toContain("/practice/lcm?mode=arena");
+    expect(questFallback("school", "lcm", "math", 1)).toBeNull();
     expect(questHref("temple", "lcm", "math", 7)).toContain("final=1");
   });
 
@@ -70,5 +72,22 @@ describe("assignQuests", () => {
     const empty = { subject: "x", steps: [], order: [], currentId: null, weakCount: 0 };
     const q = assignQuests(town as TownData, empty, []);
     expect(q.every((x) => x.href === null)).toBe(true);
+  });
+});
+
+describe("games + voice", () => {
+  it("arena game is stable per pin and always a known game", () => {
+    expect(arenaGame("lcm", 2)).toBe(arenaGame("lcm", 2));
+    const seen = new Set(["lcm", "gcd", "primes", "frac-intro", "nat-mul"].flatMap((s) => [1, 2, 5].map((n) => arenaGame(s, n))));
+    for (const g of seen) expect(ARENA_GAMES).toContain(g);
+    expect(seen.size).toBeGreaterThan(1);
+  });
+  it("voice commands: next/open/back + feat/inclusive names", () => {
+    expect(townVoiceCommand({ command: "next" })).toBe("next");
+    expect(townVoiceCommand("open")).toBe("open");
+    expect(townVoiceCommand({ type: "continue" })).toBe("open");
+    expect(townVoiceCommand({ type: "home" })).toBe("back");
+    expect(townVoiceCommand({ command: "slower" })).toBeNull();
+    expect(townVoiceCommand(null)).toBeNull();
   });
 });
