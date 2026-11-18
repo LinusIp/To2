@@ -65,6 +65,17 @@ function stateLabel(status: string, writing: boolean, speaking: boolean, voiceWa
   return t.lessonUi.waiting;
 }
 
+/** The lesson's first caption (shown, not spoken): the tutor's own maths line, or a per-subject line. */
+const SUBJECT_HI: Record<string, string> = {
+  fizika: "Fizikani tajriba-tajriba o'rganamiz!",
+  ingliz: "Ingliz tilini so'zma-so'z o'rganamiz!",
+};
+function subjectGreeting(skillId: string, ch: { name: string; hi: string }): string {
+  const sk = getSkill(skillId);
+  const line = sk ? SUBJECT_HI[subjectOfSkill(sk).id] : undefined;
+  return line ? `Salom! Men ${ch.name}. ${line}` : ch.hi;
+}
+
 function Bubble({ name }: { name: string }) {
   const caption = useLesson((s) => s.caption);
   const status = useLesson((s) => s.player.status);
@@ -269,7 +280,7 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
     // set up once the user is known: re-initialising when it arrives would reset a lesson that was
     // already started (and drop the "resume at the explanation" flag) — e2e "refresh mid-lesson"
     if (!loaded) return;
-    initLesson({ skillId, characterId, grade: user?.grade ?? 6, greeting: ch.hi });
+    initLesson({ skillId, characterId, grade: user?.grade ?? 6, greeting: subjectGreeting(skillId, ch) });
     setMuted(readPref("sound", "1") === "0");
     setDoneSeen(false);
     let at: StartAt = savedProgress(skillId, characterId);

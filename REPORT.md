@@ -889,8 +889,10 @@ feat/games → feat/languages → feat/inclusive → docs/pitch-numbers, then ea
   ⚠️ The first e2e attempt reused the dev server already running on :5173 from the main checkout (which has the real key and
   MOCK_AI off) — TTS is stubbed in the tests, but a few tutor/LLM requests may have reached VoiceLab from there.
 - **No VoiceLab generation** by the main agent (budget: ≈ 29.5k used today).
+- **Per-subject lesson greeting** (Fizika "Fizikani tajriba-tajriba o'rganamiz!", Ingliz tili "Ingliz tilini so'zma-so'z o'rganamiz!"):
+  the in-lesson greeting is a caption only (initLesson never speaks it), so the approved 600-credit exception was NOT used — 0 credits.
+- **Rebrand** (feat/ui-polish d2944cc) merged: Ilmobod; towns header = `brand.townsHeader`; ScreenTop wraps 2-line titles.
 ### ⚠️ Known issues (not fixed in this release)
-- Lesson greeting in Fizika/English is still the tutor's maths line ("Matematikani blokma-blok quramiz!") — a new line would need new TTS.
 - "Istalgan mavzu" topic shown twice on the board; first LLM heading can sit under the phone toolbar; APK parked.
 
 ## 🏷️ Rebrand To2 → Ilmobod (branch `feat/ui-polish`, 18 Nov) — not deployed
