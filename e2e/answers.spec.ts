@@ -121,5 +121,5 @@ test("bug 4: every answer reports its source (browser console + /dev/answers)", 
   const r = await page.request.get("/dev/answers");
   const j = (await r.json()) as { answers: { source: string; question: string; cache_key: string }[] };
   expect(j.answers[0]).toMatchObject({ source: "pinned", question: "nega maxrajlarni ko'paytirdik" });
-  expect(j.answers[0].cache_key).toMatch(/^int:v3:frac-add-unlike:ziyo:0:\d+:[0-9a-f]{24}$/);
+  expect(j.answers[0].cache_key).toMatch(/^int:v4:matematika:frac-add-unlike:ziyo:0:\d+:[0-9a-f]{24}$/);
 });
