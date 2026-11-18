@@ -15,7 +15,7 @@ import { PAIR_BY_ID } from "./memory";
 
 export const GAME_MAX_P = MASTERED - 0.01;
 
-export const GAME_IDS = ["tower", "speed", "memory"] as const;
+export const GAME_IDS = ["tower", "speed", "memory", "mission"] as const;
 export type GameId = (typeof GAME_IDS)[number];
 
 export const GameAnswerBody = z.union([

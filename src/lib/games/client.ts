@@ -72,11 +72,11 @@ function lsSet(g: GameId, v: number) {
 
 /** Best scores: D1 (per learner) merged with the localStorage fallback. */
 export async function loadBest(): Promise<Partial<Record<GameId, number>>> {
-  const local = { tower: lsGet("tower"), speed: lsGet("speed"), memory: lsGet("memory") };
+  const local = { tower: lsGet("tower"), speed: lsGet("speed"), memory: lsGet("memory"), mission: lsGet("mission") };
   try {
     const r = await fetch("/api/games/best", { cache: "no-store" });
     const j = (await r.json()) as { best: Partial<Record<GameId, number>> };
-    return { tower: Math.max(local.tower, j.best.tower ?? 0), speed: Math.max(local.speed, j.best.speed ?? 0), memory: Math.max(local.memory, j.best.memory ?? 0) };
+    return { tower: Math.max(local.tower, j.best.tower ?? 0), speed: Math.max(local.speed, j.best.speed ?? 0), memory: Math.max(local.memory, j.best.memory ?? 0), mission: Math.max(local.mission, j.best.mission ?? 0) };
   } catch {
     return local;
   }

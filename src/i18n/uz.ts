@@ -296,6 +296,14 @@ export const t = {
       done: (n: number, c: number) => `${n} ball · ${c} ta to'g'ri javob`,
       start: "Boshlash",
     },
+    mission: {
+      name: "Kasb sinovi",
+      desc: "5 qadamli hikoya: bugun kasb egasi bo'lasiz va real masalalarni yechasiz.",
+      job: (title: string) => `Kasb: ${title}`,
+      step: (i: number, n: number) => `Qadam ${i}/${n}`,
+      start: "Ishni boshlash",
+      result: (c: number, n: number) => `${n} ta vazifadan ${c} tasi to'g'ri bajarildi`,
+    },
     memory: {
       name: "Juftini top",
       desc: "12 karta: kasr ↔ rasm, formula ↔ nomi. Juftlarni toping!",

@@ -46,6 +46,23 @@ const GAMES: { id: GameId; href: string; from: string; to: string; art: React.Re
       </span>
     ),
   },
+  {
+    id: "mission",
+    href: "/games/mission",
+    from: "#a07bff",
+    to: "#8a5cf6",
+    art: (
+      <span className="flex flex-col items-center" aria-hidden>
+        <span className="block h-[14px] w-[44px] rounded-t-[10px] bg-[#ffc42e] shadow-[inset_0_-3px_0_rgba(0,0,0,.15)]" />
+        <span className="block h-[5px] w-[54px] rounded-sm bg-[#f0a400]" />
+        <span className="mt-1.5 grid grid-cols-3 gap-[2px]">
+          {[0, 1, 2, 3, 4, 5].map((k) => (
+            <span key={k} className="block h-[8px] w-[14px] rounded-[2px] bg-white/80" />
+          ))}
+        </span>
+      </span>
+    ),
+  },
 ];
 
 export default function GamesPage() {
@@ -56,7 +73,7 @@ export default function GamesPage() {
     setSkillParam(new URLSearchParams(window.location.search).get("skill"));
     void loadBest().then(setBest);
   }, []);
-  const names = { tower: t.games.tower, speed: t.games.speed, memory: t.games.memory };
+  const names = { tower: t.games.tower, speed: t.games.speed, memory: t.games.memory, mission: t.games.mission };
   const topic = skills?.length === 1 ? getSkill(skills[0])?.title_uz : null;
   const q = skillParam ? `?skill=${encodeURIComponent(skillParam)}` : "";
 
