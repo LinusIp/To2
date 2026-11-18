@@ -3,6 +3,7 @@
 // Language course hook: when feat/languages lands, add pairs with kind "word" (word ↔ translation) here
 // or pass them in via `deal({ bank })`.
 import type { Rng } from "@/data/problems";
+import { EN_PAIRS } from "@/config/courses/english/practice";
 
 export type Face =
   | { kind: "text"; text: string }
@@ -46,7 +47,20 @@ export const PAIRS: Pair[] = [
   tx("e-pct50", "pct-intro", "50%", "0,5 qismi"),
   tx("e-sq", "nat-powers", "7²", "49"),
   tx("e-cube", "nat-powers", "2³", "8"),
+  // Fizika (7-sinf): formula ↔ name
+  tx("p-speed", "fiz-tezlik", "v = s : t", "Tezlik"),
+  tx("p-density", "fiz-zichlik", "ρ = m : V", "Zichlik"),
+  tx("p-weight", "fiz-kuch", "P = m · g", "Og'irlik kuchi"),
+  tx("p-pressure", "fiz-bosim", "p = F : S", "Bosim"),
+  tx("p-work", "fiz-ish", "A = F · s", "Mexanik ish"),
+  tx("p-power", "fiz-quvvat", "N = A : t", "Quvvat"),
+  tx("p-path", "fiz-masofa-vaqt", "s = v · t", "Bosib o'tilgan yo'l"),
+  // Ingliz tili: word ↔ translation (EN_PAIRS from the English course)
+  ...EN_PAIRS.map((w) => tx(`w-${w.en}`, "en-alphabet", w.en, w.uz)),
 ];
+
+/** pairs of the same course stay together when a round is filled up (math / fizika / ingliz) */
+const course = (skillId: string) => (skillId.startsWith("en-") ? "en" : skillId.startsWith("fiz-") ? "fiz" : "math");
 
 export const PAIR_BY_ID: Record<string, Pair> = Object.fromEntries(PAIRS.map((p) => [p.id, p]));
 
@@ -73,7 +87,9 @@ export function deal(opts: { skillIds?: string[]; rng?: Rng; bank?: Pair[]; card
     return a;
   };
   const pref = opts.skillIds?.length ? shuffle(bank.filter((p) => opts.skillIds!.includes(p.skillId))) : [];
-  const rest = shuffle(bank.filter((p) => !pref.includes(p)));
+  const courses = new Set(opts.skillIds?.length ? opts.skillIds.map(course) : ["math"]);
+  const others = bank.filter((p) => !pref.includes(p));
+  const rest = [...shuffle(others.filter((p) => courses.has(course(p.skillId)))), ...shuffle(others.filter((p) => !courses.has(course(p.skillId))))];
   // two faces must never be identical text on different pairs (would be ambiguous): skip clashes
   const chosen: Pair[] = [];
   const faces = new Set<string>();

@@ -20,20 +20,20 @@ describe("Kasb sinovi bank", () => {
   });
   it("course from skill id", () => {
     expect(courseOf("frac-add-unlike")).toBe("math");
-    expect(courseOf("phys-speed")).toBe("physics");
-    expect(courseOf("en-numbers")).toBe("english");
+    expect(courseOf("fiz-tezlik")).toBe("physics");
+    expect(courseOf("en-plurals")).toBe("english");
     expect(courseOf(null)).toBe("math");
   });
 });
 
 describe("pickMission", () => {
   it("5 steps, no repeats, the chosen skill first, right answer present", () => {
-    const m = pickMission({ skillId: "phys-speed", rng: seeded(3) });
+    const m = pickMission({ skillId: "fiz-tezlik", rng: seeded(3) });
     expect(m.course).toBe("physics");
     expect(m.steps).toHaveLength(MISSION_STEPS);
     expect(new Set(m.steps.map((s) => s.q)).size).toBe(MISSION_STEPS);
-    // phys-speed has 3 items → the first three steps are on that skill
-    expect(m.steps.slice(0, 3).every((s) => s.skillId === "phys-speed")).toBe(true);
+    // fiz-tezlik has 3 items → the first three steps are on that skill
+    expect(m.steps.slice(0, 3).every((s) => s.skillId === "fiz-tezlik")).toBe(true);
     for (const s of m.steps) {
       expect(s.story).not.toBe("");
       expect(checkAnswer(s.expect, s.choices[s.correct]).correct).toBe(true);

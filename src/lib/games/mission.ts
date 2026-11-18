@@ -15,7 +15,7 @@ export const MISSION_STEPS = 5;
 
 /** Which course a skill belongs to. Hook for feat/subjects: physics skills "phys-…", English "en-…". */
 export function courseOf(skillId: string | null | undefined): Course {
-  if (skillId?.startsWith("phys-")) return "physics";
+  if (skillId?.startsWith("fiz-") || skillId?.startsWith("phys-")) return "physics";
   if (skillId?.startsWith("en-")) return "english";
   return "math";
 }
