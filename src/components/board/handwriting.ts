@@ -3,7 +3,7 @@
 // Pure functions — no DOM — so stroke lengths and the chalk-tip position are exact and testable.
 import glyphData from "./glyphs.json";
 import type { BoardCommand, Color, DrawCommand } from "@/lib/ai/schema";
-import { FONT_PX, bbox } from "@/lib/board/model";
+import { FONT_PX, LINE_GAP, bbox } from "@/lib/board/model";
 import { tokenizeTex } from "./chalkTex";
 
 export type Pt = [number, number];
@@ -215,8 +215,11 @@ export type PlotFn = ((x: number) => number) | null;
 /** Convert one draw command into strokes, in writing order. */
 export function strokesFor(cmd: DrawCommand, r: Rng, plotFn: PlotFn = null): Stroke[] {
   switch (cmd.op) {
-    case "write":
-      return writeText(cmd.text, cmd.x, cmd.y, FONT_PX[cmd.size ?? "m"], cmd.color ?? "ink", r).strokes;
+    case "write": {
+      // "\n" = a second line (side-board notes wrap to 2 lines), written in order
+      const fs = FONT_PX[cmd.size ?? "m"];
+      return cmd.text.split("\n").flatMap((line, i) => writeText(line, cmd.x, cmd.y + i * fs * LINE_GAP, fs, cmd.color ?? "ink", r).strokes);
+    }
     case "latex":
       return writeMath(cmd.tex, cmd.x, cmd.y, FONT_PX[cmd.size ?? "m"], cmd.color ?? "ink", r).strokes;
     case "line": {

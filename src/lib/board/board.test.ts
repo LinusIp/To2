@@ -42,7 +42,8 @@ describe("board model", () => {
     s = applyCommand(s, { op: "highlight", target: "a" });
     expect(s.els[0].highlight).toBe("yellow");
     s = applyCommand(s, { op: "write", id: "n", x: 0, y: 0, text: "izoh" }, "note");
-    expect(s.els.find((e) => e.layer === "note")?.cmd).toMatchObject({ color: "orange" });
+    // notes: warm yellow chalk on the "Savolingiz" side board (not orange, not where the LLM put them)
+    expect(s.els.find((e) => e.layer === "note")?.cmd).toMatchObject({ color: "yellow", size: "s" });
     expect(clearNotes(s).els).toHaveLength(1);
     s = applyCommand(s, { op: "erase", target: "all" });
     expect(s.els).toHaveLength(0);

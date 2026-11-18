@@ -3,7 +3,7 @@
 // UI reads everything from the zustand store; side effects live in module scope.
 import { create } from "zustand";
 import type { Emotion, Expect, LessonSegment } from "@/lib/ai/schema";
-import { applyCommand, describeBoard, emptyBoard, isDraw, scheduleSegment, scheduleLength, type BoardState, type Layer, type Slot } from "@/lib/board/model";
+import { applyCommand, describeBoard, emptyBoard, fadeHighlights, isDraw, scheduleSegment, scheduleLength, type BoardState, type Layer, type Slot } from "@/lib/board/model";
 import { prefetchSpeech, speak, unlockAudio, type Speech } from "@/lib/audio/player";
 import { speakMath } from "@/lib/ai/speakMath";
 import { resolveStart, type StartAt } from "./resume";
@@ -231,6 +231,7 @@ async function playSegment(track: "main" | "note", index: number, resume?: { t: 
 
 function onSegmentDone(g: number, track: "main" | "note", index: number) {
   if (g !== gen) return;
+  set((st) => ({ board: fadeHighlights(st.board) })); // a step's highlight fades when the step ends
   const s = get();
   if (track === "main") {
     const seg = s.main[index];

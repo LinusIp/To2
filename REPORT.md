@@ -485,3 +485,34 @@ is not the cost: 1.3–3.2 ms per lesson (3 real LLM lessons + the demo lesson).
 | Server must **always** end with `done` | — | `finally` sends `done {segments}` (also after an `error` event); an `ask` without `expect` becomes `explain` | — |
 - Live answers that get **no** segment at all: the tutor says "Ustoz hozir javob bera olmadi…" and the lesson continues (as before).
 - Tests: **161 unit (+15), 8 e2e (+3: stream.spec.ts), all green**. E2E stub TTS → 0 credits.
+
+## 🐞 BUG 2: interruption notes overlapped in the note box — fixed · board refresh (2026-11-18)
+**Cause**: `noteLayouter()` (`src/lib/board/model.ts`, runs on the server per request) had 2 rows and put every note after
+the 2nd onto row 2 (`Math.min(row++, NOTE_MAX_ROWS - 1)`), and a new layouter per request restarted at row 0 → an answer
+with 3+ notes wrote on top of itself; notes were cut at 30 characters.
+**Fix** — notes are laid out on the client from the ACTUAL board state (`placeNote` in `applyCommand`, layer `note`):
+- each note takes the next free row of the **"Savolingiz" side board** (3 rows); a note that doesn't fit wipes the note
+  layer (wipe animation) and starts at the top; a new answer starts on a clean side board (the previous one is wiped);
+- long notes wrap to 2 rows at a space (`wrapNote`, one `write` with a line break, still written stroke by stroke); longer
+  than 2 rows → ends with "…"; nothing is written past the side board's edge; the server no longer cuts at 30 chars;
+- notes are warm yellow chalk; shapes from the LLM don't go on the side board (no room), highlights do.
+- **Test** (`src/lib/board/notes.test.ts`, real chalk strokes): 3 interrupts × 3 notes → no two notes overlap, every note
+  inside the side board; same with no clearing in between; long note wraps to 2 rows, full board → wipe → top row.
+
+**Board refresh** (chalk engine unchanged):
+- **Side board** instead of the dashed box: a small slate hanging over the main board's bottom-right corner on two pins
+  (wood frame, "Savolingiz" in chalk at the top); it appears with the first note and fades out on "Davom et".
+- **Main board**: a faint chalk grid; the lesson starts by writing **"Mavzu: …"** top-left (short topic: "EKUK", "Kasrlar"
+  — kept short so the phone's toolbar over the board's top-right never covers it; it goes through the layout, so nothing
+  is written on it); erased writing leaves a soft **eraser smudge**.
+- **Chalk**: strokes 15 % thicker with a subtle glow. Main lines are readable at 375 px; the font sizes were not changed
+  (that would re-flow every LLM board during the freeze).
+- **Highlights**: yellow chalk, **one at a time** (a new one replaces the previous), **fade out when their step ends**.
+
+| phone 375×812 | desktop 1280×800 |
+|---|---|
+| ![](docs/screenshots/board-phone-1.png) mid-lesson: topic line, grid, highlight | ![](docs/screenshots/board-desktop-1.png) |
+| ![](docs/screenshots/board-phone-2.png) pinned answer on the side board | ![](docs/screenshots/board-desktop-2.png) |
+| ![](docs/screenshots/board-phone-3.png) live answer, 3 notes (long one wrapped → full → wiped, top row) | ![](docs/screenshots/board-desktop-3.png) |
+
+`node scripts/board-shots.mjs [baseUrl]` re-takes them (TTS stubbed, 0 credits). Tests: 166 unit, 8 e2e — green.

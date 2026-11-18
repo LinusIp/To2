@@ -11,6 +11,11 @@ export interface BoardEl {
   cmd: DrawCommand;
   layer: Layer;
   highlight?: Color;
+  /** the highlight fades out when its step ends (one highlight on the board at a time) */
+  hlOff?: boolean;
+  /** note layer: first row on the side board and how many rows it takes (1–2) */
+  row?: number;
+  rows?: number;
 }
 
 export interface BoardState {
@@ -24,6 +29,8 @@ export const emptyBoard = (): BoardState => ({ els: [], noteDim: false });
 export const BOARD_W = 1000;
 export const BOARD_H = 625;
 export const FONT_PX = { s: 28, m: 44, l: 60 } as const;
+/** line spacing of a multi-line write (× font size) */
+export const LINE_GAP = 1.2;
 
 export function isDraw(cmd: BoardCommand): cmd is DrawCommand {
   return cmd.op !== "highlight" && cmd.op !== "erase" && cmd.op !== "pause";
@@ -42,21 +49,24 @@ export function applyCommand(state: BoardState, cmd: BoardCommand, layer: Layer 
     return { ...state, els: state.els.filter((e) => e.id !== cmd.target) };
   }
   if (cmd.op === "highlight") {
-    const c: Color = cmd.color ?? (layer === "note" ? "orange" : "yellow");
-    // Prefer the newest element with that id.
+    // Highlights are yellow chalk, ONE at a time: a new one replaces the previous one.
+    if (!state.els.some((e) => e.id === cmd.target)) return state;
     let hit = false;
     const els = [...state.els]
       .reverse()
       .map((e) => {
         if (!hit && e.id === cmd.target) {
           hit = true;
-          return { ...e, highlight: c };
+          return { ...e, highlight: "yellow" as Color, hlOff: false };
         }
-        return e;
+        return e.highlight ? { ...e, highlight: undefined, hlOff: undefined } : e;
       })
       .reverse();
     return { ...state, els };
   }
+  // interruption answers: text goes to the next free row of the side board (never on top of a note)
+  if (layer === "note" && (cmd.op === "write" || cmd.op === "latex")) return placeNote(state, cmd);
+  if (layer === "note" && cmd.op !== "arrow" && cmd.op !== "strike") return state; // shapes don't fit the side board
   let draw: DrawCommand = cmd;
   // resolve target ids for arrows / strikes into board coordinates
   const center = (t: string): [number, number] | null => {
@@ -79,7 +89,7 @@ export function applyCommand(state: BoardState, cmd: BoardCommand, layer: Layer 
   }
   const withColor: DrawCommand =
     layer === "note" && draw.op !== "numberline" && draw.op !== "divider" && !(draw as { color?: Color }).color
-      ? ({ ...draw, color: "orange" } as DrawCommand)
+      ? ({ ...draw, color: "yellow" } as DrawCommand)
       : draw;
   const key = `${layer}:${cmd.id}`;
   const els = state.els.filter((e) => e.key !== key);
@@ -171,7 +181,9 @@ export function bbox(cmd: DrawCommand): { x: number; y: number; w: number; h: nu
   switch (cmd.op) {
     case "write": {
       const fs = FONT_PX[cmd.size ?? "m"];
-      return { x: cmd.x, y: cmd.y, w: Math.max(fs, cmd.text.length * fs * 0.5), h: fs * 1.15 };
+      const lines = cmd.text.split("\n");
+      const longest = Math.max(...lines.map((l) => l.length));
+      return { x: cmd.x, y: cmd.y, w: Math.max(fs, longest * fs * 0.5), h: fs * 1.15 + (lines.length - 1) * fs * LINE_GAP };
     }
     case "latex": {
       const fs = FONT_PX[cmd.size ?? "m"];
@@ -231,10 +243,73 @@ export function freeArea(state: BoardState): { x: number; y: number } {
   return { x: 40, y: Math.min(Math.max(maxY + 30, 420), 540) };
 }
 
-/** The orange "note" panel (bottom-right) where interruption answers are written. */
+/** The bottom-right area the MAIN layout keeps free for interruption answers (layout.ts NOTE_BOX). */
 export const NOTE_PANEL = { x: 548, y: 506, w: 444, h: 112 } as const;
 const NOTE_ROW_H = 44;
 const NOTE_MAX_ROWS = 2;
+
+/**
+ * The "Savolingiz" side board: a small slate hanging over the main board's bottom-right corner
+ * while an answer is shown. Notes are laid out here from the ACTUAL board state, one per row.
+ */
+export const SIDE_BOARD = { x: 560, y: 430, w: 432, h: 188 } as const;
+/** header line ("Savolingiz") */
+export const SIDE_LABEL_H = 44;
+export const SIDE_ROW_H = 44;
+export const SIDE_PAD_X = 16;
+export const SIDE_ROWS = Math.floor((SIDE_BOARD.h - SIDE_LABEL_H - 8) / SIDE_ROW_H); // 3
+/** chalk width estimate per character at size s (conservative; the tests check the real strokes) */
+const NOTE_CHAR_W = FONT_PX.s * 0.56;
+export const NOTE_MAX_CHARS = Math.floor((SIDE_BOARD.w - 2 * SIDE_PAD_X) / NOTE_CHAR_W);
+
+/** y of a side-board row */
+export const sideRowY = (row: number) => SIDE_BOARD.y + SIDE_LABEL_H + row * SIDE_ROW_H;
+
+/** Plain text for a note (latex fractions written as a/b). */
+function noteText(cmd: Extract<DrawCommand, { op: "write" | "latex" }>): string {
+  if (cmd.op === "write") return cmd.text.replace(/\s*\n\s*/g, " ");
+  return cmd.tex
+    .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, "$1/$2")
+    .replace(/\\cdot/g, "·")
+    .replace(/\\times/g, "×")
+    .replace(/[\\{}]/g, "");
+}
+
+/** Wrap a note to at most 2 lines of NOTE_MAX_CHARS (breaking at spaces); a longer note ends with "…". */
+export function wrapNote(text: string, max = NOTE_MAX_CHARS): string[] {
+  const t = text.trim().replace(/\s+/g, " ");
+  if (t.length <= max) return [t];
+  let cut = t.lastIndexOf(" ", max);
+  if (cut < max * 0.4) cut = max; // one long word: hard break
+  const first = t.slice(0, cut).trim();
+  let second = t.slice(cut).trim();
+  if (second.length > max) second = second.slice(0, max - 1).trimEnd() + "…";
+  return [first, second];
+}
+
+/**
+ * Put a note on the next free side-board row (rows come from the notes already on the board).
+ * If it doesn't fit, the note layer is wiped (the board animates the wipe) and it starts at the top.
+ */
+function placeNote(state: BoardState, cmd: Extract<DrawCommand, { op: "write" | "latex" }>): BoardState {
+  const key = `note:${cmd.id}`;
+  let els = state.els.filter((e) => e.key !== key);
+  const lines = wrapNote(noteText(cmd));
+  let row = els.filter((e) => e.layer === "note" && e.row !== undefined).reduce((m, e) => Math.max(m, (e.row ?? 0) + (e.rows ?? 1)), 0);
+  if (row + lines.length > SIDE_ROWS) {
+    els = els.filter((e) => e.layer !== "note"); // full: wipe the side board, continue at the top
+    row = 0;
+  }
+  const draw: DrawCommand = { op: "write", id: cmd.id, x: SIDE_BOARD.x + SIDE_PAD_X, y: sideRowY(row), size: "s", color: "yellow", text: lines.join("\n") };
+  els.push({ key, id: cmd.id, cmd: draw, layer: "note", row, rows: lines.length });
+  return { ...state, els };
+}
+
+/** End of a step: its highlight fades out (stays in the model until the next one replaces it). */
+export function fadeHighlights(state: BoardState): BoardState {
+  if (!state.els.some((e) => e.highlight && !e.hlOff)) return state;
+  return { ...state, els: state.els.map((e) => (e.highlight && !e.hlOff ? { ...e, hlOff: true } : e)) };
+}
 
 /**
  * Re-lay out note-layer drawings so they never cover the main lesson:
@@ -250,14 +325,14 @@ export function noteLayouter() {
       if (c.op !== "write" && c.op !== "latex") return [];
       const r = Math.min(row++, NOTE_MAX_ROWS - 1);
       const y = NOTE_PANEL.y + 10 + r * NOTE_ROW_H;
-      if (c.op === "write") return [{ ...c, x: NOTE_PANEL.x + 16, y, size: "s", text: c.text.length > 30 ? c.text.slice(0, 29) + "…" : c.text }];
+      if (c.op === "write") return [{ ...c, x: NOTE_PANEL.x + 16, y, size: "s", text: c.text.length > 2 * NOTE_MAX_CHARS ? c.text.slice(0, 2 * NOTE_MAX_CHARS - 1) + "…" : c.text }];
       // fractions are tall; keep latex only if it fits a row, else turn it into plain text
       if (c.tex.includes("\\frac")) {
         const text = c.tex
           .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, "$1/$2")
           .replace(/\\cdot/g, "·")
           .replace(/[\\{}]/g, "")
-          .slice(0, 30);
+          .slice(0, 2 * NOTE_MAX_CHARS);
         return [{ op: "write", id: c.id, x: NOTE_PANEL.x + 16, y, size: "s", color: c.color, text }];
       }
       return [{ ...c, x: NOTE_PANEL.x + 16, y, size: "s" }];

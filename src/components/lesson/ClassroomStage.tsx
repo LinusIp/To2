@@ -165,6 +165,13 @@ export default function ClassroomStage({
           <rect x="-18" y="-18" width="1036" height="661" fill="#7a4f2c" />
           <rect x="-18" y="-18" width="1036" height="6" fill="#86603d" />
           <rect x="0" y="0" width="1000" height="625" fill="#253a30" />
+          {/* a faint chalk grid, like a ruled school board */}
+          <defs>
+            <pattern id="board-grid" width="50" height="50" patternUnits="userSpaceOnUse">
+              <path d="M50 0H0V50" fill="none" stroke="#fff" strokeOpacity=".045" strokeWidth="1.5" />
+            </pattern>
+          </defs>
+          <rect x="0" y="0" width="1000" height="625" fill="url(#board-grid)" />
           <ellipse cx="300" cy="300" rx="380" ry="200" fill="url(#board-smudge)" />
           <ellipse cx="760" cy="470" rx="260" ry="140" fill="url(#board-smudge)" />
           <BoardInk state={board} active={active} reportTip />

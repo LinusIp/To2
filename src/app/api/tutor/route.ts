@@ -111,9 +111,19 @@ export async function POST(req: Request) {
   const skip = prior.length;
   const llmResume = b.resume?.source === "llm" && skip > 0;
   let segIndex = 0;
+  // the lesson opens by writing its topic in chalk, top-left ("Mavzu: …"); it goes through the
+  // layouter with the first segment, so nothing else is written on top of it
+  // short, so it stays clear of the phone's toolbar over the board's top-right: "EKUK — eng kichik…"
+  // → "EKUK"; a short title as is; else the section ("Maxrajlari har xil…" → "Kasrlar")
+  const topic = skill.title_uz.includes(" — ") ? skill.title_uz.split(" — ")[0] : skill.title_uz.length <= 22 ? skill.title_uz : skill.section;
+  const withTitle = (s: Seg): Seg =>
+    s.board.some((c) => "id" in c && c.id === "_title")
+      ? s
+      : { ...s, board: [{ op: "write", id: "_title", x: 22, y: 10, size: "s", color: "ink", text: `Mavzu: ${topic}` }, ...s.board] };
   const send = (ev: string, data: unknown) => {
     if (ev !== "segment") return sendRaw(ev, data);
-    const out = b.mode === "lesson" ? layMain(data as Seg) : data;
+    const first = segIndex === 0;
+    const out = b.mode === "lesson" ? layMain(first ? withTitle(data as Seg) : (data as Seg)) : data;
     if (segIndex++ < skip) return Promise.resolve();
     return sendRaw(ev, out);
   };

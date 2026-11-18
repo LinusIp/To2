@@ -5,7 +5,7 @@
 // <Board> wraps it in its own <svg> for standalone use (landing preview, tests).
 import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Color } from "@/lib/ai/schema";
-import { BOARD_H, BOARD_W, NOTE_PANEL, bbox, type BoardEl, type BoardState } from "@/lib/board/model";
+import { BOARD_H, BOARD_W, SIDE_BOARD, SIDE_PAD_X, bbox, type BoardEl, type BoardState } from "@/lib/board/model";
 import { boardFocus, boardTip } from "@/lib/board/tip";
 import { chalkEllipse, pathD, progressOf, rngFrom, strokesFor, type PlotFn, type Stroke } from "./handwriting";
 
@@ -72,7 +72,7 @@ const Strokes = memo(function Strokes({ strokes, drawn }: { strokes: Stroke[]; d
             d={pathD(s.pts)}
             fill="none"
             stroke={CHALK[s.color] ?? CHALK.ink}
-            strokeWidth={s.width}
+            strokeWidth={s.width * 1.15}
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeDasharray={partial ? `${s.len} ${s.len}` : undefined}
@@ -111,7 +111,53 @@ function Highlight({ el }: { el: BoardEl }) {
     boardFocus.count++;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [el.key, el.highlight]);
-  return <path d={d} fill="none" stroke={CHALK[el.highlight ?? "yellow"]} strokeWidth={4} strokeLinecap="round" pathLength={1} className="hl-draw" />;
+  // yellow chalk; fades out when its step ends (el.hlOff), one highlight at a time (board model)
+  return (
+    <path
+      d={d}
+      fill="none"
+      stroke={CHALK.yellow}
+      strokeWidth={4.5}
+      strokeLinecap="round"
+      pathLength={1}
+      className="hl-draw"
+      style={{ opacity: el.hlOff ? 0 : 1, transition: "opacity 700ms ease-out" }}
+    />
+  );
+}
+
+/** "Savolingiz" in chalk at the top of the side board (written once, same strokes every time). */
+const SIDE_LABEL = strokesFor({ op: "write", id: "_side", x: SIDE_BOARD.x + SIDE_PAD_X, y: SIDE_BOARD.y + 8, text: "Savolingiz", size: "s", color: "yellow" }, rngFrom(77));
+
+/**
+ * The side board for interruption answers: a small slate hanging over the main board's corner on
+ * two pins, wooden frame, "Savolingiz" at the top. Shown while an answer is on the board.
+ */
+function SideBoard({ show, filter }: { show: boolean; filter: string }) {
+  const { x, y, w, h } = SIDE_BOARD;
+  return (
+    <g aria-hidden style={{ opacity: show ? 1 : 0, transition: "opacity 450ms ease-out" }}>
+      {/* strings to two pins above */}
+      <g stroke="#c9b48a" strokeWidth={2.5} opacity={0.85}>
+        <line x1={x + 70} y1={y - 34} x2={x + 40} y2={y + 2} />
+        <line x1={x + 70} y1={y - 34} x2={x + 100} y2={y + 2} />
+        <line x1={x + w - 70} y1={y - 34} x2={x + w - 100} y2={y + 2} />
+        <line x1={x + w - 70} y1={y - 34} x2={x + w - 40} y2={y + 2} />
+      </g>
+      <circle cx={x + 70} cy={y - 34} r={6} fill="#d9a441" />
+      <circle cx={x + w - 70} cy={y - 34} r={6} fill="#d9a441" />
+      {/* drop shadow, frame, slate */}
+      <rect x={x - 4} y={y + 6} width={w + 14} height={h + 8} rx={10} fill="#000" opacity={0.28} />
+      <rect x={x - 9} y={y - 9} width={w + 18} height={h + 18} rx={10} fill="#8a5a33" />
+      <rect x={x - 9} y={y - 9} width={w + 18} height={5} rx={2} fill="#a8774a" />
+      <rect x={x} y={y} width={w} height={h} rx={5} fill="#1a2b25" />
+      <rect x={x} y={y} width={w} height={h} rx={5} fill="url(#side-sheen)" />
+      <g filter={filter}>
+        <Strokes strokes={SIDE_LABEL} drawn={null} />
+      </g>
+      <line x1={x + SIDE_PAD_X} y1={y + 40} x2={x + w - SIDE_PAD_X} y2={y + 41} stroke={CHALK.yellow} strokeOpacity={0.35} strokeWidth={2} strokeLinecap="round" />
+    </g>
+  );
 }
 
 export interface BoardInkProps {
@@ -128,10 +174,15 @@ export function BoardInk({ state, active, reportTip = false }: BoardInkProps) {
   // erased elements wipe out instead of vanishing
   const prev = useRef<Map<string, BoardEl>>(new Map());
   const [wiping, setWiping] = useState<BoardEl[]>([]);
+  // erased main-board writing leaves a faint eraser smudge, like a real board (last 12 kept)
+  const [smudges, setSmudges] = useState<{ k: string; x: number; y: number; w: number; h: number }[]>([]);
   useEffect(() => {
     const now = new Map(state.els.map((e) => [e.key, e]));
     const gone = [...prev.current.values()].filter((e) => !now.has(e.key));
     prev.current = now;
+    const rubbed = gone.filter((e) => e.layer === "main");
+    if (rubbed.length)
+      setSmudges((sm) => [...sm, ...rubbed.map((e) => ({ k: `${e.key}-${sm.length}`, ...bbox(e.cmd) }))].slice(-12));
     if (gone.length) {
       setWiping((w) => [...w, ...gone]);
       const t = setTimeout(() => setWiping((w) => w.filter((x) => !gone.includes(x))), 520);
@@ -177,32 +228,44 @@ export function BoardInk({ state, active, reportTip = false }: BoardInkProps) {
           <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G" result="d" />
           <feTurbulence type="fractalNoise" baseFrequency="2.6" numOctaves="1" seed="9" result="n2" />
           <feColorMatrix in="n2" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -1.6 1.25" result="holes" />
-          <feComposite in="d" in2="holes" operator="in" />
+          <feComposite in="d" in2="holes" operator="in" result="chalk" />
+          {/* a subtle glow around the chalk (mockup v2) */}
+          <feGaussianBlur in="chalk" stdDeviation="1.8" result="blur" />
+          <feComponentTransfer in="blur" result="glow">
+            <feFuncA type="linear" slope="0.5" />
+          </feComponentTransfer>
+          <feMerge>
+            <feMergeNode in="glow" />
+            <feMergeNode in="chalk" />
+          </feMerge>
         </filter>
+        <radialGradient id="smudge-g" cx=".5" cy=".5" r=".5">
+          <stop offset="0" stopColor="#fff" stopOpacity=".07" />
+          <stop offset="1" stopColor="#fff" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id="side-sheen" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity=".05" />
+          <stop offset=".5" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
       </defs>
+      {smudges.map((m) => (
+        <ellipse key={m.k} cx={m.x + m.w / 2} cy={m.y + m.h / 2} rx={m.w / 2 + 30} ry={m.h / 2 + 14} fill="url(#smudge-g)" />
+      ))}
       <g filter={`url(#chalk-${uid})`}>
         {main.map((el) => (
           <Element key={el.key} el={el} p={active?.key === el.key ? active.p : 1} plot={plot} />
         ))}
-        <g opacity={state.noteDim ? 0.3 : 1} style={{ transition: "opacity 400ms" }}>
-          {hasNoteText && (
-            <rect
-              x={NOTE_PANEL.x}
-              y={NOTE_PANEL.y}
-              width={NOTE_PANEL.w}
-              height={NOTE_PANEL.h}
-              rx={14}
-              fill="#1d3027"
-              fillOpacity={0.9}
-              stroke={CHALK.orange}
-              strokeWidth={3}
-              strokeDasharray="10 8"
-            />
-          )}
+      </g>
+      {/* the side board hangs OVER the main board; "Davom et" fades it and its notes away */}
+      <g opacity={state.noteDim ? 0 : 1} style={{ transition: "opacity 450ms" }}>
+        <SideBoard show={hasNoteText} filter={`url(#chalk-${uid})`} />
+        <g filter={`url(#chalk-${uid})`}>
           {notes.map((el) => (
             <Element key={el.key} el={el} p={active?.key === el.key ? active.p : 1} plot={plot} />
           ))}
         </g>
+      </g>
+      <g filter={`url(#chalk-${uid})`}>
         {wiping.map((el) => (
           <g key={`w-${el.key}`} className="wipe-out">
             <Element el={el} p={1} plot={plot} />
