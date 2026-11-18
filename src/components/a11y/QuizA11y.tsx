@@ -10,7 +10,7 @@ import { letterIndex, parseVoiceCommand } from "@/lib/a11y/commands";
 import { narrateQuestion } from "@/lib/a11y/narrator";
 import { announce, sayAloud, stopSaying } from "@/lib/a11y/speech";
 import { listenForCommands, recognitionSupported } from "@/lib/a11y/recognition";
-import { claimListening, dispatchA11yCommand } from "@/lib/a11y/bus";
+import { claimListening, dispatchVoice } from "@/lib/a11y/bus";
 
 export default function QuizA11y({
   questionKey,
@@ -70,7 +70,7 @@ export default function QuizA11y({
     if (c.type === "answer" && choices?.[letterIndex(c.letter)]) onAnswer(choices[letterIndex(c.letter)]);
     else if (c.type === "repeat" || c.type === "read") void readRef.current();
     else if (c.type === "home") router.push("/home");
-    else if (!dispatchA11yCommand(c, s)) announce(t.a11y.answerByVoice);
+    else if (!dispatchVoice(c)) announce(t.a11y.answerByVoice);
   };
 
   const listening = (a.voiceFirst || a.handsFree) && recognitionSupported();

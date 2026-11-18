@@ -1,6 +1,6 @@
 "use client";
 // Hands-free mode on every screen that has no recogniser of its own (the town / roadmap world, the
-// games, home…): listens with the browser recogniser and sends each command on the a11y:command bus.
+// games, home…): listens with the browser recogniser and sends each command as a "to2:voice" window event.
 // "orqaga" / "bosh sahifa" work even when no screen handles them. The lesson and quiz screens claim
 // the mic (claimListening) and this one pauses meanwhile.
 import { useEffect, useState } from "react";
@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { t } from "@/i18n/uz";
 import { useA11y } from "@/lib/a11y/settings";
 import { parseVoiceCommand } from "@/lib/a11y/commands";
-import { dispatchA11yCommand, listeningClaimed, onClaimsChange } from "@/lib/a11y/bus";
+import { dispatchVoice, handlesBackItself, listeningClaimed, onClaimsChange } from "@/lib/a11y/bus";
 import { listenForCommands, recognitionSupported } from "@/lib/a11y/recognition";
 import { announce } from "@/lib/a11y/speech";
 
@@ -27,7 +27,7 @@ export default function GlobalVoiceCommands() {
       const c = parseVoiceCommand(text);
       setHeard(text);
       if (!c) return announce(t.a11y.notCommand);
-      if (dispatchA11yCommand(c, text)) return;
+      if (dispatchVoice(c) || handlesBackItself(window.location.pathname)) return;
       // nobody on this screen handled it: the defaults
       if (c.type === "back") window.history.back();
       else if (c.type === "home") router.push("/home");

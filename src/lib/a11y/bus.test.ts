@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { parseVoiceCommand } from "./commands";
-import { A11Y_COMMAND_EVENT, claimListening, dispatchA11yCommand, listeningClaimed, onA11yCommand } from "./bus";
+import { VOICE_EVENT, claimListening, dispatchVoice, handlesBackItself, listeningClaimed, onVoice, toVoiceDetail } from "./bus";
 
 const cmd = (s: string) => parseVoiceCommand(s);
+const wire = (s: string) => {
+  const c = cmd(s);
+  return c ? toVoiceDetail(c) : null;
+};
 
 describe("town / game commands", () => {
   it("parses the new commands", () => {
@@ -31,32 +35,49 @@ describe("town / game commands", () => {
   });
 });
 
-describe("a11y:command bus", () => {
+describe('"to2:voice" wire format (feat/roadmap TownScreen, feat/games)', () => {
+  it("maps spoken phrases to the agreed details", () => {
+    expect(wire("keyingi bino")).toEqual({ command: "next" });
+    expect(wire("oldingi bino")).toEqual({ command: "prev" });
+    expect(wire("ochish")).toEqual({ command: "open" });
+    expect(wire("orqaga")).toEqual({ command: "back" });
+    expect(wire("davom et")).toEqual({ command: "continue" });
+    expect(wire("bosh sahifa")).toEqual({ command: "home" });
+    expect(wire("javob bir")).toEqual({ command: "answer", n: 1 });
+    expect(wire("javob to'rt")).toEqual({ command: "answer", n: 4 });
+    expect(wire("B")).toEqual({ command: "answer", n: 2 });
+  });
+  it("lesson-only commands are not sent", () => {
+    for (const s of ["sekinroq", "qaytar", "tushunmadim", "to'xta", "doskani o'qi"]) expect(wire(s), s).toBeNull();
+  });
+  it("the town route handles back/home itself (no app fallback there)", () => {
+    expect(handlesBackItself("/town/kasrlar")).toBe(true);
+    expect(handlesBackItself("/towns")).toBe(false);
+    expect(handlesBackItself("/home")).toBe(false);
+  });
+});
+
+describe("event bus", () => {
   const g = globalThis as unknown as { window?: EventTarget };
   beforeEach(() => (g.window = new EventTarget()));
   afterEach(() => delete g.window);
 
-  it("delivers commands as window events; a listener returning true marks it handled", () => {
-    const got: string[] = [];
-    const off = onA11yCommand((c, text) => {
-      got.push(`${c.type}:${text}`);
-      return c.type === "open";
-    });
-    expect(dispatchA11yCommand({ type: "open" }, "ochish")).toBe(true);
-    expect(dispatchA11yCommand({ type: "nextBuilding" }, "keyingi bino")).toBe(false);
-    off();
-    expect(dispatchA11yCommand({ type: "open" })).toBe(false);
-    expect(got).toEqual(["open:ochish", "nextBuilding:keyingi bino"]);
+  it("is a plain window event named to2:voice (no import needed by other branches)", () => {
+    const seen: unknown[] = [];
+    window.addEventListener(VOICE_EVENT, (e) => seen.push((e as CustomEvent).detail));
+    expect(VOICE_EVENT).toBe("to2:voice");
+    expect(dispatchVoice({ type: "nextBuilding" })).toBe(false); // nobody called preventDefault
+    dispatchVoice({ type: "answer", letter: "C", index: 2 });
+    expect(dispatchVoice({ type: "slower" })).toBe(false); // not sent
+    expect(seen).toEqual([{ command: "next" }, { command: "answer", n: 3 }]);
   });
 
-  it("works with a plain addEventListener (no import needed by other branches)", () => {
-    let seen: unknown = null;
-    window.addEventListener(A11Y_COMMAND_EVENT, (e) => {
-      seen = (e as CustomEvent).detail.command;
-      e.preventDefault();
-    });
-    expect(dispatchA11yCommand({ type: "answer", letter: "C", index: 2 }, "javob uch")).toBe(true);
-    expect(seen).toEqual({ type: "answer", letter: "C", index: 2 });
+  it("a listener can mark a command handled", () => {
+    const off = onVoice((d) => d.command === "open");
+    expect(dispatchVoice({ type: "open" })).toBe(true);
+    expect(dispatchVoice({ type: "back" })).toBe(false);
+    off();
+    expect(dispatchVoice({ type: "open" })).toBe(false);
   });
 
   it("screens with their own recogniser claim the mic", () => {

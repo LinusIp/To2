@@ -14,7 +14,7 @@ export type VoiceCommand =
   | { type: "home" }
   | { type: "read" }
   | { type: "stop" }
-  // the town (roadmap world) and the games — handled by whoever listens on the a11y:command bus (bus.ts)
+  // the town (roadmap world) and the games — sent as "to2:voice" window events (bus.ts)
   | { type: "nextBuilding" }
   | { type: "prevBuilding" }
   | { type: "open" }
