@@ -5,14 +5,7 @@
 import type { MindMap as MindMapData, MindLeaf, StepStatus } from "@/lib/learning/path";
 import { subjectOfSection } from "@/config/subjects";
 import { t } from "@/i18n/uz";
-
-const SIZE = 1000;
-const C = SIZE / 2;
-const R_BRANCH = 235;
-const R_NODE = 58;
-// leaves alternate between rings so neighbours don't touch (3 rings for big sections)
-const RINGS_2 = [345, 430];
-const RINGS_3 = [330, 395, 460];
+import { C, R_NODE, SIZE, layoutMindMap } from "./mindmapLayout";
 
 export const STATUS_STYLE: Record<StepStatus, { fill: string; stroke: string; text: string }> = {
   mastered: { fill: "#22b45a", stroke: "#178a43", text: "#fff" },
@@ -55,37 +48,6 @@ function wrap(label: string, max = 11): string[] {
   return lines.slice(0, 3);
 }
 
-interface Placed {
-  leaf: MindLeaf;
-  x: number;
-  y: number;
-  section: string;
-}
-
-export function layoutMindMap(map: MindMapData) {
-  // each section gets a slice proportional to its size (+4 so small sections still fit their bubble)
-  const weights = map.branches.map((b) => b.leaves.length + 4);
-  const total = weights.reduce((a, b) => a + b, 0) || 1;
-  let acc = 0;
-  const branches = map.branches.map((b, i) => {
-    const slice = (2 * Math.PI * weights[i]) / total;
-    const a = -Math.PI / 2 + ((acc + weights[i] / 2) / total) * 2 * Math.PI;
-    acc += weights[i];
-    return { b, a, slice, x: C + R_BRANCH * Math.cos(a), y: C + R_BRANCH * Math.sin(a) };
-  });
-  const leaves: Placed[] = [];
-  for (const br of branches) {
-    const k = br.b.leaves.length;
-    const spread = br.slice * 0.86;
-    const rings = k > 5 ? RINGS_3 : RINGS_2;
-    br.b.leaves.forEach((leaf, j) => {
-      const a = k === 1 ? br.a : br.a - spread / 2 + (spread * j) / (k - 1);
-      const r = rings[j % rings.length];
-      leaves.push({ leaf, section: br.b.section, x: C + r * Math.cos(a), y: C + r * Math.sin(a) });
-    });
-  }
-  return { branches, leaves };
-}
 
 export default function MindMap({
   map,

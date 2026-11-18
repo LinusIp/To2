@@ -590,4 +590,7 @@ it already wrote until it steps back.
   `docs/screenshots/mindmap-phone-path.png`.
 - ❓ **Assumption**: the original feature spec ("NEW FEATURE: mind map + personalized roadmap", sections 1–4) was never pasted;
   the team approved building a best guess. Compare with the real spec before merging.
-- ⚠️ With 44 skills a few leaves still touch at small-section boundaries on a phone; skills > grade+1 are hidden.
+- Layout: geometry in `src/components/roadmap/mindmapLayout.ts` (pure); touching skill dots are pushed apart (deterministic
+  relaxation inside the leaf band) — tested: no two dots closer than the minimum gap for grades 5–8 (218 unit tests green).
+- ⚠️ Skills above grade+1 are hidden on the map; a skill dot is ~19 CSS px on a 375 px phone — the section list and the
+  "Sening yo'ling" list are the full-size tap targets.
