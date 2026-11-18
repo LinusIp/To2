@@ -5,7 +5,7 @@
  Phone / tablet / laptop (browser)
  ┌──────────────────────────────────────────────────────────────────┐
  │ LessonPlayer  (src/components/lesson)                            │
- │   Board (SVG chalk)   Character (SVG + lip-sync)   Mic / answers │
+ │ Board (SVG chalk)  3D tutor (three.js, lip-sync)  Mic / answers  │
  │   └── lesson engine (src/lib/lesson/engine.ts, zustand)          │
  └──────────▲──────────────────────────────┬────────────────────────┘
             │ SSE: one event per segment   │ fetch
