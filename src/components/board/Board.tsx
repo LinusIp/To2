@@ -208,6 +208,7 @@ export function BoardInk({ state, active, reportTip = false }: BoardInkProps) {
     if (tip) {
       boardTip.x = tip[0];
       boardTip.y = tip[1];
+      boardTip.left = activeEl ? bbox(activeEl.cmd).x : NaN;
       boardTip.active = true;
       boardTip.at = performance.now();
     } else boardTip.active = false;

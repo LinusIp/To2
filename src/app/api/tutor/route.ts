@@ -54,6 +54,8 @@ const Body = z.object({
 
 /** On phones the lesson toolbar (replay / speed / sound) sits over the board's top-right corner. */
 const PHONE_TOOLBAR = { x: 470, y: 0, w: 530, h: 112 };
+/** On phones the back button sits over the board's top-left corner. */
+const PHONE_BACK = { x: 0, y: 0, w: 92, h: 76 };
 /** a main-board answer's first row (below that band) */
 const ANSWER_TOP = 122;
 
@@ -116,7 +118,9 @@ export async function POST(req: Request) {
   // Every main-layer lesson segment goes through the auto-layout, so nothing is written on top of
   // what's already on the board (LLM coordinates are only a hint). Covers LLM, KV cache and demo
   // lessons; note-layer (interrupt) segments pass through and keep using noteLayouter.
-  const layMain = mainLayouter();
+  // lessons keep the phone's toolbar band (top-right) and back button (top-left) free, so the
+  // first heading and lines are never hidden under them
+  const layMain = mainLayouter({ reserve: [PHONE_TOOLBAR, PHONE_BACK] });
   // Retry after a broken stream: the client already has the first `skip` segments. They still go
   // through the layouter (so the board state matches what the client shows) but aren't re-sent.
   const prior = (b.resume?.prior ?? []).map((p) => LessonSegment.safeParse(p)).flatMap((r) => (r.success ? [r.data] : []));
@@ -127,11 +131,14 @@ export async function POST(req: Request) {
   // layouter with the first segment, so nothing else is written on top of it
   // short, so it stays clear of the phone's toolbar over the board's top-right: "EKUK — eng kichik…"
   // → "EKUK"; a short title as is; else the section ("Maxrajlari har xil…" → "Kasrlar")
-  const topic = skill.title_uz.includes(" — ") ? skill.title_uz.split(" — ")[0] : skill.title_uz.length <= 22 ? skill.title_uz : skill.section;
+  // it sits between the phone's back button and toolbar (~360 px): ≤ 18 characters after "Mavzu: "
+  const fit = (x: string) => (x.length <= 18 ? x : x.slice(0, 17).trimEnd() + "…");
+  const topicRaw = skill.title_uz.includes(" — ") ? skill.title_uz.split(" — ")[0] : skill.title_uz.length <= 18 ? skill.title_uz : skill.section;
+  const topic = fit(topicRaw);
   const withTitle = (s: Seg): Seg =>
     s.board.some((c) => "id" in c && c.id === "_title")
       ? s
-      : { ...s, board: [{ op: "write", id: "_title", x: 22, y: 10, size: "s", color: "ink", text: `Mavzu: ${topic}` }, ...s.board] };
+      : { ...s, board: [{ op: "write", id: "_title", x: PHONE_BACK.x + PHONE_BACK.w + 10, y: 12, size: "s", color: "ink", text: `Mavzu: ${topic}` }, ...s.board] };
   const send = (ev: string, data: unknown) => {
     if (ev !== "segment") return sendRaw(ev, data);
     const first = segIndex === 0;
@@ -177,8 +184,13 @@ export async function POST(req: Request) {
         if (ai.mock || !(await rateLimit(`llm:${clientKey(req, userId)}`, 20))) {
           // offline "Istalgan mavzu": only the Fotosintez example exists; any other topic → honest notice
           const mockTopic = ai.mock && skill.subject === "any" && /fotosintez/i.test(skill.title_uz) ? TOPIC_EXAMPLE_SEGMENTS : null;
-          const segs = demo?.segments ?? mockTopic ?? cannedLesson(skill);
-          await send("meta", { source: demo ? "demo" : mockTopic ? "mock" : "canned" });
+          // rate-limited (not mock): never another skill's demo lesson in disguise — only this skill's own
+          // demo, else the generated (maths) / honest notice (other subjects) lesson, reported in meta
+          const ownDemo = demo && (ai.mock || demo.skillId === skill.id) ? demo : null;
+          const segs = ownDemo?.segments ?? mockTopic ?? cannedLesson(skill);
+          const reason = ai.mock ? "mock" : "rate-limited";
+          if (!ai.mock) console.warn("[tutor] lesson rate-limited → fallback", skill.id);
+          await send("meta", { source: ownDemo ? "demo" : mockTopic ? "mock" : "canned", reason });
           for (const s of segs) await send("segment", s);
           return;
         }

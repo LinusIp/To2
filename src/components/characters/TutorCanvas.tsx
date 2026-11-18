@@ -50,6 +50,7 @@ function lessonDriver(inp: AnimInput, view: TutorView) {
   inp.tipActive = boardTip.active;
   inp.tipX = boardTip.x;
   inp.tipY = boardTip.y;
+  inp.tipLeft = boardTip.left;
   inp.focusCount = boardFocus.count;
   inp.focusX = boardFocus.x;
   inp.focusY = boardFocus.y;

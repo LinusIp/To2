@@ -54,7 +54,8 @@ function Stage({ characterId }: { characterId: string }) {
   );
 }
 
-function stateLabel(status: string, writing: boolean, speaking: boolean) {
+function stateLabel(status: string, writing: boolean, speaking: boolean, voiceWait = false) {
+  if (voiceWait) return t.lessonUi.voiceWait;
   if (status === "listening" || status === "paused") return t.lessonUi.listeningState;
   if (status === "thinking") return t.lessonUi.thinkingState;
   if (writing) return t.lessonUi.writing;
@@ -67,7 +68,8 @@ function Bubble({ name }: { name: string }) {
   const status = useLesson((s) => s.player.status);
   const track = useLesson((s) => s.track);
   const writing = useLesson((s) => !!s.active && s.active.p < 1);
-  const speaking = status === "speaking" || status === "answering";
+  const voiceWait = useLesson((s) => s.voiceWait);
+  const speaking = (status === "speaking" || status === "answering") && !voiceWait;
   return (
     <div className="card flex items-center gap-3 px-3.5 py-3" aria-live="polite">
       <div className={`grid h-[42px] w-[42px] flex-none place-items-center rounded-full text-white shadow-[0_6px_14px_rgba(47,107,255,.35)] ${track === "note" ? "bg-note" : "bg-blue"}`} aria-hidden>
@@ -75,7 +77,7 @@ function Bubble({ name }: { name: string }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="mb-0.5 flex items-center gap-2 text-[12px] font-extrabold text-mut">
-          <span className="text-ink">{name}</span>· {stateLabel(status, writing, speaking)}
+          <span className="text-ink">{name}</span>· {stateLabel(status, writing, speaking, voiceWait)}
           {speaking && <Wave color={track === "note" ? "#ff9f43" : "#2f6bff"} h={12} />}
         </div>
         <p className="m-0 text-[15px] leading-[1.35] font-extrabold md:text-[16px]">{caption}</p>
