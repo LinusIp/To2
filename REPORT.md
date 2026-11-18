@@ -569,3 +569,53 @@ Tests: **193 unit, 12 e2e** (new `e2e/answers.spec.ts`: voice-first + fillers, r
 New voice lines warmed for the 3 tutors (18 clips). ⚠️ Known, not in this fix: an LLM lesson's own first heading can still
 sit under the phone toolbar (the lesson layout doesn't reserve that band yet); while writing, the tutor's body covers lines
 it already wrote until it steps back.
+
+## 🔁 HANDOFF to the next main agent (2026-11-18, ~13:00)
+**Role**: the main agent is the ONLY one who releases — `node scripts/release.mjs` (pull --rebase → tests → push → clean
+worktree build → deploy → checks `/version`). Branch agents push branches, never deploy. Memory notes: one-deployer,
+kv-write-cap, code-freeze.
+
+**State of main**: `19d35c2` (pushed, NOT released). Production = `70985d2` (bugs 1–4 fixed: spoken live answers with fillers,
+restart requests replay the lesson, tutor never covers writing, answer sources in `/dev/answers` + console). `19d35c2` only
+raises the hard TTS cap to **60,000/day** (warning stays 40,000) — ships with the next release.
+
+**Merge order** (user, latest): **ui-polish → roadmap → subjects-2 → games → languages → inclusive**
+(merge `feat/subjects-2`, NOT `feat/subjects` — that branch is empty; tell the user only if it gets unique commits).
+Branch heads at handoff (all based on main @15b3846, each 1–2 commits ahead): see `git log main..origin/<branch>`.
+Feature freeze 13:45 (anything not pushed is not merged); integrate 13:45–14:30; one release at 14:30; report at 14:40.
+
+**Trial merge at 12:51** (throwaway worktree, in the old order; a conflicting branch was skipped, so later results are approximate):
+- feat/ui-polish: clean.
+- feat/roadmap: REPORT.md only.
+- feat/subjects-2: `src/app/progress/page.tsx`.
+- feat/languages: REPORT.md.
+- feat/games: `src/components/ui/AppShell.tsx` — **bottom tab bar**: games adds a 6th tab, ui-polish restyled the bar →
+  keep ui-polish's styling + games' tab (check 6 tabs fit at 375 px). Also **`recordAnswer`**: games added an optional
+  `maxP` param — keep it optional, other callers unchanged.
+- feat/inclusive: REPORT.md, `src/app/globals.css`, `src/app/page.tsx`, `src/app/progress/page.tsx`,
+  `src/app/settings/page.tsx`, `AppShell.tsx`. **Keep inclusive's contrast colours** (brand blue `#2a5ce8`, grey `#5f6787`)
+  over ui-polish's (contrast wins).
+
+**After each merge**: typecheck, `pnpm vitest run`, `pnpm e2e` (all), 375×812 smoke screenshot of new screens. Not green in
+15 min → revert that merge, keep the others, tell the user why.
+
+**Cross-feature wiring to do**: roadmap uses each course's skill graph (math, fizika, ingliz tili); inclusive mode in every
+course (board narration, captions, voice commands also in quizzes and "Takrorlang"); Home = Kurslar grid + "Bugungi dars"
+from the personal path; demo learner has the math path + Fizika and English demo lessons; games read questions from the
+course framework (look for the games agent's TODO).
+**Quick follow-ups (≤ 10 min each)**: per-subject tutor greeting = generic "Keling, birga o'rganamiz!" with cached audio
+(not the math line); topic shown twice on "Istalgan mavzu" boards; flaky quiz e2e → wait on UI state, not the network.
+Then a **15-min UI consistency pass** over all screens (tokens/buttons/cards, no overflow at 375 px, headers/back buttons,
+loading states), then the release.
+
+**Budget**: today's VoiceLab spend was **26,268** at 12:10; the user allowed **up to 5,000 more** for new lessons (dry-run
+first: `node scripts/warm-tts.mjs --dry-run`; Blokbek's non-demo lessons were deliberately never generated — don't warm
+the full list). Never mix voice models (one model per tutor, lison-v2).
+
+**Production checks after the release**: `/version`; per tutor: Matematika lesson + pinned question
+(`node scripts/demo-check.mjs`, `node scripts/prod-check-answers.mjs`), Fizika "Tezlik", English "Greetings" + Takrorlang,
+blind mode on one lesson, hands-free "davom et". Then report (URL, what's live per feature, known issues, credits), update
+REPORT.md + the status page (https://claude.ai/artifact/7N6Uoz3FkjKqs23L83J7qn), `git worktree prune` for merged branches.
+
+**Nothing half-done on main.** Known issues still open: an LLM lesson's first heading can sit under the phone toolbar; while
+writing, the tutor covers lines it already wrote until it steps back; APK parked (opens the browser at "home" — use the site).
