@@ -11,7 +11,7 @@ import TutorPortrait from "@/components/characters/TutorPortrait";
 
 const TABS = [
   { href: "/home", label: t.tabs.home, Icon: HomeIcon, match: ["/home"] },
-  { href: "/roadmap", label: t.tabs.lessons, Icon: BookIcon, match: ["/roadmap", "/lesson", "/practice"] },
+  { href: "/towns", label: t.tabs.lessons, Icon: BookIcon, match: ["/towns", "/town", "/map", "/roadmap", "/lesson", "/practice"] },
   { href: "/progress", label: t.tabs.progress, Icon: ChartIcon, match: ["/progress"] },
   { href: "/rewards", label: t.tabs.rewards, Icon: CupIcon, match: ["/rewards"] },
   { href: "/settings", label: t.tabs.profile, Icon: UserIcon, match: ["/settings", "/tutors", "/profile"] },

@@ -594,3 +594,33 @@ it already wrote until it steps back.
   relaxation inside the leaf band) — tested: no two dots closer than the minimum gap for grades 5–8 (218 unit tests green).
 - ⚠️ Skills above grade+1 are hidden on the map; a skill dot is ~19 CSS px on a 375 px phone — the section list and the
   "Sening yo'ling" list are the full-size tap targets.
+
+## 🏘️ Course towns — the core loop (branch `feat/roadmap`, 2026-11-18, not released)
+Each course = a voxel town; each building on the route = a quest; all buildings built = course mastered.
+- **Data**: `public/ui/town-<id>.json` `{course, image, quests:[{i, kind, marker, path}], route}` (x,y in 0..1 of the image),
+  validated by `parseTown()`. Until the team's files land: `town-math.json` = **placeholder** (island image, 7 buildings);
+  a missing `town-<id>.json` falls back to it. Towns ↔ curricula in `src/config/towns.ts` (math → matematika; Fizika /
+  Ingliz tili shahri show "Tez orada" until their curriculum is on this branch).
+- **Logic** (`src/lib/learning/town.ts`, pure, 8 tests): buildings in route order take the personal path (`path.ts`) step
+  by step; a **weak** step keeps its topic from a school to the following arena (school + arena first); the temple (final
+  test) = the path's goal. First unfinished building = current, the rest locked.
+- **Quest types**: school → `/lesson/<skill>`, library → `/practice/<skill>`, temple → `/practice/<skill>?final=1`.
+  arena → `/practice/<skill>?mode=arena`, workshop → `/practice/<skill>?mode=career` — **TODO(main)**: the games module and
+  "Kasb sinovi" missions are not on this branch; quick-fire practice stands in (the extra query params are ignored today).
+- **Screens**: `/towns` (the "Darslar" tab now opens it; `/roadmap` stays reachable and is still where the diagnostic lands)
+  = town cards with "N/7 bino"; `/town/<id>` = image full width, dashed SVG route, pins: done gold ✓ · current pulsing with
+  the chosen tutor's face · locked grey + lock with the area dimmed and a scaffold icon. Header "Shaharni o'qib quring!".
+- **Completion**: tapping a pin stores `{town, n, skill, p0}` in sessionStorage and opens the quest; back on `/towns` or
+  `/town/<id>`, if that topic's mastery went **up** (finished lesson / right answers) the building is marked done →
+  confetti + gold pin + "+1 bino qurildi!". No change to the lesson/practice screens (code freeze).
+- **Persistence**: `GET/POST /api/town` → D1 `kv_store` key `town:<userId>:<townId>` via `store.ts` (no KV writes).
+- **Inclusive**: pins are real `<button>`s, `aria-label` "3. Kutubxona — ochiq" / "4. Maktab — qulflangan", DOM order =
+  route order = Tab order; focusing a pin writes "N. Kind · state / Action: topic" into an `aria-live` caption.
+- Checked (Playwright, 375×812, mock mode): D1 store round-trip, picker "1/7 bino", simulated finished quest → toast +
+  "2/7 bino", labels + Shift+Tab focus order, current pin opens `/practice/…?town=math&q=3`. 226 unit tests, build green.
+  Screenshots: `docs/screenshots/towns-phone.png`, `town-phone-built.png`, `town-phone-focus.png`.
+- Decisions: temple's Uzbek name = **"Minora"** (neutral word for a school app); no TTS generated for quest names (0 credits) —
+  the aria-live caption is read by screen readers; completion = "mastery went up" (simplest signal without editing lesson
+  screens); Fizika/English towns = "Tez orada".
+- ⚠️ Known: completion is only detected when the learner comes back to a town screen in the same tab session; a quest
+  replayed after mastery hits its ceiling may not register; arena/workshop are practice stand-ins.
