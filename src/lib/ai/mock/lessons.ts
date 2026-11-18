@@ -5,6 +5,7 @@
 // Board canvas is 1000×625. `say` spells numbers in words so TTS reads them well.
 import type { LessonSegment } from "../schema";
 import { PHYSICS_SPEED } from "./physics";
+import { EN_TO_BE } from "@/config/courses/english/demoLesson";
 
 export interface DemoLesson {
   skillId: string;
@@ -327,6 +328,7 @@ export const DEMO_LESSONS: Record<string, DemoLesson> = {
   "pct-of-number": { skillId: "pct-of-number", segments: percent },
   "geo-area-rect": { skillId: "geo-area-rect", segments: area },
   "fiz-tezlik": { skillId: "fiz-tezlik", segments: PHYSICS_SPEED },
+  "en-to-be": { skillId: "en-to-be", segments: EN_TO_BE },
 };
 
 /** Related skills reuse the closest demo lesson in mock mode. */

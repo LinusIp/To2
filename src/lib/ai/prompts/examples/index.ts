@@ -11,6 +11,7 @@ export const LESSON_EXAMPLE_EQUATION = compact(DEMO_LESSONS["eq-two-step"].segme
 export const LESSON_EXAMPLE_PERCENT = compact(DEMO_LESSONS["pct-of-number"].segments.slice(0, 4));
 export const LESSON_EXAMPLE_AREA = compact(DEMO_LESSONS["geo-area-rect"].segments.slice(0, 4));
 /** Fizika: the pinned "Tezlik" lesson (diagram → formula → units → worked example) */
+export const LESSON_EXAMPLE_ENGLISH = compact(DEMO_LESSONS["en-to-be"].segments.slice(0, 6));
 export const LESSON_EXAMPLE_PHYSICS = compact(DEMO_LESSONS["fiz-tezlik"].segments.slice(0, 7));
 /** "Istalgan mavzu": a short non-maths lesson — keywords + a scheme, one choice question */
 export const TOPIC_EXAMPLE_SEGMENTS: LessonSegment[] = [

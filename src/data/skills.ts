@@ -1,5 +1,6 @@
 import raw from "./skills.uz.json";
 import fizikaRaw from "./skills.fizika.uz.json";
+import englishRaw from "@/config/courses/english/skills.json";
 
 export interface Skill {
   id: string;
@@ -16,10 +17,12 @@ export const SKILLS: Skill[] = raw as Skill[];
 /** Fizika (grade 7) skill graph: lessons only (no diagnostic / generators yet). */
 export const PHYSICS_SKILLS: Skill[] = fizikaRaw as Skill[];
 /** skill graphs by subject id */
-export const SKILL_GRAPHS: Record<string, Skill[]> = { matematika: SKILLS, fizika: PHYSICS_SKILLS };
+/** Ingliz tili (beta, grades 5–7): lessons only (no diagnostic / generators yet). */
+export const ENGLISH_SKILLS: Skill[] = (englishRaw as Omit<Skill, "subject">[]).map((s) => ({ ...s, subject: "ingliz" }));
+export const SKILL_GRAPHS: Record<string, Skill[]> = { matematika: SKILLS, fizika: PHYSICS_SKILLS, ingliz: ENGLISH_SKILLS };
 
 export const SKILL_BY_ID: Record<string, Skill> = Object.fromEntries(SKILLS.map((s) => [s.id, s]));
-const ANY_SKILL_BY_ID: Record<string, Skill> = Object.fromEntries([...SKILLS, ...PHYSICS_SKILLS].map((s) => [s.id, s]));
+const ANY_SKILL_BY_ID: Record<string, Skill> = Object.fromEntries([...SKILLS, ...PHYSICS_SKILLS, ...ENGLISH_SKILLS].map((s) => [s.id, s]));
 export const SECTIONS: string[] = [...new Set(SKILLS.map((s) => s.section))];
 
 /** "Istalgan mavzu" (any topic, beta): the topic text is the skill id, after this prefix. */

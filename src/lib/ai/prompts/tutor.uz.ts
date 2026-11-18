@@ -11,6 +11,7 @@ import {
   LESSON_EXAMPLE_EQUATION,
   LESSON_EXAMPLE_FRACTIONS,
   LESSON_EXAMPLE_PHYSICS,
+  LESSON_EXAMPLE_ENGLISH,
   LESSON_EXAMPLE_TOPIC,
 } from "./examples";
 
@@ -68,6 +69,8 @@ export function lessonMessages(opts: { ch: CharacterConfig; skill: Skill; grade:
   const examples =
     subject.id === "fizika"
       ? `Namuna (Fizika — Tezlik): ${LESSON_EXAMPLE_PHYSICS}`
+      : subject.id === "ingliz"
+      ? `Namuna (Ingliz tili — To be): ${LESSON_EXAMPLE_ENGLISH}`
       : `Namuna (Kasrlarni qo'shish): ${LESSON_EXAMPLE_FRACTIONS}
 Namuna (Tenglama): ${LESSON_EXAMPLE_EQUATION}`;
   return [

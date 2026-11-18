@@ -2,6 +2,7 @@
 // Matematika is the default; a skill without `subject` is maths. To add a subject: a skill graph
 // file in src/data/, an entry in SKILL_GRAPHS (src/data/skills.ts) and an entry here.
 import { SKILL_GRAPHS, type Skill } from "@/data/skills";
+import { ENGLISH } from "@/config/courses/english";
 
 export type SubjectStatus = "live" | "beta" | "soon";
 
@@ -80,7 +81,21 @@ export const SUBJECTS: SubjectConfig[] = [
   },
   { id: "kimyo", name: "Kimyo", icon: "H₂O", from: "#cfd6ea", to: "#b9c2dc", status: "soon", role: "kimyo ustozi", flavour: "", terms: "", exact: "", boardOps: [] },
   { id: "biologiya", name: "Biologiya", icon: "DNK", from: "#cfd6ea", to: "#b9c2dc", status: "soon", role: "biologiya ustozi", flavour: "", terms: "", exact: "", boardOps: [] },
-  { id: "ingliz", name: "Ingliz tili", icon: "Aa", from: "#cfd6ea", to: "#b9c2dc", status: "soon", role: "ingliz tili ustozi", flavour: "", terms: "", exact: "", boardOps: [] },
+  {
+    id: "ingliz",
+    name: ENGLISH.name,
+    icon: ENGLISH.glyph,
+    from: ENGLISH.from,
+    to: ENGLISH.to,
+    status: "beta",
+    href: "/fan/ingliz",
+    graphFile: "src/config/courses/english/skills.json",
+    role: ENGLISH.flavour.teacher,
+    flavour: `INGLIZ TILI: ${ENGLISH.flavour.board} ${ENGLISH.flavour.rules.join(" ")}`,
+    terms: ENGLISH.flavour.terms,
+    exact: "Inglizcha grammatika va imlo",
+    boardOps: [...ENGLISH.boardOps],
+  },
 ];
 
 export const DEFAULT_SUBJECT = "matematika";
