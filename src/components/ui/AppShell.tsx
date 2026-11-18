@@ -100,7 +100,7 @@ export default function AppShell({ children, wide = false, hideTabs = false }: {
 /** Screen header used on inner pages: back button · title · right slot. */
 export function ScreenTop({ title, back = "/home", right }: { title: string; back?: string | null; right?: React.ReactNode }) {
   return (
-    <div className="flex h-[52px] items-center justify-between px-4 pt-3 md:px-2 md:pt-6">
+    <div className="flex min-h-[52px] items-center justify-between gap-2 px-4 pt-3 md:px-2 md:pt-6">
       {back ? (
         <Link href={back} aria-label={t.nav.back} title={t.nav.back} className="icon-btn">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -110,7 +110,7 @@ export function ScreenTop({ title, back = "/home", right }: { title: string; bac
       ) : (
         <div className="w-11" />
       )}
-      <h1 className="t-h2 m-0">{title}</h1>
+      <h1 className="t-h2 m-0 min-w-0 text-center leading-tight">{title}</h1>
       <div className="flex min-w-11 justify-end">{right}</div>
     </div>
   );

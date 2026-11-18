@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { t } from "@/i18n/uz";
+import { brand } from "@/config/brand";
 import AppShell, { ScreenTop } from "@/components/ui/AppShell";
 import { ArrowIcon, LockIcon } from "@/components/ui/icons";
 import { Bar } from "@/components/ui/hud";
@@ -44,7 +45,7 @@ export default function TownsPage() {
 
   return (
     <AppShell>
-      <ScreenTop title={t.town.pickerTitle} back="/home" />
+      <ScreenTop title={brand.townsHeader} back="/home" />
       <div className="flex flex-col gap-4 px-[18px] pb-8 md:px-2">
         <p className="m-0 text-[14px] leading-[1.35] font-extrabold text-mut">{t.town.pickerIntro}</p>
         {!loaded ? (
