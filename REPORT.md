@@ -569,3 +569,31 @@ Tests: **193 unit, 12 e2e** (new `e2e/answers.spec.ts`: voice-first + fillers, r
 New voice lines warmed for the 3 tutors (18 clips). ⚠️ Known, not in this fix: an LLM lesson's own first heading can still
 sit under the phone toolbar (the lesson layout doesn't reserve that band yet); while writing, the tutor's body covers lines
 it already wrote until it steps back.
+
+## 🌐 Languages — English course (feat/languages, 2026-11-18) — not wired in yet
+- **What:** `src/config/courses/english/` — `types.ts` (own `Course` interface: id, name, glyph, colours, status, skill graph,
+  pinned demo, prompt flavour, allowed board ops), `skills.json` (9 skills, grades 5–7: alifbo → olmoshlar → to be →
+  artikllar → ko'plik → have got → Present Simple → Present Continuous → Past Simple), `index.ts` (`ENGLISH`, status "beta"),
+  `prompt.ts` (`courseFlavourPrompt`, `courseLessonRequest`, `filterBoardOps`), `demoLesson.ts` — pinned 9-step lesson
+  **"To be: am / is / are"** (Uzbek explanation, English on the board, 2 choice questions + praise, short forms column).
+- **Tests:** `english.test.ts` 11/11 (config loads, graph is a DAG + the cycle check catches cycles, prompt contains the flavour
+  and only the allowed ops, demo lesson valid vs. the zod contract, only allowed ops, TTS-ready `say`, every choice answer checks
+  right and the others wrong, survives the server auto-layout). Full suite 204/204.
+- **Audio:** `scripts/warm-english.mjs` (dry run → 33 lines ≈ 3,266 credits) → **generated 33/33, 0 failed, 0 v1 fallbacks,
+  ≈ 3,266 credits** (Blokbek, Lola, Ziyo + the 2 "Ko'rsatib ber" reveal lines). Today's total was 26,268 / 40,000 before.
+- **Screenshots 375×812:** `docs/screenshots/english-phone-{1,2,3}.png` via `scripts/english-shots.mjs` (real board + tutor,
+  /api/tutor stubbed with the laid-out lesson, TTS stubbed). The page header shows the fractions skill title because the
+  stub rides on `/lesson/frac-add-unlike` — expected until it's wired in.
+- 🔑 **TODO(main agent) at merge with feat/subjects:** add `ENGLISH` to the subjects registry (home tile "Ingliz tili · Beta"),
+  include `ENGLISH_SKILLS` in skill lookup, put `ENGLISH.demo` into `DEMO_LESSONS["en-to-be"]`, insert
+  `courseFlavourPrompt()` / allowed ops into `tutor.uz.ts`, and hide "Mashqqa o'tish" for English (no generators yet).
+### Decisions (autonomy mode)
+- The "Agent 5: Languages" prompt never arrived (placeholder) → assumed: one language = English, same shape as the subjects task.
+- feat/subjects not merged → self-contained course under `src/config/courses/english/`, no edits to shared files.
+- `say` spells English the way the Uzbek voice reads it ("ay em", "iz", "ticher"); the board has the real spelling.
+- Questions are `choice` (exact match, no mathjs needed). Board ops: no latex/fractionbar/numberline/plot.
+- Separate warm script instead of editing the shared `warm-tts.mjs`.
+- My earlier subjects attempt is parked on the local-only branch `wip/subjects-parked-eae58d` (never pushed).
+### ⚠️ Known issues
+- Uzbek TTS reading phonetic English is an approximation (not a native accent); listen before the demo.
+- No practice generators for English yet; the lesson end still offers "Mashqqa o'tish" until wired as above.

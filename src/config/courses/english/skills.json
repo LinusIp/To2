@@ -1,0 +1,11 @@
+[
+  { "id": "en-alphabet", "title_uz": "Alifbo va harflar talaffuzi", "grade": 5, "prereqs": [], "section": "Asoslar" },
+  { "id": "en-pronouns", "title_uz": "Kishilik olmoshlari: I, you, he, she, it, we, they", "grade": 5, "prereqs": ["en-alphabet"], "section": "Asoslar" },
+  { "id": "en-to-be", "title_uz": "To be: am / is / are", "grade": 5, "prereqs": ["en-pronouns"], "section": "Fe'llar" },
+  { "id": "en-articles", "title_uz": "Artikllar: a / an / the", "grade": 5, "prereqs": ["en-alphabet"], "section": "Otlar" },
+  { "id": "en-plurals", "title_uz": "Otlarning ko'pligi: -s / -es", "grade": 5, "prereqs": ["en-articles"], "section": "Otlar" },
+  { "id": "en-have-got", "title_uz": "Have got / has got", "grade": 5, "prereqs": ["en-to-be"], "section": "Fe'llar" },
+  { "id": "en-present-simple", "title_uz": "Present Simple: I play / he plays", "grade": 6, "prereqs": ["en-to-be", "en-plurals"], "section": "Zamonlar" },
+  { "id": "en-present-continuous", "title_uz": "Present Continuous: I am playing", "grade": 6, "prereqs": ["en-present-simple"], "section": "Zamonlar" },
+  { "id": "en-past-simple", "title_uz": "Past Simple: played / went", "grade": 7, "prereqs": ["en-present-simple"], "section": "Zamonlar" }
+]
