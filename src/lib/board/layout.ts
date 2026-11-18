@@ -123,7 +123,12 @@ const NOTE_BOX: Box = { x: NOTE_PANEL.x - 6, y: NOTE_PANEL.y - 6, w: NOTE_PANEL.
  * Stateful layouter for one lesson stream. Call it on every main-layer segment in order.
  * Note-layer segments are passed through untouched (noteLayouter handles them).
  */
-export function mainLayouter() {
+/**
+ * `opts.top`: y of the first row (a live answer on the wiped board starts below the phone toolbar);
+ * `opts.reserve`: extra areas kept free (the toolbar that sits over the board top-right on phones).
+ */
+export function mainLayouter(opts: { top?: number; reserve?: Box[] } = {}) {
+  const TOP = opts.top ?? 40;
   // what is on the board right now (main layer), by element id
   let placed = new Map<string, Box>();
   // what kind of drawing each id is (an op never changes for an id within a lesson)
@@ -231,7 +236,7 @@ export function mainLayouter() {
         } else {
           const y = bottom();
           // board full → start again at the top (the layouter then wipes for a new page)
-          at(50, y === 0 || y + 22 + b.h > BOARD_H - M ? 40 : y + 22);
+          at(50, y === 0 || y + 22 + b.h > BOARD_H - M ? TOP : y + 22);
         }
       }
       const box = measure(c);
@@ -407,7 +412,7 @@ export function mainLayouter() {
       let cur = cur0;
       const off = new Map<number, [number, number]>();
       for (const cl of ordered) {
-        const obs: Box[] = [NOTE_BOX];
+        const obs: Box[] = [NOTE_BOX, ...(opts.reserve ?? [])];
         for (const [id, b] of board) if (!replaced.has(id) || !cl.some((it) => it.cmd.id === id)) obs.push(b);
         // this segment's annotations stay where they are, so nothing else may land on them
         if (strict) for (const it of items) if (it.anchored) obs.push(it.box);

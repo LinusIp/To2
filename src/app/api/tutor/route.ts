@@ -51,6 +51,11 @@ const Body = z.object({
     .optional(),
 });
 
+/** On phones the lesson toolbar (replay / speed / sound) sits over the board's top-right corner. */
+const PHONE_TOOLBAR = { x: 470, y: 0, w: 530, h: 112 };
+/** a main-board answer's first row (below that band) */
+const ANSWER_TOP = 122;
+
 const CHECK: Seg = { id: "chk", type: "check", layer: "note", emotion: "encouraging", say: "Tushunarli bo'ldimi? Davom etamizmi?", board: [] };
 
 function sse() {
@@ -217,7 +222,8 @@ export async function POST(req: Request) {
       const emitAnswer = async (s: Seg, display?: AnswerDisplay) => {
         if (!metaSent) {
           ans.display = display ?? answerDisplay(s, ans.source === "pinned");
-          const main = mainLayouter(); // a main-board answer is written on a wiped (empty) board
+          // a main-board answer is written on a wiped (empty) board, below the phone toolbar band
+          const main = mainLayouter({ top: ANSWER_TOP, reserve: [PHONE_TOOLBAR] });
           const note = noteLayouter();
           lay = ans.display === "main" ? (x: Seg) => main({ ...x, layer: "main" }) : (x: Seg) => note({ ...x, layer: "note" });
           await send("meta", { source: ans.source, display: ans.display, norm: ans.question, key: ans.key, step, ...(skip ? { resumedAt: skip } : {}) });
