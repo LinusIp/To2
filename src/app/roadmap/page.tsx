@@ -11,6 +11,7 @@ import TutorPortrait from "@/components/characters/TutorPortrait";
 import { useMe } from "@/lib/client/me";
 import { getCharacter } from "@/config/characters";
 import { SUBJECTS, SUBJECT_BY_ID } from "@/config/subjects";
+import { ArrowIcon } from "@/components/ui/icons";
 
 const RoadmapGraph = lazy(() => import("@/components/roadmap/RoadmapGraph"));
 
@@ -63,6 +64,9 @@ export default function RoadmapPage() {
             </button>
           ))}
         </div>
+        <Link href="/map" className="btn btn-soft min-h-11 w-full text-[14px]">
+          {t.roadmap.mindMap} <ArrowIcon />
+        </Link>
         {!loaded || !roadmap ? (
           <div className="p-6 text-center font-extrabold text-mut">{t.common.loading}</div>
         ) : view === "list" ? (

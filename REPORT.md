@@ -664,3 +664,27 @@ courses, games or a11y files), so it merges cleanly next to the 5 feature branch
 | progress | ![](docs/screenshots/ui-before-progress-phone.png) | ![](docs/screenshots/ui-after-progress-phone.png) | ![](docs/screenshots/ui-before-progress-desktop.png) | ![](docs/screenshots/ui-after-progress-desktop.png) |
 | settings | ![](docs/screenshots/ui-before-settings-phone.png) | ![](docs/screenshots/ui-after-settings-phone.png) | ![](docs/screenshots/ui-before-settings-desktop.png) | ![](docs/screenshots/ui-after-settings-desktop.png) |
 | tutors | ![](docs/screenshots/ui-before-tutors-phone.png) | ![](docs/screenshots/ui-after-tutors-phone.png) | ![](docs/screenshots/ui-before-tutors-desktop.png) | ![](docs/screenshots/ui-after-tutors-desktop.png) |
+## 🧭 Mind map + personalized path — branch `feat/roadmap` (2026-11-18, not released)
+- **`src/lib/learning/path.ts`** (pure, subject-agnostic): the subject is an input — `Curriculum {id, title, skills}`.
+  `buildPath(curriculum, mastery, grade, {touched, started})` → ordered steps (same rules as `buildRoadmap`: weak targets +
+  transitive unmastered prereqs, Kahn order, lowest mastery → most blocking → lowest grade), each with status, **reason**
+  ("Zaif nuqta" or "«X» uchun kerak") and `lockedBy`. `buildMindMap()` → centre (subject) → branches (sections, mastered/total)
+  → leaves (status, onPath, order). `validateGraph()` → duplicate ids, missing prereqs, self-loops, cycles.
+- **`src/data/curricula.ts`**: `CURRICULA = { matematika }` — only math data here. Fizika/Kimyo/Biologiya (branch
+  `feat/subjects`) plug in by adding `{id, title, skills}`; `/map?subject=<id>` picks it.
+- **`/map` "Aql xaritasi"** (linked from `/roadmap`): radial SVG mind map — sections sized by skill count, leaves coloured
+  **+ icon** (✓ / number / lock / +) with the word in the legend and detail card; the personal path is a dashed blue numbered
+  route; tap a section → its skills as a list; tap a skill → card (status, %, why it's on the path, lock reason, start/practice).
+  Below: "Sening yo'ling" — the ordered path with reasons. Primary action: "Darsni davom ettirish: <current>".
+- `roadmap.ts`, `RoadmapList`, the API and the demo path are **unchanged** (code freeze); `/map` computes the path in the
+  browser from `/api/user` mastery + the roadmap's `started` flags.
+- Tests: `path.test.ts` (21) — for maths `buildPath` order/current/weakCount **equal** `buildRoadmap` on 5 mastery maps,
+  prereqs before dependents, valid DAG, mind-map counts, started never locks, a fake Fizika curriculum works. All 214 unit
+  tests green, `pnpm build` green. Screenshots (375×812, mock mode, seeded mastery): `docs/screenshots/mindmap-phone.png`,
+  `docs/screenshots/mindmap-phone-path.png`.
+- ❓ **Assumption**: the original feature spec ("NEW FEATURE: mind map + personalized roadmap", sections 1–4) was never pasted;
+  the team approved building a best guess. Compare with the real spec before merging.
+- Layout: geometry in `src/components/roadmap/mindmapLayout.ts` (pure); touching skill dots are pushed apart (deterministic
+  relaxation inside the leaf band) — tested: no two dots closer than the minimum gap for grades 5–8 (218 unit tests green).
+- ⚠️ Skills above grade+1 are hidden on the map; a skill dot is ~19 CSS px on a 375 px phone — the section list and the
+  "Sening yo'ling" list are the full-size tap targets.

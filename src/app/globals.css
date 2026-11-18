@@ -583,3 +583,12 @@
   .quiz-thinker .img, .quiz-thinker .q, .quiz-thinker .cloud { animation: none; }
   .quiz-thinker .q { opacity: 1; }
 }
+
+/* Mind map (/map): current skill ring pulses, the personal route flows */
+@keyframes mm-pulse { 0%, 100% { opacity: .9; } 50% { opacity: .25; } }
+@keyframes mm-route { to { stroke-dashoffset: -48; } }
+.mindmap-pulse { animation: mm-pulse 1.8s ease-in-out infinite; }
+.mindmap-route { animation: mm-route 1.6s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .mindmap-pulse, .mindmap-route { animation: none; }
+}
