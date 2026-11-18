@@ -679,9 +679,9 @@ course framework (look for the games agent's TODO).
 Then a **15-min UI consistency pass** over all screens (tokens/buttons/cards, no overflow at 375 px, headers/back buttons,
 loading states), then the release.
 
-**Budget**: today's VoiceLab spend was **26,268** at 12:10; the user allowed **up to 5,000 more** for new lessons (dry-run
-first: `node scripts/warm-tts.mjs --dry-run`; Blokbek's non-demo lessons were deliberately never generated — don't warm
-the full list). Never mix voice models (one model per tutor, lison-v2).
+**Budget (updated ~13:00)**: today ≈ **29.5k** credits — feat/languages already used ~3,266 of the 5,000 extra. **NO VoiceLab
+generation at all for the rest of today** — no warm-ups, no generating dry-runs, no production checks that make new lines
+(new lines play captions-only). Never mix voice models (one model per tutor, lison-v2).
 
 **Production checks after the release**: `/version`; per tutor: Matematika lesson + pinned question
 (`node scripts/demo-check.mjs`, `node scripts/prod-check-answers.mjs`), Fizika "Tezlik", English "Greetings" + Takrorlang,
