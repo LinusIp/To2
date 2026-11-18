@@ -7,6 +7,7 @@ import { speak, unlockAudio } from "@/lib/audio/player";
 import { t } from "@/i18n/uz";
 import TutorPortrait from "./TutorPortrait";
 import { CheckIcon, LockIcon, SpeakerIcon } from "@/components/ui/icons";
+import { Burst } from "@/components/ui/Celebrate";
 
 export default function TutorPicker({ value, onChange, xp, streak }: { value: CharacterId; onChange: (id: CharacterId) => void; xp: number; streak: number }) {
   const sel = getCharacter(value);
@@ -23,27 +24,29 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
 
   return (
     <div>
-      <div className="relative h-[250px] overflow-hidden rounded-[24px] shadow-[0_0_0_3px_#2f6bff,0_12px_26px_rgba(47,107,255,.3)]" style={{ background: "linear-gradient(160deg,#6aa0ff,#3a72ff)" }}>
-        <div key={`${value}-${bump}`} className="anim-in absolute top-3 left-1/2 -translate-x-1/2">
+      <div className="relative h-[260px] overflow-hidden rounded-[32px] shadow-[0_6px_0_var(--color-blue-800),0_16px_32px_rgba(37,99,235,.3)]" style={{ background: "radial-gradient(90% 70% at 50% 30%, #8fb6ff 0%, rgba(143,182,255,0) 70%), linear-gradient(160deg,#5b8cff,#2563eb)" }}>
+        <div aria-hidden className="absolute inset-0 opacity-[.12]" style={{ backgroundImage: "radial-gradient(#fff 1.5px, transparent 1.5px)", backgroundSize: "18px 18px" }} />
+        <Burst fire={bump} count={14} />
+        <div key={`${value}-${bump}`} className="bounce-in absolute top-3 left-1/2 -translate-x-1/2">
           <TutorPortrait id={value} pose="sig" frame="half" className="h-[250px] w-[250px]" />
         </div>
-        <div className="absolute inset-x-0 bottom-0 px-3.5 pt-8 pb-3.5 text-center text-white" style={{ background: "linear-gradient(to top, rgba(36,84,220,.95) 55%, rgba(36,84,220,0))" }}>
-          <div className="text-[24px] font-black">{sel.name}</div>
-          <div className="text-[13px] font-bold opacity-90">{sel.tag}</div>
+        <div className="absolute inset-x-0 bottom-0 px-3.5 pt-8 pb-3.5 text-center text-white" style={{ background: "linear-gradient(to top, rgba(29,78,216,.97) 55%, rgba(29,78,216,0))" }}>
+          <div className="t-h2">{sel.name}</div>
+          <div className="t-small opacity-95">{sel.tag}</div>
         </div>
         <button
           type="button"
           onClick={hear}
-          className="absolute top-3 right-3 flex h-10 items-center gap-2 rounded-full bg-white/95 px-3.5 text-[13px] font-black text-ink shadow-[0_4px_12px_rgba(0,0,0,.15)]"
+          className="absolute top-3 right-3 flex h-12 items-center gap-2 rounded-full bg-white px-4 text-[14px] font-black text-blue-800 shadow-[0_4px_0_#b9c6ea] transition-transform duration-100 active:translate-y-[4px] active:shadow-none"
         >
           <SpeakerIcon size={16} /> {talking ? "…" : t.tutors.hear}
         </button>
-        <div className="absolute right-4 bottom-[22px] grid h-[30px] w-[30px] place-items-center rounded-full bg-white shadow-[0_4px_10px_rgba(0,0,0,.15)]">
-          <CheckIcon color="#2f6bff" />
+        <div key={`ok-${value}`} className="bounce-in absolute right-4 bottom-[22px] grid h-[32px] w-[32px] place-items-center rounded-full bg-white shadow-[0_3px_0_rgba(0,0,0,.18)]">
+          <CheckIcon color="#2563eb" />
         </div>
       </div>
 
-      <div className="mt-3.5 grid grid-cols-2 gap-3 sm:grid-cols-4" role="radiogroup" aria-label={t.tutors.title}>
+      <div className="stagger mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4" role="radiogroup" aria-label={t.tutors.title}>
         {CHARACTERS.map((c) => {
           const soon = c.status === "soon";
           const open = isUnlocked(c.id, xp, streak);
@@ -66,8 +69,8 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
                 onChange(c.id);
                 setBump((b) => b + 1);
               }}
-              className={`relative flex h-[190px] flex-col items-center justify-end overflow-hidden rounded-[20px] bg-white ${on ? "shadow-[0_0_0_3px_#2f6bff,0_8px_20px_rgba(47,107,255,.25)]" : "shadow-[0_6px_18px_rgba(31,54,120,.08)]"}`}
-              style={shake === c.id ? { animation: "shake .35s" } : undefined}
+              className={`card-press relative flex h-[190px] flex-col items-center justify-end overflow-hidden rounded-[24px] ${on ? "shadow-[0_0_0_3px_var(--color-blue),0_4px_0_3px_var(--color-blue-800),0_10px_22px_rgba(37,99,235,.25)]" : "shadow-[var(--shadow-1)]"}`}
+              style={{ background: open || soon ? "linear-gradient(180deg,#e4ecff 0%,#fff 72%)" : "linear-gradient(180deg,#e7e9f2 0%,#fff 72%)", ...(shake === c.id ? { animation: "shake .35s" } : {}) }}
             >
               {/* "sig" art = the cut-outs that match the 3D models; MVP "soon" tutors keep their colours, dimmed */}
               <TutorPortrait
@@ -82,7 +85,7 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
               {soon && <span className="absolute top-2.5 left-2.5 rounded-full bg-ink px-2.5 py-1 text-[11px] font-black text-white">{t.tutors.soon}</span>}
               <div className="relative w-full px-1.5 pt-7 pb-2.5 text-center" style={{ background: "linear-gradient(to top,#fff 62%,rgba(255,255,255,0))" }}>
                 <b className="block text-[16px] font-black">{secret ? "???" : c.name}</b>
-                <span className="inline-flex items-center gap-1 text-[12px] font-bold text-mut">
+                <span className="t-caption inline-flex items-center gap-1 text-mut">
                   {open ? (
                     c.tag
                   ) : (
@@ -93,7 +96,7 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
                 </span>
               </div>
               {on && (
-                <span className="absolute top-2.5 right-2.5 grid h-7 w-7 place-items-center rounded-full bg-blue text-white">
+                <span className="bounce-in absolute top-2.5 right-2.5 grid h-7 w-7 place-items-center rounded-full bg-blue text-white shadow-[0_2px_0_var(--color-blue-800)]">
                   <CheckIcon size={14} />
                 </span>
               )}

@@ -569,3 +569,49 @@ Tests: **193 unit, 12 e2e** (new `e2e/answers.spec.ts`: voice-first + fillers, r
 New voice lines warmed for the 3 tutors (18 clips). ⚠️ Known, not in this fix: an LLM lesson's own first heading can still
 sit under the phone toolbar (the lesson layout doesn't reserve that band yet); while writing, the tutor's body covers lines
 it already wrote until it steps back.
+
+## 🎨 UI polish — design system (branch `feat/ui-polish`, 18 Nov) — not deployed
+Scope kept to the design system + splash, onboarding, progress, settings shell, tutors (no lesson stage, home, roadmap,
+courses, games or a11y files), so it merges cleanly next to the 5 feature branches.
+- **Tokens** (`src/app/globals.css` `@theme`): one blue scale `blue-50…900` (primary = `#2563eb`, white text 5.2:1);
+  subject accents `subj-math` blue · `subj-physics` orange · `subj-chemistry` purple · `subj-biology` green ·
+  `subj-english` red (each with a `-dark` 3D edge and a text-safe `-ink`); radius 16/24/32; **2 shadow levels**
+  (`shadow-1` resting, `shadow-2` raised); type scale utilities `t-display / t-h1 / t-h2 / t-h3 / t-body / t-small /
+  t-caption` (Nunito 700/800/900, line-heights on the 4/8-pt grid). Muted text darkened `#6b7393 → #5b6385` (5.0–5.9:1 on
+  every background), inactive tab labels `#8a92b0 → #5f6788` (5.6:1) — both failed AA before.
+- **Buttons** (`.btn`, `components/ui/Button.tsx`): chunky 3D — solid bottom edge, press sinks into it (translateY 4–5 px);
+  `primary` / `secondary` / `ghost` / `green` / `white` / `soft` / `danger`; ≥ 52 px tall (icon buttons 48 px).
+- **Cards** (`.card`, `.card-press`, `.card-head`, `.icon-tile`, `components/ui/Card.tsx`): r24, hover-lift / press-sink,
+  soft gradient headers, one icon style (rounded tile in the accent colour with a 3D bottom edge).
+- **Shared components** (`src/components/ui/`): `Button`, `Card`/`LinkCard`/`CardHeader`/`IconTile`, `Chip`, `Progress`
+  (fills from 0, glossy HUD bar), `Skeleton`/`SkeletonPage`, `States` (`EmptyState` / `LoadingState` / `ErrorState`:
+  tutor portrait + one Uzbek line, retry button), `Toast` (`toast()` + `<Toaster/>` in `AppShell`), `Sheet` (bottom sheet /
+  centred dialog), `CountUp`, `Celebrate` (`<Burst/>` block-confetti). Tab bar + sidebar restyled in `AppShell`.
+- **Motion**: page transition (slide + fade, 200 ms) on every `AppShell` page and onboarding; list stagger (`.stagger`);
+  XP / level count-up; skeleton instead of "Yuklanmoqda…" on progress + settings; bounce-in + block burst when a tutor is
+  picked; toasts on "tutor saved" / "grade saved". **All of it is off under `prefers-reduced-motion`** (count-up jumps to
+  the value, bursts hidden, transitions removed).
+- **Screens**: splash (stagger, subject-accent pillar tiles, gradient-header audience cards, tutor carousel cards),
+  onboarding (3D grade buttons, ghost "skip"), progress (gradient XP header + count-up, subject cards with icon tiles,
+  badge grid with "0 / 5 ta nishon" chip, empty state when nothing is mastered), settings shell (profile header card,
+  tinted icon tiles, 3D grade picker, switches, danger button — the "Qulaylik" section was not touched), tutors (hero card
+  with 3D edge + burst, card-press grid).
+
+## ❓ Unclear / assumption — UI polish
+- What: new UI strings. - I assumed: they go to `src/i18n/uz-ui.ts` (not `uz.ts`) to avoid merge conflicts with the
+  languages branch. - To change: move the `ui` object into `uz.ts`.
+- What: "work in `git worktree add ../To2-ui -b feat/ui-polish`". - I assumed: the session's existing isolated worktree
+  (same base commit `15b3846` = main) renamed to branch `feat/ui-polish` is equivalent. - To change: nothing needed.
+- What: subject accents vs. `src/config/subjects.ts` (owned by the subjects branch). - I assumed: tokens only; screens keep
+  reading their colours from `subjects.ts`. - To change: point `subjects.ts` colours at the `--color-subj-*` tokens.
+- ⚠️ The blue/button/card changes are global CSS classes, so out-of-scope screens (home, lesson, roadmap…) pick up the new
+  look too (no markup touched there). Check the lesson toolbar buttons on a phone after merging.
+- `node scripts/ui-shots.mjs <tag> [baseUrl]` re-takes the screenshots below (TTS stubbed, reduced motion, 0 credits).
+
+| screen | before 375×812 | after 375×812 | before 1440×900 | after 1440×900 |
+|---|---|---|---|---|
+| splash | ![](docs/screenshots/ui-before-splash-phone.png) | ![](docs/screenshots/ui-after-splash-phone.png) | ![](docs/screenshots/ui-before-splash-desktop.png) | ![](docs/screenshots/ui-after-splash-desktop.png) |
+| onboarding | ![](docs/screenshots/ui-before-onboarding-phone.png) | ![](docs/screenshots/ui-after-onboarding-phone.png) | ![](docs/screenshots/ui-before-onboarding-desktop.png) | ![](docs/screenshots/ui-after-onboarding-desktop.png) |
+| progress | ![](docs/screenshots/ui-before-progress-phone.png) | ![](docs/screenshots/ui-after-progress-phone.png) | ![](docs/screenshots/ui-before-progress-desktop.png) | ![](docs/screenshots/ui-after-progress-desktop.png) |
+| settings | ![](docs/screenshots/ui-before-settings-phone.png) | ![](docs/screenshots/ui-after-settings-phone.png) | ![](docs/screenshots/ui-before-settings-desktop.png) | ![](docs/screenshots/ui-after-settings-desktop.png) |
+| tutors | ![](docs/screenshots/ui-before-tutors-phone.png) | ![](docs/screenshots/ui-after-tutors-phone.png) | ![](docs/screenshots/ui-before-tutors-desktop.png) | ![](docs/screenshots/ui-after-tutors-desktop.png) |
