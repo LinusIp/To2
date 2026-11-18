@@ -8,8 +8,9 @@ import { getEnv } from "@/lib/env";
 export const DAILY_CAP = 15_000;
 export const DEMO_DAYS = new Set(["2026-11-18", "2026-11-19"]);
 export const warnCapFor = (day: string) => (DEMO_DAYS.has(day) ? 40_000 : DAILY_CAP);
-/** over this a day: no new generation at all — captions only (cached audio still plays) */
-export const HARD_CAP = 40_000;
+/** over this a day: no new generation at all — captions only (cached audio still plays).
+ *  60,000 since 18 Nov (VoiceLab balance ~140k): the demo must never fall to captions-only because of our own cap. */
+export const HARD_CAP = 60_000;
 export const RATE: Record<string, number> = { lison: 1, "lison-v2": 1.5 };
 export const creditsFor = (model: string, chars: number) => chars * (RATE[model] ?? 1);
 

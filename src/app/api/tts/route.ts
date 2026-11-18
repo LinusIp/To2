@@ -12,7 +12,7 @@
 //
 // Budget: every synthesized clip is logged (credits_log, see /dev/credits). Over the warning cap
 // (15,000 a day; 40,000 on the demo days 18–19 Nov) generation continues with a logged warning; over
-// HARD_CAP (40,000 a day) new uncached lines are captions only. Cached audio always plays. &check=1 = dry run:
+// HARD_CAP (60,000 a day) new uncached lines are captions only. Cached audio always plays. &check=1 = dry run:
 // says whether the line is cached and what it would cost, without generating anything.
 // &src=warm|… labels the spend (default: prefetch for wait=long, answer for lead=1, else live).
 import { after } from "next/server";
