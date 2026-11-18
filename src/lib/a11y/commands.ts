@@ -10,10 +10,15 @@ export type VoiceCommand =
   | { type: "slower" }
   | { type: "faster" }
   | { type: "confused" }
-  | { type: "answer"; letter: Letter }
+  | { type: "answer"; letter: Letter; /** 0-based: "javob bir" / "A" → 0 */ index: number }
   | { type: "home" }
   | { type: "read" }
-  | { type: "stop" };
+  | { type: "stop" }
+  // the town (roadmap world) and the games — handled by whoever listens on the a11y:command bus (bus.ts)
+  | { type: "nextBuilding" }
+  | { type: "prevBuilding" }
+  | { type: "open" }
+  | { type: "back" };
 
 /** How the letters are said / misheard in Uzbek: A "a", B "be", C "se/si/ce", D "de/di" */
 const LETTER_WORDS: Record<string, Letter> = {
@@ -28,15 +33,24 @@ const ORDINALS: Record<string, Letter> = {
   uchinchi: "C", uchinchisi: "C",
   tortinchi: "D", tortinchisi: "D",
 };
+/** "javob bir/ikki/uch/to'rt" (and digits) — numbers count as answers only next to an answer word */
+const CARDINALS: Record<string, Letter> = { bir: "A", "1": "A", ikki: "B", "2": "B", uch: "C", "3": "C", tort: "D", "4": "D" };
 /** words that make a bare letter an answer ("javob B", "B variant", "B ni tanlayman") */
 const ANSWER_WORDS = ["javob", "variant", "tanlayman", "tanladim", "tanla", "belgila"];
 /** filler words allowed around a lone letter */
 const FILLER = new Set(["iltimos", "menimcha", "bu", "shu", "ni", "deb", "o", "ha", "ustoz", "mening", "men", "javobim"]);
 
+/** "ochish" (open) and friends: whole words only ("o'chir" = erase must not match) */
+const OPEN_WORDS = new Set(["ochish", "och", "oching", "ochib", "ochamiz", "kirish", "kir", "kiring", "kiramiz"]);
+
 const words = (text: string) => normalizeQuestion(text).replace(/'/g, "").split(" ").filter(Boolean);
 
 function answerLetter(ws: string[]): Letter | null {
   const hasAnswerWord = ws.some((w) => ANSWER_WORDS.some((a) => w.startsWith(a)));
+  if (hasAnswerWord) {
+    const n = ws.map((w) => CARDINALS[w]).filter(Boolean) as Letter[];
+    if (n.length === 1) return n[0];
+  }
   for (const w of ws) {
     const o = ORDINALS[w.replace(/(ni|si)$/, "") as string] ?? ORDINALS[w];
     if (o && (hasAnswerWord || ws.length <= 3)) return o;
@@ -58,10 +72,15 @@ export function parseVoiceCommand(text: string): VoiceCommand | null {
   const has = (p: string) => ws.some((w) => w.startsWith(p));
   const phrase = ws.join(" ");
 
+  // town / games (before "uyga" = home and "keyingi" = continue)
+  if (/(^| )(keyingi|keyingisi|navbatdagi) (bino|uy)/.test(phrase)) return { type: "nextBuilding" };
+  if (/(^| )(oldingi|oldingisi) (bino|uy)/.test(phrase)) return { type: "prevBuilding" };
+  if (ws.length <= 3 && ws.some((w) => OPEN_WORDS.has(w))) return { type: "open" };
+  if (ws.length <= 3 && (has("orqaga") || has("ortga"))) return { type: "back" };
   if (/\bbosh sahifa/.test(phrase) || /\bbosh menyu/.test(phrase) || has("uyga")) return { type: "home" };
   if (has("tushunmadim") || has("tushunmayapman") || /\byana tushuntir/.test(phrase)) return { type: "confused" };
   const letter = answerLetter(ws);
-  if (letter) return { type: "answer", letter };
+  if (letter) return { type: "answer", letter, index: letterIndex(letter) };
   if (has("sekin")) return { type: "slower" };
   if (has("tezroq") || has("tezlat")) return { type: "faster" };
   if (has("qaytar") || has("takrorla") || /\byana bir (marta|bor) ayt/.test(phrase)) return { type: "repeat" };

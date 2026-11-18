@@ -30,6 +30,29 @@ The UI is in `src/components/a11y/`:
 
 The lesson code is untouched apart from hooks marked `// a11y-hook`: two lines in `LessonPlayer`, and in `engine.ts` a getter for the line being spoken plus a command hook on the mic path.
 
+**Voice commands for the town and the games: the `a11y:command` bus.** In hands-free mode the
+app also listens on every other screen (`GlobalVoiceCommands`): the town / roadmap world, the games
+and home. Each command is sent as a `window` CustomEvent, so those screens need **no import** from
+the inclusive mode:
+
+```ts
+window.addEventListener("a11y:command", (e) => {
+  const { command } = (e as CustomEvent).detail; // { type: "nextBuilding" } · { type: "open" } · { type: "back" } · { type: "answer", letter: "B", index: 1 } …
+  if (command.type === "nextBuilding") { selectNext(); e.preventDefault(); } // preventDefault() = "handled"
+});
+```
+
+| Learner says | `command.type` |
+|---|---|
+| *keyingi bino* / *keyingi uy* | `nextBuilding` (also `prevBuilding`: *oldingi bino*) |
+| *ochish*, *och*, *kirish* | `open` |
+| *orqaga* | `back`. If no screen handles it, the app goes back in history. |
+| *javob bir / ikki / uch / to'rt* (or *javob A–D*, *javob 2*) | `answer` with `letter` A–D and `index` 0–3 |
+| *bosh sahifa* | `home`. If no screen handles it, the app opens /home. |
+
+The lesson and quiz screens run their own recogniser and pause the app-wide one (`claimListening`).
+Any command they don't use themselves goes onto the bus.
+
 **Cost: 0 VoiceLab credits.** Narration plays in the tutor's voice only when `/api/tts?check=1` says the line is already cached. Otherwise the device's own speech synthesiser reads it, and the live region always has the text. Always-on listening uses the browser recogniser (`uz-UZ`), not VoiceLab STT.
 
 **Tests.**

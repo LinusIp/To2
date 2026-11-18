@@ -10,6 +10,7 @@ import { letterIndex, parseVoiceCommand } from "@/lib/a11y/commands";
 import { narrateQuestion } from "@/lib/a11y/narrator";
 import { announce, sayAloud, stopSaying } from "@/lib/a11y/speech";
 import { listenForCommands, recognitionSupported } from "@/lib/a11y/recognition";
+import { claimListening, dispatchA11yCommand } from "@/lib/a11y/bus";
 
 export default function QuizA11y({
   questionKey,
@@ -69,13 +70,18 @@ export default function QuizA11y({
     if (c.type === "answer" && choices?.[letterIndex(c.letter)]) onAnswer(choices[letterIndex(c.letter)]);
     else if (c.type === "repeat" || c.type === "read") void readRef.current();
     else if (c.type === "home") router.push("/home");
-    else announce(t.a11y.answerByVoice);
+    else if (!dispatchA11yCommand(c, s)) announce(t.a11y.answerByVoice);
   };
 
   const listening = (a.voiceFirst || a.handsFree) && recognitionSupported();
   useEffect(() => {
     if (!listening) return;
-    return listenForCommands((s) => onText.current(s), setMicOpen);
+    const release = claimListening(); // the app-wide listener pauses on this screen
+    const stop = listenForCommands((s) => onText.current(s), setMicOpen);
+    return () => {
+      stop();
+      release();
+    };
   }, [listening]);
 
   if (!a.loaded || !(a.voiceFirst || a.handsFree)) return null;

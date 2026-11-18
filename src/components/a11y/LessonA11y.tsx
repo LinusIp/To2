@@ -17,6 +17,7 @@ import { parseVoiceCommand, letterIndex, type VoiceCommand } from "@/lib/a11y/co
 import { narrateBoard, narrateQuestion } from "@/lib/a11y/narrator";
 import { announce, cue, sayAloud, stopSaying } from "@/lib/a11y/speech";
 import { listenForCommands, recognitionSupported } from "@/lib/a11y/recognition";
+import { claimListening, dispatchA11yCommand } from "@/lib/a11y/bus";
 import {
   a11yNowSpeaking,
   ask,
@@ -154,9 +155,18 @@ export default function LessonA11y({ voice }: { voice: string }) {
       case "answer": {
         const ch = s.expect?.kind === "choice" ? s.expect.choices?.[letterIndex(c.letter)] : undefined;
         if (st === "awaiting" && ch) void submitAnswer(ch);
-        else announce(t.a11y.notCommand);
+        else if (!dispatchA11yCommand(c)) announce(t.a11y.notCommand);
         return;
       }
+      case "back":
+        if (!dispatchA11yCommand(c)) router.back();
+        return;
+      case "nextBuilding":
+      case "prevBuilding":
+      case "open":
+        // town / game commands: whatever is on screen handles them (a11y:command bus)
+        dispatchA11yCommand(c);
+        return;
       case "home":
         router.push("/home");
         return;
@@ -191,6 +201,11 @@ export default function LessonA11y({ voice }: { voice: string }) {
   }, [a.handsFree, a.voiceFirst]);
 
   // always-on listening while the lesson waits (never while the tutor talks: it would hear itself)
+  // the lesson owns the mic while it is open: the app-wide listener must not hear the tutor
+  useEffect(() => {
+    if (!a.handsFree) return;
+    return claimListening();
+  }, [a.handsFree]);
   const canListen = (a.handsFree || a.voiceFirst) && recognitionSupported() && listenWanted && (WAITING.has(status) || pausedByVoice);
   useEffect(() => {
     if (!canListen) return;
