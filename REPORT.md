@@ -516,3 +516,56 @@ with 3+ notes wrote on top of itself; notes were cut at 30 characters.
 | ![](docs/screenshots/board-phone-3.png) live answer, 3 notes (long one wrapped → full → wiped, top row) | ![](docs/screenshots/board-desktop-3.png) |
 
 `node scripts/board-shots.mjs [baseUrl]` re-takes them (TTS stubbed, 0 credits). Tests: 166 unit, 8 e2e — green.
+
+## 🐞 Phone test on 71da820 (EKUK, Ziyo): 4 bugs — fixed (21abfe2 + 70985d2)
+**4 · "Same answer every time".** Reproduced on production first: without and with the real lesson context (step, board,
+history) the server gave 5 different answers to 5 questions (`source: llm` / `cache`), and the client's request context was
+valid at every step. So the repeat came from the paths that were *not visible*: when the LLM failed or a client hit the
+limit, the server silently served `mockInterrupt` — for the EKUK lesson one generic explanation for almost any question.
+Also found: asking during a still-streaming lesson aborted the lesson stream (one shared AbortController).
+- Every answer reports its **source** — `pinned` · `interrupt-cache` · `llm` · `rate-limited` · `llm-failed` · `mock` (offline
+  only) — with the normalized question, the cache key, the step and the display: in the `meta` event, the **browser console**
+  (`[To2] answer {…}`), D1 `answer_log`, and **`/dev/answers`** (your own session's last 30).
+- **Never a silent canned answer**: over **60 live answers/hour per client** the tutor says "Hozir juda ko'p savol berildi, bir
+  daqiqadan keyin qayta so'rang." (cached voice); an LLM failure is retried once, then "Kechirasan, hozir javob bera olmadim…".
+- **Pinned matching** = the demo questions + aliases as full phrases (exact or ≥ 80 % words in common); one word never matches.
+  10 real non-demo questions and single words are negative tests.
+- **Cache key** keeps word boundaries and Uzbek letters (ʻ ’ ‘ → '), and includes the **step**: 10 questions → 10 keys; case /
+  punctuation / apostrophe variants → 1 key (tests). The prompt gets "Hozirgi qadam: N/M" and "answer the question asked".
+- Separate aborts for the lesson stream and the answer stream.
+
+**1 · Silent answers** (the 4 s captions-only rule muted every fresh answer, ~11 s to make):
+- Voice first: a line waits up to **15 s** for its audio — tutor in the think pose, caption already in the bubble, a cached
+  filler ("Hmm…", "Qani, o'ylab ko'raylik…", "Bir daqiqa…") every ~3 s; then it **speaks and writes at the same moment**.
+  The board never draws in silence. One shared request per line (the prefetch on arrival = the play request).
+- Last resort (no audio after 15 s): "Ovozim biroz kechikmoqda, yozib ko'rsataman." (≤ once a minute), then captions-only.
+
+**2 · Wrong board:**
+- "boshidan", "qaytadan", "doskani o'chir", "tushunmadim", a bare "(yana) tushuntirib ber" → the **lesson restarts at step 1**
+  (board wiped, cached segments, step pips back to 1). Never sent to the LLM (tests: 10 restart phrasings, 10 real questions).
+- A live answer with **more than one note, a formula or a drawing goes on the main board**: the board wipes (animation), the
+  answer is written from below the phone toolbar band, "Davom et" restores the lesson board and continues the step. The slate
+  is only for **one short note**, and hangs only where it covers no writing (bottom-right → bottom-middle → right-middle; none
+  free → the main-board path). Pinned demo answers stay on the slate (they circle the lesson's own fraction bars).
+
+**3 · Tutor blocks the board:** while talking the tutor stands at the board's **far-left edge where its silhouette covers no
+writing** (`restSpot`: further left, partly out of frame, before moving right). While writing it stands beside the line and
+steps back to that spot after the line. **Test**: the 4 demo + 3 recorded LLM lessons, laid out like the server, phone and
+desktop, **at the end of every segment the tutor's box covers no chalk box** (`src/lib/board/tutorSpot.test.ts`).
+
+**Production check (70985d2, `node scripts/prod-check-answers.mjs`, phone 375×812, real voice):**
+
+| tutor | "Boshidan doskani o'chirib tushuntirib ber" | "Nega 12?" source | written on | answer lines with voice | fillers |
+|---|---|---|---|---|---|
+| Blokbek | lesson → step 1 ✓ | llm | main board | 3/3 (6.8 · 10.1 · 14.2 s) | 2 |
+| Lola | lesson → step 1 ✓ | llm | main board | 3/3 (6.5 · 13.7 · 19.7 s) | 3 |
+| Ziyo | lesson → step 1 ✓ | interrupt-cache | main board | 3/3 (2.2 s, cached) | 0 |
+
+| talking: far-left, nothing covered | the answer on the main board | after "Davom et" |
+|---|---|---|
+| ![](docs/screenshots/answers-ziyo-1.png) | ![](docs/screenshots/answers-lola-3.png) | ![](docs/screenshots/answers-ziyo-4.png) |
+
+Tests: **193 unit, 12 e2e** (new `e2e/answers.spec.ts`: voice-first + fillers, restart, main-board answer + restore, sources).
+New voice lines warmed for the 3 tutors (18 clips). ⚠️ Known, not in this fix: an LLM lesson's own first heading can still
+sit under the phone toolbar (the lesson layout doesn't reserve that band yet); while writing, the tutor's body covers lines
+it already wrote until it steps back.
