@@ -1,4 +1,5 @@
 // Icons from docs/prototypes/mobile-app.html (inline SVG, currentColor).
+import { brand } from "@/config/brand";
 type P = { size?: number; className?: string };
 
 export const HomeIcon = ({ size = 24, className }: P) => (
@@ -131,7 +132,8 @@ export const ReplayIcon = ({ size = 18, className }: P) => (
 );
 export const Logo = ({ size = 36 }: { size?: number }) => (
   <span style={{ fontWeight: 900, letterSpacing: -1.5, lineHeight: 1, fontSize: size }}>
-    To<span style={{ color: "#2f6bff" }}>2</span>
+    {brand.wordmark[0]}
+    <span style={{ color: "#2563eb" }}>{brand.wordmark[1]}</span>
   </span>
 );
 /** O'yinlar tab: a little stack of voxel blocks */

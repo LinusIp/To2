@@ -892,3 +892,18 @@ feat/games → feat/languages → feat/inclusive → docs/pitch-numbers, then ea
 ### ⚠️ Known issues (not fixed in this release)
 - Lesson greeting in Fizika/English is still the tutor's maths line ("Matematikani blokma-blok quramiz!") — a new line would need new TTS.
 - "Istalgan mavzu" topic shown twice on the board; first LLM heading can sit under the phone toolbar; APK parked.
+
+## 🏷️ Rebrand To2 → Ilmobod (branch `feat/ui-polish`, 18 Nov) — not deployed
+Tagline: **"Har bir fan — bir shahar. Har bir topshiriq — bir bino."**
+- Changed (user-facing only): `src/config/brand.ts` (name, shortName, wordmark split "Ilm"+"obod", tagline, `townsHeader`,
+  theme colour), `src/i18n/uz.ts` (`productName`, splash tagline), `<title>` / `application-name` via `layout.tsx`, new
+  `public/manifest.webmanifest` (name/short_name "Ilmobod"; there was no manifest before), sidebar logo wordmark +
+  `aria-label`, splash wordmark (shrunk to 64/72/112 px so the 7-letter name fits at 375 px), README heading, Android
+  `app_name` / Capacitor `appName` / `mobile/www` titles. Privacy, teacher and footer pick it up from `brand.name`.
+- **Not changed (would break deploy):** code identifiers, URLs (`to2.locallabs-io.workers.dev`), package names, Android
+  `appId` `uz.to2.app`, the worker name, D1 `to2` / bindings, the `x-to2-commit` header, `[To2]` console log tags.
+- ⚠️ **Towns header** "Ilmobod — shaharni o'qib quring!": the towns screen lives on `feat/roadmap`, not on this branch.
+  The string is in `brand.townsHeader`; point that screen's header (`pickerTitle: "Shaharlar"`) at it when merging.
+- ⚠️ **Tutor greeting lines**: none of them said "To2", so no change. **Blokbek's hoodie print "[To2]"** is baked into
+  the 144 Blender renders and the GLB textures; the voxel config (`characters.ts` `print: "To2"`) was left matching them.
+  Team: re-render with the new print if wanted.

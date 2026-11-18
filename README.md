@@ -1,15 +1,19 @@
-# To2 — AI math tutor that speaks Uzbek and draws on the board
+# Ilmobod — AI tutor that speaks Uzbek and draws on the board
+
+> Har bir fan — bir shahar. Har bir topshiriq — bir bino.
+>
+> (Formerly "To2". Code identifiers, URLs, the package, the worker and D1 names still say `to2`.)
 
 **Live:** https://to2.locallabs-io.workers.dev · [![Android APK](https://github.com/LinusIp/To2/actions/workflows/android.yml/badge.svg)](https://github.com/LinusIp/To2/actions/workflows/android.yml)
 
 ### How to install the APK (Android)
 1. Open the latest green run of [Android APK](https://github.com/LinusIp/To2/actions/workflows/android.yml) → **Artifacts** → download **To2-debug.apk** (a zip; unzip it). Signed builds, when the signing secrets are set, are on the [Releases](https://github.com/LinusIp/To2/releases) page as `apk-<commit>`.
 2. Copy the APK to the phone and open it. Android asks to **allow installs from this source** (Chrome / Files) — allow it, then **Install**.
-3. Open **To2**. It loads the live site (needs internet; without it you see "Internet aloqasi yo'q — qayta urinib ko'ring"). The first time you press **Savol berish**, allow the microphone.
+3. Open **Ilmobod**. It loads the live site (needs internet; without it you see "Internet aloqasi yo'q — qayta urinib ko'ring"). The first time you press **Savol berish**, allow the microphone.
 
 National AI Hackathon, Tashkent 2026 · Ministry task **#3 "Shaxsiylashtirilgan o'qitish"** — *an AI tutor that works in Uzbek, finds knowledge gaps and builds an individual learning path.*
 
-| Task wording | What To2 does |
+| Task wording | What Ilmobod does |
 |---|---|
 | **O'zbek tilida ishlaydigan** | Learner asks by voice in Uzbek (VoiceLab STT), the tutor answers by voice (VoiceLab TTS), lessons are generated in Uzbek (VoiceLab LLM). The whole UI is in Uzbek. |
 | **bilimdagi bo'shliqlarni aniqlab** | 8-question adaptive diagnostic walks *down* the prerequisite graph on a miss and *up* on a hit; a mastery score per skill updates after every answer. |

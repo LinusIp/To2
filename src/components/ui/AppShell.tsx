@@ -9,6 +9,7 @@ import { useMe } from "@/lib/client/me";
 import { BlocksIcon, BookIcon, ChartIcon, CupIcon, FlameIcon, GearIcon, HomeIcon, Logo, UserIcon } from "./icons";
 import TutorPortrait from "@/components/characters/TutorPortrait";
 import { Toaster } from "./Toast";
+import { brand } from "@/config/brand";
 
 const TABS = [
   { href: "/home", label: t.tabs.home, Icon: HomeIcon, match: ["/home"] },
@@ -30,7 +31,7 @@ export default function AppShell({ children, wide = false, hideTabs = false }: {
   return (
     <div className="min-h-dvh bg-ph md:flex md:bg-bg">
       <aside className="sticky top-0 hidden h-dvh w-[232px] flex-none flex-col gap-2 bg-white px-4 py-6 shadow-[6px_0_24px_rgba(31,54,120,.05)] md:flex">
-        <Link href="/home" className="mb-4 px-2 no-underline" aria-label="To2">
+        <Link href="/home" className="mb-4 px-2 no-underline" aria-label={brand.name}>
           <Logo size={34} />
         </Link>
         <nav aria-label={t.nav.main} className="flex flex-col gap-1">

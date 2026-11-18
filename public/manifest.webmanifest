@@ -1,0 +1,14 @@
+{
+  "name": "Ilmobod",
+  "short_name": "Ilmobod",
+  "description": "Har bir fan — bir shahar. Har bir topshiriq — bir bino.",
+  "lang": "uz",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f6fe",
+  "theme_color": "#2563eb",
+  "icons": [
+    { "src": "/characters/blokbek_idle_face.png", "sizes": "240x240", "type": "image/png", "purpose": "any" }
+  ]
+}
