@@ -30,6 +30,35 @@ The UI is in `src/components/a11y/`:
 
 The lesson code is untouched apart from hooks marked `// a11y-hook`: two lines in `LessonPlayer`, and in `engine.ts` a getter for the line being spoken plus a command hook on the mic path.
 
+**Voice commands for the town and the games: the `to2:voice` event.** In hands-free mode the app
+also listens on every other screen (`GlobalVoiceCommands`): the town, the games and home. Commands
+are sent as a `window` CustomEvent named **`to2:voice`**, the format feat/roadmap's TownScreen
+already listens for, so those screens import nothing from the inclusive mode:
+
+```ts
+window.addEventListener("to2:voice", (e) => {
+  const d = (e as CustomEvent).detail; // { command: "next" | "prev" | "open" | "back" | "continue" | "home" } or { command: "answer", n: 1–4 }
+});
+```
+
+| Learner says | `detail` |
+|---|---|
+| *keyingi bino* / *keyingi uy* | `{ command: "next" }` |
+| *oldingi bino* | `{ command: "prev" }` |
+| *ochish*, *och*, *kirish* | `{ command: "open" }` |
+| *orqaga* | `{ command: "back" }` |
+| *davom et* | `{ command: "continue" }` |
+| *bosh sahifa* | `{ command: "home" }` |
+| *javob bir / ikki / uch / to'rt* (or *javob A–D*, *javob 2*) | `{ command: "answer", n: 1–4 }` (games) |
+
+When no screen handles *orqaga* or *bosh sahifa*, the app goes back in history or opens /home itself.
+There is one exception: on `/town/…` the town screen does this on its own, and because it doesn't
+call `preventDefault()`, the app skips its fallback there so nothing navigates twice. Any other
+listener can call `e.preventDefault()` to say "handled". Lesson-only commands (*sekinroq*,
+*qaytar*, *to'xta*…) are not sent. The lesson and quiz screens run their own recogniser and pause
+the app-wide one (`claimListening`). Any town or game command they don't use themselves is sent as
+`to2:voice`.
+
 **Cost: 0 VoiceLab credits.** Narration plays in the tutor's voice only when `/api/tts?check=1` says the line is already cached. Otherwise the device's own speech synthesiser reads it, and the live region always has the text. Always-on listening uses the browser recogniser (`uz-UZ`), not VoiceLab STT.
 
 **Tests.**

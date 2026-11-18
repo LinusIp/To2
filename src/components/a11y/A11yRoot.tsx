@@ -4,6 +4,7 @@
 // globals.css, loads the dyslexia font only when needed, and owns the app-wide live region.
 import { useEffect } from "react";
 import { applyA11y, useA11y } from "@/lib/a11y/settings";
+import GlobalVoiceCommands from "./GlobalVoiceCommands";
 
 const FONT_ID = "a11y-dyslexia-font";
 
@@ -35,5 +36,10 @@ export default function A11yRoot() {
     }
   }, [s]);
 
-  return <div id="a11y-live" aria-live="polite" aria-atomic="true" className="sr-only" />;
+  return (
+    <>
+      <div id="a11y-live" aria-live="polite" aria-atomic="true" className="sr-only" />
+      <GlobalVoiceCommands />
+    </>
+  );
 }

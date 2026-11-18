@@ -400,7 +400,7 @@ export const t = {
     speechRate: "Nutq tezligi",
     osNote: "Telefoningizdagi «harakatni kamaytirish» va «kontrast» sozlamalari avtomatik hisobga olinadi.",
     commandsTitle: "Ovozli buyruqlar",
-    commands: "«davom et» · «qaytar» · «sekinroq» · «tezroq» · «tushunmadim» · «javob A/B/C/D» · «doskani o'qi» · «to'xta» · «bosh sahifa»",
+    commands: "«davom et» · «qaytar» · «sekinroq» · «tezroq» · «tushunmadim» · «javob A/B/C/D» · «doskani o'qi» · «to'xta» · «keyingi bino» · «ochish» · «orqaga» · «javob bir/ikki/uch/to'rt» · «bosh sahifa»",
     readBoard: "Doskani o'qib berish",
     listenOn: "Buyruqlarni tinglayapman",
     listenOff: "Buyruq aytish uchun bosing",
