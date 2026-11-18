@@ -7,6 +7,9 @@ import { getEnv } from "@/lib/env";
 import { getAI } from "@/lib/ai";
 import { LessonSegment, parseSegments, type LessonSegment as Seg } from "@/lib/ai/schema";
 import { continuationMessages, segmentFromLLM } from "@/lib/ai/llmSegments";
+import { INTERRUPT_LIMIT_PER_HOUR, LLM_FAILED_LINE, RATE_LIMIT_LINE, answerDisplay, type AnswerDisplay } from "@/lib/ai/answers";
+import { interruptKey } from "@/lib/ai/interruptKey";
+import { logAnswer } from "@/lib/server/answerLog";
 import { createObjectSplitter } from "@/lib/ai/streamJson";
 import { interruptMessages, lessonMessages } from "@/lib/ai/prompts/tutor.uz";
 import { demoLessonFor, mockInterrupt } from "@/lib/ai/mock/lessons";
@@ -32,6 +35,9 @@ const Body = z.object({
   segment: z.string().max(600).optional(),
   board: z.array(z.object({ id: z.string(), op: z.string(), text: z.string().optional(), x: z.number(), y: z.number() })).max(80).optional(),
   history: z.array(z.object({ role: z.string(), text: z.string().max(600) })).max(12).optional(),
+  /** interrupt: the lesson step the learner is on (0-based) and how many steps there are */
+  step: z.coerce.number().int().min(0).max(99).optional(),
+  steps: z.coerce.number().int().min(0).max(99).optional(),
   /**
    * Retry after a stream that closed without `done`: the client already has `prior` (in order).
    * Deterministic sources (demo, cache, pinned, mock, canned) are re-sent minus what the client has;
@@ -128,6 +134,9 @@ export async function POST(req: Request) {
     return sendRaw(ev, out);
   };
 
+  const t0 = Date.now();
+  /** what answered this question (logged to D1 answer_log, shown in /dev/answers and the console) */
+  const ans = { source: "", reason: "", question: "", key: "", display: "note" as AnswerDisplay, segments: 0 };
   const run = async () => {
     try {
       if (b.mode === "lesson") {
@@ -193,43 +202,67 @@ export async function POST(req: Request) {
         return;
       }
 
-      // ── interrupt ──
-      const lay = noteLayouter();
+      // ── interrupt ── (every answer reports its source; nothing canned is ever served silently)
+      ans.question = normalizeQuestion(b.question ?? "");
       const question = (b.question ?? "").trim();
+      const step = b.step ?? 0;
       if (!question) {
         await send("segment", CHECK);
         return;
       }
-      // KV key of an interrupt answer: skill + tutor + simpler + hash of the normalized question
-      const intKeyFor = async (q: string) => {
-        const h = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(normalizeQuestion(q))))].slice(0, 12).map((x) => x.toString(16).padStart(2, "0")).join("");
-        return `int:v2:${skill.id}:${ch.id}:${b.simpler ? 1 : 0}:${h}`;
+      ans.key = await interruptKey({ skillId: skill.id, characterId: ch.id, simpler: !!b.simpler, step, question });
+      /** send the answer's meta (once) + its segments, laid out for the chosen display */
+      let metaSent = false;
+      let lay: ((s: Seg) => Seg) | null = null;
+      const emitAnswer = async (s: Seg, display?: AnswerDisplay) => {
+        if (!metaSent) {
+          ans.display = display ?? answerDisplay(s, ans.source === "pinned");
+          const main = mainLayouter(); // a main-board answer is written on a wiped (empty) board
+          const note = noteLayouter();
+          lay = ans.display === "main" ? (x: Seg) => main({ ...x, layer: "main" }) : (x: Seg) => note({ ...x, layer: "note" });
+          await send("meta", { source: ans.source, display: ans.display, norm: ans.question, key: ans.key, step, ...(skip ? { resumedAt: skip } : {}) });
+          metaSent = true;
+        }
+        const out = lay!(s);
+        ans.segments++;
+        await send("segment", out);
+        return out;
       };
-      // Demo questions (and close variants) → the pinned, reviewed answer for this tutor; never the LLM.
+      const say = async (source: string, line: string, reason: string) => {
+        ans.source = source;
+        ans.reason = reason;
+        await emitAnswer({ id: "sys1", type: "explain", layer: "note", emotion: "encouraging", say: line, board: [] }, "note");
+        await emitAnswer(CHECK, "note");
+      };
+      // Demo questions (and close variants, full phrase) → the pinned, reviewed answer for this tutor.
+      // It stays on the side slate: it circles the lesson's own fraction bars, which a wipe would remove.
       const pin = b.simpler ? null : matchPinned(skill.id, question);
       if (pin) {
-        const segs = pinnedAnswer(pin, ch.id).map((s) => lay(s));
-        await send("meta", { source: "pinned", id: pin });
-        for (const s of segs) await send("segment", s);
-        const key = await intKeyFor(CANONICAL[pin]);
-        const json = JSON.stringify(segs);
+        ans.source = "pinned";
+        ans.reason = pin;
+        const sent: Seg[] = [];
+        for (const s of pinnedAnswer(pin, ch.id)) sent.push(await emitAnswer(s, "note"));
+        const key = await interruptKey({ skillId: skill.id, characterId: ch.id, simpler: false, step: 0, question: CANONICAL[pin] });
+        const json = JSON.stringify({ display: "note", segs: sent });
         if ((await storeGetText(key)) !== json) await storePut(key, json); // no TTL: pinned
         return;
       }
-      if (ai.mock || !(await rateLimit(`llm:${clientKey(req, userId)}`, 30))) {
-        await send("meta", { source: "mock" });
-        for (const s of mockInterrupt(question, skill.id)) await send("segment", lay(s));
+      if (ai.mock) {
+        ans.source = "mock";
+        ans.reason = "MOCK_AI (offline dev)";
+        for (const s of mockInterrupt(question, skill.id)) await emitAnswer(s);
         return;
       }
-      // Same question on the same skill → instant cached answer (LLM response cache in KV).
-      const intKey = await intKeyFor(question);
-      const cachedInt = await storeGetJson<Seg[]>(intKey);
-      if (cachedInt?.length) {
-        await send("meta", { source: "cache" });
-        for (const s of cachedInt) await send("segment", s);
+      // Same question at the same step → the cached answer (LLM response cache)
+      const cachedInt = await storeGetJson<{ display: AnswerDisplay; segs: Seg[] }>(ans.key);
+      if (cachedInt?.segs?.length) {
+        ans.source = "interrupt-cache";
+        for (const s of cachedInt.segs) await emitAnswer(s, cachedInt.display);
         return;
       }
-      await send("meta", llmResume ? { source: "llm", resumedAt: skip } : { source: "llm" });
+      if (!(await rateLimit(`llm-int:${clientKey(req, userId)}`, INTERRUPT_LIMIT_PER_HOUR, 3600)))
+        return say("rate-limited", RATE_LIMIT_LINE, `over ${INTERRUPT_LIMIT_PER_HOUR}/h`);
+      ans.source = "llm";
       const sent: Seg[] = [];
       const boardDesc = b.board ?? [];
       const free = freeArea({ ...emptyBoard(), els: [] });
@@ -239,48 +272,47 @@ export async function POST(req: Request) {
         grade: b.grade,
         question,
         segment: b.segment ?? "",
+        step: step + 1,
+        steps: b.steps ?? 0,
         board: boardDesc,
         history: b.history ?? [],
         simpler: !!b.simpler,
         free: boardDesc.some((e) => e.x > 560) ? { x: 600, y: 520 } : free,
       });
       let sawCheck = false;
-      let n = 0;
       const emit = async (s: Seg) => {
         if (sawCheck) return;
-        n++;
         if (s.type === "check") sawCheck = true;
-        const out = lay(s);
-        sent.push(out);
-        await send("segment", out);
+        sent.push(await emitAnswer(s));
       };
       if (llmResume) {
-        // continue the same answer: the learner already has `prior` (note rows stay in order)
-        for (const s of prior) {
-          sent.push(lay(s));
-          await send("segment", s); // skipped
-        }
+        // continue the same answer from what the learner already has (same display as before)
+        const display: AnswerDisplay = prior[0]?.layer === "main" ? "main" : "note";
+        for (const s of prior) await emitAnswer(s, display); // skipped by send(), keeps layout state
         sawCheck = prior.some((s) => s.type === "check");
-        if (!sawCheck) await streamLLM(continuationMessages(msgs, prior), emit, { note: true, maxTokens: 900, prior }).catch((e) => console.warn("[tutor] continuation failed", (e as Error).message));
-        if (!sawCheck) await send("segment", CHECK);
+        if (!sawCheck) await streamLLM(continuationMessages(msgs, prior), emit, { note: false, maxTokens: 900, prior }).catch((e) => console.warn("[tutor] continuation failed", (e as Error).message));
+        if (!sawCheck) await emitAnswer(CHECK);
         return;
       }
-      const r = await streamLLM(msgs, emit, { note: true, maxTokens: 900 }).catch((e) => ({ count: 0, raw: "", error: (e as Error).message }));
-      if (n === 0) {
-        console.warn("[tutor] interrupt LLM failed", r.error);
-        await send("meta", { source: "mock" });
-        for (const s of mockInterrupt(question, skill.id)) await send("segment", lay(s));
-        return;
+      let r = await streamLLM(msgs, emit, { note: false, maxTokens: 900 }).catch((e) => ({ count: 0, raw: "", error: (e as Error).message }));
+      if (!sent.length) {
+        // one retry with the error appended (like lessons), then say so — never a canned explanation
+        const retry = [...msgs, { role: "assistant" as const, content: r.raw.slice(0, 1500) }, { role: "user" as const, content: `Xato: ${r.error ?? "JSON emas"}. Faqat to'g'ri JSON massiv qaytar.` }];
+        const text = await ai.llm.complete(retry, { maxTokens: 900 }).catch((e) => {
+          r = { ...r, error: (e as Error).message };
+          return "";
+        });
+        const p = parseSegments(text);
+        if (p.ok) for (const s of p.segments) await emit(s);
       }
-      if (!sawCheck && n > 0) {
-        await send("segment", CHECK);
-        sent.push(CHECK);
-      }
-      if (sent.length >= 2) await storePut(intKey, JSON.stringify(sent), { ttlSec: 60 * 60 * 24 * 7 });
+      if (!sent.length) return say("llm-failed", LLM_FAILED_LINE, r.error ?? "no valid segment");
+      if (!sawCheck) sent.push(await emitAnswer(CHECK));
+      if (sent.length >= 2) await storePut(ans.key, JSON.stringify({ display: ans.display, segs: sent }), { ttlSec: 60 * 60 * 24 * 7 });
     } catch (e) {
       console.error("[tutor]", (e as Error).message);
       await send("error", { message: "tutor_failed" }).catch(() => {});
     } finally {
+      if (b.mode === "interrupt") await logAnswer({ ...ans, userId, skillId: skill.id, tutor: ch.id, step: b.step ?? 0, ms: Date.now() - t0 });
       // ALWAYS end with done (the client treats a stream that closes without it as broken → retry)
       await sendRaw("done", { segments: segIndex }).catch(() => {});
       await close();

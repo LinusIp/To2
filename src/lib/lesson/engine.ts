@@ -3,8 +3,10 @@
 // UI reads everything from the zustand store; side effects live in module scope.
 import { create } from "zustand";
 import type { Emotion, Expect, LessonSegment } from "@/lib/ai/schema";
+import { SIDE_BOARD, sideSpot, type BoardEl } from "@/lib/board/model";
+import { isRestartRequest } from "./intents";
 import { applyCommand, describeBoard, emptyBoard, fadeHighlights, isDraw, scheduleSegment, scheduleLength, type BoardState, type Layer, type Slot } from "@/lib/board/model";
-import { prefetchSpeech, speak, unlockAudio, type Speech } from "@/lib/audio/player";
+import { loadSpeech, prefetchSpeech, speak, unlockAudio, type Clip, type Speech } from "@/lib/audio/player";
 import { speakMath } from "@/lib/ai/speakMath";
 import { resolveStart, type StartAt } from "./resume";
 import { startRecording, stopRecording, micSupported } from "@/lib/audio/recorder";
@@ -57,6 +59,8 @@ export interface LessonStore {
    * "Davom etamizmi?" once playback reaches the end of what arrived, and retryStream() resumes it.
    */
   broken: "main" | "note" | null;
+  /** which path answered the last live question (pinned / interrupt-cache / llm / …) — dev only */
+  answerSource: string;
   error: string | null;
   xpGained: number;
   masteryAfter: number | null;
@@ -84,6 +88,7 @@ const initial = (): Omit<LessonStore, "skillId" | "characterId" | "voice" | "gra
   celebrate: 0,
   waiting: false,
   broken: null,
+  answerSource: "",
   error: null,
   xpGained: 0,
   masteryAfter: null,
@@ -126,7 +131,9 @@ let gen = 0;
 /** where the main lesson paused, to resume EXACTLY there */
 let mainResume: { index: number; t: number; applied: number; audioMs: number } | null = null;
 let lastQuestion = "";
-let abort: AbortController | null = null;
+/** separate controllers: asking a question must never abort the lesson that is still streaming in */
+let mainAbort: AbortController | null = null;
+let noteAbort: AbortController | null = null;
 
 const now = () => performance.now();
 const tlTime = (x: Timeline) => x.offset + (x.running ? (now() - x.start) * get().rate : 0);
@@ -210,10 +217,27 @@ async function playSegment(track: "main" | "note", index: number, resume?: { t: 
 
   const layer: Layer = seg.layer ?? (track === "note" ? "note" : "main");
   tl = { gen: my, track, index, layer, cmds: seg.board, slots: null, applied: resume?.applied ?? 0, offset: resume?.t ?? 0, start: now(), running: false, speechEnded: false };
-  // emotion → speed/tags on the server; the first answer to a learner question starts with a short pause
-  // live answers (note track): if the voice isn't playing within 4 s, this segment goes captions-only
-  // (text-paced mouth); its audio keeps generating (prefetched on arrival) for later segments / replays
-  const sp = speak(seg.say, s.voice, { rate: s.rate, fromMs: resume?.audioMs, muted: s.muted, emotion: seg.emotion, lead: track === "note" && index === 0 && !resume, startTimeoutMs: track === "note" ? 4000 : undefined });
+  // VOICE FIRST, THEN THE BOARD: never draw in silence. Wait (≤ 15 s) for this line's audio while the
+  // tutor thinks out loud with cached fillers and the caption is already in the bubble; then speak it
+  // and start writing at the same moment. Only if no audio comes: say so once, then captions-only.
+  const tone = { emotion: seg.emotion, lead: track === "note" && index === 0 && !resume };
+  let clip: Clip | null = null;
+  if (!s.muted) {
+    const r = await waitForVoice(seg, tone, my);
+    if (my !== gen || !tl) return;
+    if (r && r !== "none") clip = r;
+    else if (performance.now() - delayNoticeAt > 60_000) {
+      // last resort (at most once a minute): explain, then write in captions-only mode
+      delayNoticeAt = performance.now();
+      set({ caption: DELAY_LINE });
+      const d = speak(DELAY_LINE, s.voice, { rate: s.rate, emotion: "encouraging" });
+      speech = d;
+      await d.ended;
+      if (my !== gen || !tl) return;
+      set({ caption: seg.say });
+    }
+  }
+  const sp = speak(seg.say, s.voice, { rate: s.rate, fromMs: resume?.audioMs, muted: s.muted || !clip, emotion: seg.emotion, clip: clip ?? undefined });
   speech = sp;
   const dur = await sp.started;
   if (my !== gen || !tl) return;
@@ -227,6 +251,46 @@ async function playSegment(track: "main" | "note", index: number, resume?: { t: 
   if (!tl.running) {
     // paused exactly as speech ended — tick() will finish on resume
   }
+}
+
+/** said once (≤ 1 per minute) when a line's voice didn't come within VOICE_WAIT_MS */
+export const DELAY_LINE = "Ovozim biroz kechikmoqda, yozib ko'rsataman.";
+/** cached thinking sounds played every ~3 s while a line's voice is being made */
+export const WAIT_FILLERS = ["Hmm…", "Qani, o'ylab ko'raylik…", "Bir daqiqa…"];
+export const VOICE_WAIT_MS = 15_000;
+const FILLER_EVERY_MS = 3000;
+/** cached lines come back well within this: no filler for them */
+const FILLER_GRACE_MS = 900;
+let delayNoticeAt = -Infinity;
+/** true while a segment waits for its voice (a barge-in then resumes the segment from its start) */
+let waitingVoice = false;
+
+/**
+ * Wait for a line's audio (≤ VOICE_WAIT_MS). If it isn't there within a moment, the tutor goes into
+ * the think pose and says a short cached filler every ~3 s; the caption is already in the bubble.
+ */
+async function waitForVoice(seg: LessonSegment, tone: { emotion: string; lead: boolean }, my: number): Promise<Clip | "none" | null> {
+  const s = get();
+  let result: Clip | "none" | null | undefined;
+  const load = loadSpeech(seg.say, s.voice, tone, VOICE_WAIT_MS).then((r) => (result = r));
+  await Promise.race([load, new Promise((r) => setTimeout(r, FILLER_GRACE_MS))]);
+  if (result !== undefined || my !== gen) return result ?? null;
+  waitingVoice = true;
+  const emotion = get().emotion;
+  set({ emotion: "thinking" });
+  let k = 0;
+  while (result === undefined && my === gen) {
+    const t0 = performance.now();
+    const f = speak(WAIT_FILLERS[k++ % WAIT_FILLERS.length], s.voice, { rate: s.rate, emotion: "thinking", startTimeoutMs: 2500 });
+    speech = f;
+    await f.ended; // a filler always finishes (they're short) — the real line never talks over it
+    if (result !== undefined || my !== gen) break;
+    await Promise.race([load, new Promise((r) => setTimeout(r, Math.max(0, FILLER_EVERY_MS - (performance.now() - t0))))]);
+  }
+  waitingVoice = false;
+  if (my === gen) set({ emotion });
+  await load;
+  return result ?? null;
 }
 
 function onSegmentDone(g: number, track: "main" | "note", index: number) {
@@ -344,7 +408,8 @@ export function initLesson(opts: { skillId: string; characterId: string; grade: 
   speech = null;
   tl = null;
   mainResume = null;
-  abort?.abort();
+  mainAbort?.abort();
+  noteAbort?.abort();
   cancelAnimationFrame(raf);
   set({
     ...initial(),
@@ -359,7 +424,8 @@ export function initLesson(opts: { skillId: string; characterId: string; grade: 
 export function disposeLesson() {
   gen++;
   speech?.stop();
-  abort?.abort();
+  mainAbort?.abort();
+  noteAbort?.abort();
   cancelAnimationFrame(raf);
 }
 
@@ -367,7 +433,9 @@ function context() {
   const s = get();
   const hist = s.transcript.slice(-6).map((x) => ({ role: x.who === "me" ? "user" : "assistant", text: x.text }));
   const cur = s.main[Math.min(s.mainIndex, s.main.length - 1)];
-  return { skillId: s.skillId, characterId: s.characterId, grade: s.grade, segment: cur?.say ?? "", board: describeBoard(s.board), history: hist };
+  // the lesson's board, even while an answer has it wiped; the step makes answers fit where the learner is
+  const board = lessonBoard ? { ...s.board, els: lessonBoard } : s.board;
+  return { skillId: s.skillId, characterId: s.characterId, grade: s.grade, segment: cur?.say ?? "", board: describeBoard(board), history: hist, step: Math.min(s.mainIndex, Math.max(0, s.main.length - 1)), steps: s.main.length };
 }
 
 /** Start the lesson: unlock audio (user gesture), stream segments. */
@@ -391,7 +459,7 @@ let mainSource = "";
  */
 async function streamMain(resume = false) {
   const s = get();
-  abort = new AbortController();
+  mainAbort = new AbortController();
   let complete = false;
   try {
     const res = await fetch("/api/tutor", {
@@ -404,7 +472,7 @@ async function streamMain(resume = false) {
         grade: s.grade,
         ...(resume && s.main.length ? { resume: { source: mainSource || "llm", prior: s.main } } : {}),
       }),
-      signal: abort.signal,
+      signal: mainAbort.signal,
     });
     const r = await readTutorStream(res, {
       onMeta: (m) => {
@@ -466,14 +534,14 @@ export function bargeIn() {
   if (!["speaking", "awaiting", "answering", "checking"].includes(st)) return;
   if (st === "speaking" && tl && tl.track === "main") {
     stopTimeline();
-    mainResume = { index: tl.index, t: tl.offset, applied: tl.applied, audioMs: speech?.position() ?? 0 };
+    mainResume = { index: tl.index, t: tl.offset, applied: tl.applied, audioMs: waitingVoice ? 0 : (speech?.position() ?? 0) }; // a filler was playing: restart the line
     speech?.pause();
   } else if (st === "answering" || st === "checking") {
     // interrupting the answer: drop it (nesting max 1)
     gen++;
     stopTimeline();
     speech?.stop();
-    abort?.abort();
+    noteAbort?.abort();
     set((x) => ({ note: [], board: { ...x.board, els: x.board.els.filter((e) => e.layer !== "note") } }));
   } else if (st === "awaiting") {
     speech?.pause();
@@ -525,10 +593,84 @@ export async function stopListening() {
   }
 }
 
+// ── where a live answer is written ──────────────────────────────────────────────
+/** "main" = on the (wiped) main board; "note" = the side slate */
+let noteDisplay: "main" | "note" = "note";
+/** the lesson's main-board writing while an answer has the board wiped; put back on "Davom et" */
+let lessonBoard: BoardEl[] | null = null;
+
+/**
+ * Before an answer's first segment: a main-board answer wipes the board (wipe animation; the lesson is
+ * kept aside). A slate answer brings the lesson back first and hangs the slate where it covers no
+ * writing — if there is no such spot, the slate goes on a wiped board too (the main-board path).
+ */
+function prepareAnswerBoard(display: "main" | "note") {
+  const b = get().board;
+  const lesson = lessonBoard ?? b.els.filter((e) => e.layer === "main");
+  if (display === "main") {
+    lessonBoard = lesson;
+    set({ board: { els: [], noteDim: false } });
+    return;
+  }
+  const spot = sideSpot({ els: lesson });
+  if (spot) {
+    lessonBoard = null;
+    set({ board: { els: lesson, noteDim: false, side: spot } });
+  } else {
+    lessonBoard = lesson;
+    set({ board: { els: [], noteDim: false, side: { x: SIDE_BOARD.x, y: SIDE_BOARD.y } } });
+  }
+}
+
+/** Put the lesson's board back (the answer's writing wipes out). Returns whether it did. */
+function restoreLessonBoard(): boolean {
+  if (!lessonBoard) return false;
+  const els = lessonBoard;
+  lessonBoard = null;
+  set((s) => ({ board: { ...s.board, els, noteDim: false, side: undefined } }));
+  return true;
+}
+
+/**
+ * "Boshidan…", "qaytadan", "doskani o'chir", "tushunmadim": the lesson restarts from step 1 with its
+ * cached segments (instant voice); the board is wiped; the step counter follows.
+ */
+function restartLesson(q: string, voice: boolean) {
+  gen++;
+  speech?.stop();
+  stopTimeline();
+  noteAbort?.abort();
+  mainResume = null;
+  lessonBoard = null;
+  waitingVoice = false;
+  set((s) => ({
+    note: [],
+    noteDone: false,
+    broken: s.broken === "note" ? null : s.broken,
+    expect: null,
+    feedback: null,
+    misses: 0,
+    error: null,
+    transcript: [...s.transcript, { who: "me", text: q, voice }],
+    board: emptyBoard(),
+    mainIndex: 0,
+    track: "main",
+    player: { status: "speaking", resumeTo: null, depth: 0 },
+    caption: T.lesson.restarting,
+    emotion: "happy",
+  }));
+  console.info("[To2] answer", { question: q, source: "restart" });
+  set({ answerSource: "restart" });
+  if (get().main.length) void playSegment("main", 0);
+  else set({ waiting: true });
+}
+
 /** Ask the tutor a question mid-lesson (voice or typed). */
 export async function ask(question: string, voice = false, simpler = false) {
   const q = question.trim();
   if (!q) return;
+  // "boshidan", "qaytadan", "doskani o'chir", "tushunmadim"… → the lesson restarts from step 1 (cached, with voice)
+  if (!simpler && isRestartRequest(q)) return restartLesson(q, voice);
   askedAt = performance.now();
   if (["speaking", "awaiting", "answering", "checking"].includes(get().player.status) && !simpler) bargeIn();
   lastQuestion = q;
@@ -568,8 +710,8 @@ let noteSource = "";
  * resumes from the last segment). Nothing at all → the tutor says so and the lesson continues.
  */
 async function streamNote(q: string, simpler: boolean, resume: boolean, fillerDone: Promise<void> = Promise.resolve()) {
-  abort?.abort();
-  abort = new AbortController();
+  noteAbort?.abort(); // the previous answer only — never the lesson stream
+  noteAbort = new AbortController();
   let first = get().note.length === 0;
   let complete = false;
   try {
@@ -584,15 +726,22 @@ async function streamNote(q: string, simpler: boolean, resume: boolean, fillerDo
         ...context(),
         ...(resume && s0.note.length ? { resume: { source: noteSource || "llm", prior: s0.note } } : {}),
       }),
-      signal: abort.signal,
+      signal: noteAbort.signal,
     });
     const r = await readTutorStream(res, {
       onMeta: (m) => {
         if (!resume && typeof m.source === "string") noteSource = m.source;
+        if (m.display === "main" || m.display === "note") noteDisplay = m.display;
+        // which path answered (pinned / interrupt-cache / llm / rate-limited / llm-failed / mock) — also /dev/answers
+        console.info("[To2] answer", { question: q, ...m });
+        set({ answerSource: String(m.source ?? "") });
       },
       onSegment: (seg) => {
         const idx = get().note.length;
-        set((st) => ({ note: [...st.note, { ...seg, layer: "note" }] }));
+        // the first segment decides where the answer is written: main board (wiped, restored on
+        // "Davom et") or the side slate (only where it covers nothing; else the main-board path)
+        if (idx === 0) prepareAnswerBoard(noteDisplay);
+        set((st) => ({ note: [...st.note, { ...seg, layer: noteDisplay === "main" ? "main" : "note" }] }));
         // start its audio right away (server caches it) — the player picks it up when the segment plays
         prefetchSpeech(seg.say, get().voice, { emotion: seg.emotion, lead: idx === 0 });
         if (first) {
@@ -644,6 +793,7 @@ export function lastAnswerTimeline() {
 }
 
 function resumeAfterInterrupt(alreadyTransitioned = false) {
+  restoreLessonBoard(); // an answer that wiped the board (failed / cancelled): the lesson comes back
   const s = get();
   if (!alreadyTransitioned && !["speaking", "awaiting"].includes(s.player.status)) return;
   const st = get().player.status;
@@ -668,7 +818,8 @@ export function continueLesson() {
   gen++;
   stopTimeline();
   fire({ type: "CONTINUE" });
-  set((s) => ({ board: { ...s.board, noteDim: true }, track: "main" }));
+  if (!restoreLessonBoard()) set((s) => ({ board: { ...s.board, noteDim: true }, track: "main" }));
+  else set({ track: "main" });
   resumeAfterInterrupt();
 }
 

@@ -133,10 +133,13 @@ const SIDE_LABEL = strokesFor({ op: "write", id: "_side", x: SIDE_BOARD.x + SIDE
  * The side board for interruption answers: a small slate hanging over the main board's corner on
  * two pins, wooden frame, "Savolingiz" at the top. Shown while an answer is on the board.
  */
-function SideBoard({ show, filter }: { show: boolean; filter: string }) {
+function SideBoard({ show, filter, at }: { show: boolean; filter: string; at?: { x: number; y: number } }) {
   const { x, y, w, h } = SIDE_BOARD;
+  // drawn at the default spot, moved to where it hangs for this answer (never over the lesson's writing)
+  const dx = at ? at.x - x : 0;
+  const dy = at ? at.y - y : 0;
   return (
-    <g aria-hidden style={{ opacity: show ? 1 : 0, transition: "opacity 450ms ease-out" }}>
+    <g aria-hidden transform={dx || dy ? `translate(${dx},${dy})` : undefined} style={{ opacity: show ? 1 : 0, transition: "opacity 450ms ease-out" }}>
       {/* strings to two pins above */}
       <g stroke="#c9b48a" strokeWidth={2.5} opacity={0.85}>
         <line x1={x + 70} y1={y - 34} x2={x + 40} y2={y + 2} />
@@ -258,7 +261,7 @@ export function BoardInk({ state, active, reportTip = false }: BoardInkProps) {
       </g>
       {/* the side board hangs OVER the main board; "Davom et" fades it and its notes away */}
       <g opacity={state.noteDim ? 0 : 1} style={{ transition: "opacity 450ms" }}>
-        <SideBoard show={hasNoteText} filter={`url(#chalk-${uid})`} />
+        <SideBoard show={hasNoteText} filter={`url(#chalk-${uid})`} at={state.side} />
         <g filter={`url(#chalk-${uid})`}>
           {notes.map((el) => (
             <Element key={el.key} el={el} p={active?.key === el.key ? active.p : 1} plot={plot} />

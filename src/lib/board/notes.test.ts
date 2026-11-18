@@ -93,3 +93,25 @@ describe("highlights", () => {
     expect(s.els.find((e) => e.id === "b")?.hlOff).toBe(true); // unknown target: nothing changes
   });
 });
+
+describe("the side slate never covers the lesson", () => {
+  const write = (id: string, x: number, y: number, text = "1/2 + 1/3 = 5/6") => ({ op: "write" as const, id, x, y, text, size: "m" as const });
+  it("hangs bottom-right when that corner is free, elsewhere when it isn't, and returns null when nothing is free", async () => {
+    const { sideSpot, SIDE_SPOTS } = await import("./model");
+    let s = emptyBoard();
+    s = applyCommand(s, write("t", 40, 40));
+    expect(sideSpot(s)).toEqual(SIDE_SPOTS[0]); // bottom-right free
+    s = applyCommand(s, write("br", 620, 520));
+    const spot = sideSpot(s)!;
+    expect(spot).not.toEqual(SIDE_SPOTS[0]);
+    s = applyCommand(s, write("bm", 320, 520));
+    s = applyCommand(s, write("rm", 620, 300));
+    expect(sideSpot(s)).toBeNull(); // → the engine takes the main-board path (wipe, restore on "Davom et")
+  });
+  it("notes go where the slate hangs", () => {
+    const s = applyCommand({ ...emptyBoard(), side: { x: 284, y: 430 } }, { op: "write", id: "n", x: 0, y: 0, text: "EKUK = 12" }, "note");
+    const n = s.els.find((e) => e.layer === "note")!;
+    expect((n.cmd as { x: number }).x).toBeGreaterThanOrEqual(284);
+    expect((n.cmd as { x: number }).x).toBeLessThan(284 + SIDE_BOARD.w);
+  });
+});

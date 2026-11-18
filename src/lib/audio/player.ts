@@ -42,15 +42,58 @@ export function ttsUrl(text: string, voice: string, tone: Tone = {}) {
   return `/api/tts?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(text)}${em}${tone.lead ? "&lead=1" : ""}`;
 }
 
-const prefetched = new Set<string>();
-/** Warm the HTTP cache (and the server's KV/R2 cache) for the next segment. */
+/** A line's audio, loaded ahead (blob + its lip-sync envelope). */
+export interface Clip {
+  blob: Blob;
+  env: Uint8Array | null;
+}
+/** the result of a load: a clip, "none" (the server says this line has no audio: muted/mock/cap/error) or null (not yet) */
+type Load = Clip | "none" | null;
+
+/** one request per line, shared by the prefetch and the player (no double generation) */
+const inflight = new Map<string, Promise<Load>>();
+function fetchClip(u: string): Promise<Load> {
+  let p = inflight.get(u);
+  if (!p) {
+    p = fetch(u)
+      .then(async (r): Promise<Load> => {
+        if (r.status !== 200) return "none";
+        const e = r.headers.get("x-tts-env");
+        return { blob: await r.blob(), env: e ? decodeEnvelope(e) : null };
+      })
+      .catch((): Load => null);
+    inflight.set(u, p);
+    void p.then((x) => {
+      if (x === null || x === "none") inflight.delete(u); // let a later attempt try again
+    });
+  }
+  return p;
+}
+
+// wait=long: nobody is waiting on a prefetch, so the server holds out for the expressive voice (and caches it)
+const longUrl = (text: string, voice: string, tone: Tone) => ttsUrl(text, voice, tone) + "&wait=long";
+
+/** Start loading a line's audio now (the next segment, a live answer as it arrives). */
 export function prefetchSpeech(text: string, voice: string, tone: Tone = {}) {
-  // wait=long: nobody is waiting on a prefetch, so the server holds out for the expressive voice
-  // (and caches it); the real request then gets it from cache
-  const u = ttsUrl(text, voice, tone) + "&wait=long";
-  if (prefetched.has(u)) return;
-  prefetched.add(u);
-  void fetch(u).catch(() => prefetched.delete(u));
+  void fetchClip(longUrl(text, voice, tone));
+}
+
+/**
+ * Wait (at most `timeoutMs`) for a line's audio. A fresh expressive line takes ~11 s; the caller keeps
+ * the tutor thinking (fillers) meanwhile. Resolves the clip, "none" when the server says there is no
+ * audio for this line (then waiting is pointless), or null when the time ran out.
+ */
+export async function loadSpeech(text: string, voice: string, tone: Tone, timeoutMs: number): Promise<Load> {
+  const deadline = performance.now() + timeoutMs;
+  const u = longUrl(text, voice, tone);
+  while (performance.now() < deadline) {
+    const left = deadline - performance.now();
+    const r = await Promise.race([fetchClip(u), new Promise<"timeout">((res) => setTimeout(() => res("timeout"), left))]);
+    if (r === "timeout") return null;
+    if (r) return r; // a clip, or "none"
+    await new Promise((res) => setTimeout(res, 600)); // network error: try again shortly
+  }
+  return null;
 }
 
 export const estimateMs = (text: string, rate = 1) => Math.max(1200, (text.length * 62) / rate);
@@ -69,7 +112,7 @@ export interface Speech {
 }
 
 /** Speak `text` with the character voice via /api/tts. `fromMs` seeks (resume after interruption). */
-export function speak(text: string, voice: string, opts: { rate?: number; fromMs?: number; muted?: boolean; startTimeoutMs?: number } & Tone = {}): Speech {
+export function speak(text: string, voice: string, opts: { rate?: number; fromMs?: number; muted?: boolean; startTimeoutMs?: number; clip?: Clip } & Tone = {}): Speech {
   const a = audioEl();
   let rate = opts.rate ?? 1;
   let fallback = false;
@@ -145,12 +188,19 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
     // fetch (not <audio src>) so we can read the envelope header that belongs to exactly these bytes
     void (async () => {
       try {
-        const r = await fetch(ttsUrl(text, voice, { emotion: opts.emotion, lead: opts.lead }), { signal: ctrl.signal });
-        if (done || fallback) return; // too late: this line already went captions-only
-        if (r.status !== 200) return startFallback();
-        const e = r.headers.get("x-tts-env");
-        envelope = e ? decodeEnvelope(e) : null;
-        const blob = await r.blob();
+        let blob: Blob;
+        if (opts.clip) {
+          // loaded ahead (loadSpeech): plays at once
+          envelope = opts.clip.env;
+          blob = opts.clip.blob;
+        } else {
+          const r = await fetch(ttsUrl(text, voice, { emotion: opts.emotion, lead: opts.lead }), { signal: ctrl.signal });
+          if (done || fallback) return; // too late: this line already went captions-only
+          if (r.status !== 200) return startFallback();
+          const e = r.headers.get("x-tts-env");
+          envelope = e ? decodeEnvelope(e) : null;
+          blob = await r.blob();
+        }
         if (done || fallback) return;
         if (objUrl) URL.revokeObjectURL(objUrl);
         objUrl = URL.createObjectURL(blob);

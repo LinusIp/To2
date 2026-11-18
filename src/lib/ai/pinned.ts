@@ -14,14 +14,36 @@ export const PINNED_SKILLS = new Set(["frac-add-unlike"]);
 
 export type PinnedId = "why-multiply" | "why-six" | "what-lcm";
 
-/** lowercase, unify/drop apostrophes, drop punctuation, squeeze spaces. "Nega oltiga?!" → "nega oltiga" */
+/**
+ * The normalized question (also the interrupt cache key's text): lowercase, every apostrophe variant
+ * (ʻ ’ ‘ ` ʼ) unified to ', other punctuation dropped, word boundaries kept. Uzbek letters stay intact:
+ * "Nega KOʻPAYTIRDIK?!" → "nega ko'paytirdik"; "o'n ikki" ≠ "on ikki".
+ */
 export function normalizeQuestion(q: string): string {
   return q
     .toLowerCase()
-    .replace(/[ʻʼ’‘`']/g, "")
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/[ʻʼ’‘`]/g, "'")
+    .replace(/[^\p{L}\p{N}'\s]/gu, " ")
+    .replace(/(^|\s)'+|'+(?=\s|$)/g, "$1") // quotes around words, not the o'/g' inside them
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/** words for matching: apostrophes ignored (STT writes "kopaytirdik" as often as "ko'paytirdik") */
+const tokens = (q: string) => normalizeQuestion(q).replace(/'/g, "").split(" ").filter(Boolean);
+
+/** share of words two questions have in common, over the longer one (multiset) */
+export function tokenOverlap(a: string[], b: string[]): number {
+  const left = [...b];
+  let common = 0;
+  for (const t of a) {
+    const i = left.indexOf(t);
+    if (i >= 0) {
+      common++;
+      left.splice(i, 1);
+    }
+  }
+  return common / Math.max(a.length, b.length, 1);
 }
 
 const ALIASES: Record<PinnedId, string[]> = {
@@ -65,12 +87,25 @@ export const CANONICAL: Record<PinnedId, string> = {
   "what-lcm": "EKUK nima?",
 };
 
-const INDEX = new Map<string, PinnedId>();
-for (const [id, list] of Object.entries(ALIASES) as [PinnedId, string[]][]) for (const q of list) INDEX.set(normalizeQuestion(q), id);
+const INDEX: { id: PinnedId; words: string[] }[] = (Object.entries(ALIASES) as [PinnedId, string[]][]).flatMap(([id, list]) => list.map((q) => ({ id, words: tokens(q) })));
 
+/** Minimum word overlap with an alias (full phrase). */
+export const PIN_MIN_OVERLAP = 0.8;
+
+/**
+ * Only the demo questions and their listed aliases, as FULL phrases: exact, or ≥ 80 % of the words in
+ * common. A single word ("nega", "tushuntir", "boshidan") never matches.
+ */
 export function matchPinned(skillId: string, question: string): PinnedId | null {
   if (!PINNED_SKILLS.has(skillId)) return null;
-  return INDEX.get(normalizeQuestion(question)) ?? null;
+  const q = tokens(question);
+  if (q.length < 2) return null;
+  let best: { id: PinnedId; score: number } | null = null;
+  for (const a of INDEX) {
+    const score = tokenOverlap(q, a.words);
+    if (score >= PIN_MIN_OVERLAP && (!best || score > best.score)) best = { id: a.id, score };
+  }
+  return best?.id ?? null;
 }
 
 const CHECK: LessonSegment = { id: "chk", type: "check", layer: "note", emotion: "encouraging", say: "Tushunarli bo'ldimi? Davom etamizmi?", board: [] };

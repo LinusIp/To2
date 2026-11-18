@@ -4,9 +4,29 @@ import { LessonSegment } from "./schema";
 import { DEMO_LESSONS } from "./mock/lessons";
 
 describe("pinned demo answers", () => {
-  it("normalizes apostrophes, case and punctuation", () => {
-    expect(normalizeQuestion("  Nega maxrajlarni KOʻPAYTIRDIK?! ")).toBe("nega maxrajlarni kopaytirdik");
+  it("normalizes case, punctuation and apostrophe variants — keeping word boundaries and Uzbek letters", () => {
+    expect(normalizeQuestion("  Nega maxrajlarni KOʻPAYTIRDIK?! ")).toBe("nega maxrajlarni ko'paytirdik");
     expect(normalizeQuestion("nega   ko’paytirdik")).toBe(normalizeQuestion("Nega ko'paytirdik?"));
+    expect(normalizeQuestion("O‘n ikki nega?")).toBe("o'n ikki nega");
+    expect(normalizeQuestion("on ikki nega")).not.toBe(normalizeQuestion("o'n ikki nega"));
+    expect(normalizeQuestion("'EKUK' nima?")).toBe("ekuk nima");
+  });
+
+  it("never matches single words or other real questions (negative cases)", () => {
+    for (const q of ["nega", "Nega?", "tushuntir", "boshidan", "EKUK", "maxraj"]) expect(matchPinned("frac-add-unlike", q), q).toBeNull();
+    const real = [
+      "Nega 12?",
+      "Kasrlarni ayirganda ham umumiy maxraj kerakmi?",
+      "Nega maxrajlarni qo'shmadik?",
+      "Surat nima?",
+      "Bir ikkidan birni o'nli kasrga qanday aylantiramiz?",
+      "EKUB bilan EKUK farqi nima?",
+      "Nega oltiga bo'lmadik?",
+      "Uchdan bir nega ikkidan birdan kichik?",
+      "Javob nechchi chiqdi?",
+      "Nega pushti chiziq qisqa?",
+    ];
+    for (const q of real) expect(matchPinned("frac-add-unlike", q), q).toBeNull();
   });
 
   it("matches the 3 demo questions and close variants (as STT may write them)", () => {

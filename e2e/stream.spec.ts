@@ -88,19 +88,24 @@ test("1. lesson stream closes without done → 'Davom etamizmi?' → retry resum
   await expect(page.getByTestId("stream-retry")).toHaveCount(0);
 });
 
-test("2. a TTS request that hangs after an earlier clip played → captions-only, the lesson moves on", async ({ page }) => {
+test("2. a line whose voice never comes: fillers while waiting, then captions-only after 15 s — the lesson goes on", async ({ page }) => {
   await guest(page);
-  let tts = 0;
+  const line = encodeURIComponent(LESSON[1].say).slice(0, 30);
+  const fillers: string[] = [];
   await page.route("**/api/tts**", async (r) => {
-    if (r.request().url().includes("wait=long")) return r.fulfill({ status: 204 }); // prefetches
-    tts++;
-    if (tts === 1) return r.fulfill({ status: 200, headers: { "content-type": "audio/wav" }, body: silentWav() });
-    if (tts === 2) return; // never answered: a hung request on a bad mobile network
-    return r.fulfill({ status: 204 });
+    const u = r.request().url();
+    if (u.includes(line)) return; // this line's audio never answers (hung request on a bad network)
+    if (/Hmm|Qani|Bir%20daqiqa/.test(u)) fillers.push(u);
+    return r.fulfill({ status: 204 }); // everything else: captions-only
   });
   await startLesson(page);
   await expect(bubble(page)).toContainText(LESSON[1].say.slice(0, 20), { timeout: 30_000 });
-  // before the fix the tutor stayed on segment 2 forever; now ≤ 13 s + its caption time
+  // waiting for the voice: the tutor thinks out loud (fillers), the board doesn't move yet
+  const before = await page.locator('g[data-layer="main"]').count();
+  await page.waitForTimeout(8000);
+  expect(fillers.length).toBeGreaterThan(0);
+  expect(await page.locator('g[data-layer="main"]').count()).toBe(before);
+  // after 15 s: captions-only, the segment is written, the lesson moves on
   await expect(bubble(page)).toContainText(LESSON[2].say.slice(0, 20), { timeout: 40_000 });
 });
 

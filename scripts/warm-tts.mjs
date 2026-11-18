@@ -68,6 +68,14 @@ const COMMON = [
   ["Tushunarli bo'ldimi? Davom etamizmi?", "encouraging"],
   ["Hmm… yaxshi savol! Hozir ko'rsataman.", "thinking"],
   ["Qiziq savol! Qani, o'ylab ko'raylik…", "thinking"],
+  // while a line's voice is being made (engine.ts WAIT_FILLERS), and the last-resort notice (DELAY_LINE)
+  ["Hmm…", "thinking"],
+  ["Qani, o'ylab ko'raylik…", "thinking"],
+  ["Bir daqiqa…", "thinking"],
+  ["Ovozim biroz kechikmoqda, yozib ko'rsataman.", "encouraging"],
+  // live answers that can't be answered (src/lib/ai/answers.ts): never a canned explanation
+  ["Hozir juda ko'p savol berildi, bir daqiqadan keyin qayta so'rang.", "encouraging"],
+  ["Kechirasan, hozir javob bera olmadim. Savolingni yana bir bor ber.", "encouraging"],
 ];
 // "Ko'rsatib ber" reveals the answer of each demo-lesson question (spoken via speakMath, as the player does)
 for (const l of Object.values(DEMO_LESSONS))

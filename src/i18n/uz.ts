@@ -147,6 +147,7 @@ export const t = {
     // the tutor's stream broke before the server finished (REPORT.md: "never stuck")
     streamBroken: "Ustoz gapini tugatmadi. Davom etamizmi?",
     retry: "Davom etish",
+    restarting: "Mayli, boshidan boshlaymiz!",
     xpGained: (n: number) => `+${n} XP`,
     tryAgain: "Yana bir urinib ko'r!",
     correct: "Barakalla! To'g'ri!",

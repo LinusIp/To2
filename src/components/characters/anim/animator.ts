@@ -43,11 +43,16 @@ export interface AnimInput {
   focusY: number;
   /** bump to play the praise move */
   praiseCount: number;
+  /**
+   * stage x to stand at while NOT writing (talking, idle, listening): chosen so the tutor covers no
+   * writing (src/lib/board/tutorSpot.ts). NaN → the view's default frontX.
+   */
+  restX: number;
 }
 
 export const newInput = (): AnimInput => ({
   talking: false, amp: 0, listening: false, thinking: false, emotion: "neutral",
-  tipActive: false, tipX: 0, tipY: 0, focusCount: 0, focusX: 0, focusY: 0, praiseCount: 0,
+  tipActive: false, tipX: 0, tipY: 0, focusCount: 0, focusX: 0, focusY: 0, praiseCount: 0, restX: NaN,
 });
 
 export interface AnimView {
@@ -285,7 +290,7 @@ export class TutorAnimator {
     if (this.facing === "board" || this.state === "turnToBoard") {
       if (this.state === "walkAlongBoard" || this.state === "turnToBoard")
         this.walkTarget = clamp(this.tip3.x - standOff * S, view.x0 + 140 * view.s, view.x0 + view.w - 200 * view.s);
-    } else this.walkTarget = view.frontX;
+    } else this.walkTarget = Number.isFinite(inp.restX) ? inp.restX : view.frontX; // never in front of writing
     const vMax = 560 * Math.max(S, 0.6);
     const vWant = clamp((this.walkTarget - this.x) * 7, -vMax, vMax);
     this.v = follow(this.v, Math.abs(this.walkTarget - this.x) < 1.5 ? 0 : vWant, WALK_EASE, dt);

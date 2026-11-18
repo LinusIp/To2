@@ -74,20 +74,26 @@ export function interruptMessages(opts: {
   grade: number;
   question: string;
   segment: string;
+  /** 1-based step the learner is on, and how many steps the lesson has (0 = unknown) */
+  step?: number;
+  steps?: number;
   board: { id: string; op: string; text?: string; x: number; y: number }[];
   history: { role: string; text: string }[];
   simpler: boolean;
   free?: { x: number; y: number };
 }): Msg[] {
-  const { ch, skill, grade, question, segment, board, history, simpler } = opts;
+  const { ch, skill, grade, question, segment, board, history, simpler, step, steps } = opts;
   return [
     {
       role: "system",
       content: `${persona(ch, grade)}
 O'quvchi dars o'rtasida savol berdi. Unga 1–2 ta qisqa segment bilan javob ber, oxirgi segment doim:
 {"id":"chk","type":"check","layer":"note","emotion":"encouraging","say":"Tushunarli bo'ldimi? Davom etamizmi?","board":[]}
-- Barcha segmentlarda "layer":"note". Izoh uchun faqat qisqa "write" (28 belgigacha) ishlat — u avtomatik ravishda doskaning o'ng pastidagi izoh oynasiga joylanadi (x,y ni 0 qo'ysang bo'ladi). Asosiy chizmalarni o'chirma.
-- Doskadagi elementlarni "highlight" bilan ko'rsatishing mumkin (id bo'yicha).
+- AYNAN berilgan SAVOLGA javob ber. Hozirgi qadamni qaytadan tushuntirma (agar o'quvchi buni so'ramagan bo'lsa); har xil savolga har xil javob.
+- Javob ikki turdan biri:
+  (a) bitta qisqa izoh yetsa — barcha segmentlarda "layer":"note", faqat BITTA qisqa "write" (28 belgigacha, x,y = 0): u doska yonidagi kichik "Savolingiz" taxtachasiga yoziladi;
+  (b) formula, bir necha qator yoki chizma kerak bo'lsa — barcha segmentlarda "layer":"main": dars doskasi vaqtincha o'chiriladi, sen TOZA doskada yuqoridan pastga yozasan ("place":{"row":"next"}), keyin dars doskasi qaytadi. Birinchi segmentdayoq "layer":"main" deb yoz.
+- Dars doskasidagi elementlarni "highlight" bilan ko'rsatishing mumkin (faqat (a) turida, id bo'yicha).
 - Savol matematikaga aloqasiz bo'lsa: bitta do'stona gap bilan darsga qaytar, keyin check.
 ${simpler ? "- O'quvchi avvalgi tushuntirishni tushunmadi: JUDA oddiyroq, boshqa misol bilan tushuntir." : ""}
 ${SEGMENT_SPEC}
@@ -97,7 +103,7 @@ Namuna javob: ${INTERRUPT_EXAMPLE}`,
     },
     {
       role: "user",
-      content: `Mavzu: ${skill.title_uz}.
+      content: `Mavzu: ${skill.title_uz}.${step ? `\nHozirgi qadam: ${step}${steps ? `/${steps}` : ""}.` : ""}
 Ustoz hozir aytayotgan gap: "${segment}"
 Doskada: ${JSON.stringify(board.slice(0, 30))}
 Oxirgi suhbat: ${history.map((h) => `${h.role === "user" ? "O'quvchi" : "Ustoz"}: ${h.text}`).join(" | ")}

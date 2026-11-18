@@ -9,6 +9,9 @@ import { boardFocus, boardTip, tutorGate } from "@/lib/board/tip";
 import { mouth } from "@/lib/audio/lipsync";
 import { useLesson } from "@/lib/lesson/engine";
 import type { AnimInput, TutorAnimator } from "./anim/animator";
+import { restSpot, type Box } from "@/lib/board/tutorSpot";
+import { measure } from "@/lib/board/layout";
+import { SIDE_BOARD, type BoardState } from "@/lib/board/model";
 
 export interface TutorView {
   x0: number;
@@ -21,8 +24,22 @@ export interface TutorView {
 
 const FLOOR = 860;
 
+/** What is written on the board right now (main, notes and the side slate) — the tutor must not cover it. */
+function boardBoxes(b: BoardState): Box[] {
+  const boxes: Box[] = b.els.map((e) => measure(e.cmd));
+  if (!b.noteDim && b.els.some((e) => e.layer === "note")) {
+    const p = b.side ?? SIDE_BOARD;
+    boxes.push({ x: p.x - 10, y: p.y - 40, w: SIDE_BOARD.w + 20, h: SIDE_BOARD.h + 50 });
+  }
+  return boxes;
+}
+// the talking spot is recomputed only when the board or the view changes
+let spotBoard: BoardState | null = null;
+let spotKey = "";
+let spotX = NaN;
+
 /** Fill the animator input from the live lesson (the default driver). */
-function lessonDriver(inp: AnimInput) {
+function lessonDriver(inp: AnimInput, view: TutorView) {
   const st = useLesson.getState();
   const status = st.player.status;
   inp.talking = mouth.speaking;
@@ -37,6 +54,13 @@ function lessonDriver(inp: AnimInput) {
   inp.focusX = boardFocus.x;
   inp.focusY = boardFocus.y;
   inp.praiseCount = st.celebrate;
+  const key = `${view.x0},${view.w},${view.s}`;
+  if (st.board !== spotBoard || key !== spotKey) {
+    spotBoard = st.board;
+    spotKey = key;
+    spotX = restSpot(boardBoxes(st.board), view);
+  }
+  inp.restX = spotX; // while talking: at the board's left edge, never in front of writing
 }
 
 export default function TutorCanvas({
@@ -48,7 +72,7 @@ export default function TutorCanvas({
   characterId: string;
   view: TutorView;
   /** fills the input every frame (default: the live lesson) */
-  driver?: (inp: AnimInput) => void;
+  driver?: (inp: AnimInput, view: TutorView) => void;
   /** gives the dev page access to the animator (speed, state) */
   onReady?: (a: TutorAnimator) => void;
 }) {
@@ -132,7 +156,7 @@ export default function TutorCanvas({
 
       const anim = new A.TutorAnimator(ch, characterId, viewRef.current);
       const inp = A.newInput();
-      driverRef.current(inp);
+      driverRef.current(inp, viewRef.current);
       anim.prime(inp);
       const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
       const onMq = () => (anim.reducedMotion = mq.matches);
@@ -154,7 +178,7 @@ export default function TutorCanvas({
         last = now;
         syncCam();
         const v = viewRef.current;
-        driverRef.current(inp);
+        driverRef.current(inp, viewRef.current);
         anim.update(dt, inp, v);
         tutorGate.hold = anim.holdBoard;
         if (shadow) {

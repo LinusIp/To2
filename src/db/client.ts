@@ -16,6 +16,9 @@ const BOOTSTRAP = [
   // VoiceLab TTS spend, one row per synthesized clip (src/lib/server/credits.ts)
   `CREATE TABLE IF NOT EXISTS credits_log (id integer PRIMARY KEY AUTOINCREMENT, at integer NOT NULL, day text NOT NULL, tutor text NOT NULL, source text NOT NULL, model text NOT NULL, chars integer NOT NULL, credits real NOT NULL, text text)`,
   `CREATE INDEX IF NOT EXISTS credits_day_idx ON credits_log (day)`,
+  // which path answered each live question (src/lib/server/answerLog.ts, /dev/answers)
+  `CREATE TABLE IF NOT EXISTS answer_log (id integer PRIMARY KEY AUTOINCREMENT, at integer NOT NULL, user_id text NOT NULL, skill text NOT NULL, tutor text NOT NULL, step integer NOT NULL, question text NOT NULL, cache_key text NOT NULL, source text NOT NULL, reason text NOT NULL, display text NOT NULL, segments integer NOT NULL, ms integer NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS answer_log_user_idx ON answer_log (user_id, id)`,
 ];
 
 let bootstrapped: Promise<void> | null = null;

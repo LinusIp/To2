@@ -22,6 +22,8 @@ export interface BoardState {
   els: BoardEl[];
   /** note layer is dimmed after the learner says "Davom et" */
   noteDim: boolean;
+  /** where the side slate hangs for the current answer (top-left corner); default SIDE_BOARD */
+  side?: { x: number; y: number };
 }
 
 export const emptyBoard = (): BoardState => ({ els: [], noteDim: false });
@@ -263,7 +265,28 @@ const NOTE_CHAR_W = FONT_PX.s * 0.56;
 export const NOTE_MAX_CHARS = Math.floor((SIDE_BOARD.w - 2 * SIDE_PAD_X) / NOTE_CHAR_W);
 
 /** y of a side-board row */
-export const sideRowY = (row: number) => SIDE_BOARD.y + SIDE_LABEL_H + row * SIDE_ROW_H;
+export const sideRowY = (row: number, side: { y: number } = SIDE_BOARD) => side.y + SIDE_LABEL_H + row * SIDE_ROW_H;
+
+/**
+ * Spots the side slate may hang (top-left corners), in order of preference. Not the top-right: on
+ * phones the lesson's toolbar sits over that corner of the board.
+ */
+export const SIDE_SPOTS: readonly { x: number; y: number }[] = [
+  { x: SIDE_BOARD.x, y: SIDE_BOARD.y }, // bottom-right
+  { x: 284, y: SIDE_BOARD.y }, // bottom-middle
+  { x: SIDE_BOARD.x, y: 230 }, // right-middle
+];
+
+/** The first spot where the slate covers NO main-board writing (null = none free → write on the main board). */
+export function sideSpot(state: Pick<BoardState, "els">, pad = 14): { x: number; y: number } | null {
+  const boxes = state.els.filter((e) => e.layer === "main").map((e) => bbox(e.cmd));
+  for (const p of SIDE_SPOTS) {
+    // the frame, shadow and the pins/strings above it count too
+    const r = { x: p.x - 10 - pad, y: p.y - 40 - pad, w: SIDE_BOARD.w + 20 + 2 * pad, h: SIDE_BOARD.h + 50 + 2 * pad };
+    if (!boxes.some((b) => b.x < r.x + r.w && r.x < b.x + b.w && b.y < r.y + r.h && r.y < b.y + b.h)) return { x: p.x, y: p.y };
+  }
+  return null;
+}
 
 /** Plain text for a note (latex fractions written as a/b). */
 function noteText(cmd: Extract<DrawCommand, { op: "write" | "latex" }>): string {
@@ -300,7 +323,8 @@ function placeNote(state: BoardState, cmd: Extract<DrawCommand, { op: "write" | 
     els = els.filter((e) => e.layer !== "note"); // full: wipe the side board, continue at the top
     row = 0;
   }
-  const draw: DrawCommand = { op: "write", id: cmd.id, x: SIDE_BOARD.x + SIDE_PAD_X, y: sideRowY(row), size: "s", color: "yellow", text: lines.join("\n") };
+  const side = state.side ?? SIDE_BOARD;
+  const draw: DrawCommand = { op: "write", id: cmd.id, x: side.x + SIDE_PAD_X, y: sideRowY(row, side), size: "s", color: "yellow", text: lines.join("\n") };
   els.push({ key, id: cmd.id, cmd: draw, layer: "note", row, rows: lines.length });
   return { ...state, els };
 }
