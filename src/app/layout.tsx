@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { brand } from "@/config/brand";
 import OldBrowserBanner from "@/components/ui/OldBrowserBanner";
+import A11yRoot from "@/components/a11y/A11yRoot";
 import { t } from "@/i18n/uz";
 
 export const metadata: Metadata = {
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         {children}
         <OldBrowserBanner />
+        <A11yRoot />
       </body>
     </html>
   );

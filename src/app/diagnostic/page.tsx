@@ -8,6 +8,7 @@ import { t } from "@/i18n/uz";
 import { getCharacter } from "@/config/characters";
 import TutorPortrait from "@/components/characters/TutorPortrait";
 import AnswerInput from "@/components/lesson/AnswerInput";
+import QuizA11y from "@/components/a11y/QuizA11y";
 import SuccessScreen from "@/components/ui/SuccessScreen";
 import { CloseIcon } from "@/components/ui/icons";
 import { useMe } from "@/lib/client/me";
@@ -129,6 +130,7 @@ export default function Diagnostic() {
             <div className="mt-2 text-center font-chalk text-[26px] leading-snug">{p.q}</div>
           </div>
           <AnswerInput key={p.index} expect={expect} disabled={busy} onSubmit={(v) => void send(v)} />
+          <QuizA11y questionKey={String(p.index)} question={p.q} choices={expect.kind === "choice" ? expect.choices : undefined} voice={ch.id} busy={busy} skipQuestion onAnswer={(v) => void send(v)} />
           <button type="button" className="btn btn-soft w-full" disabled={busy} onClick={() => void send("")}>
             {t.diagnostic.dontKnow} — keyin birga quramiz
           </button>

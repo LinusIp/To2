@@ -18,7 +18,7 @@ const STYLE: Record<RoadmapNode["status"], { bg: string; border: string; dashed?
   current: { bg: "#2f6bff", border: "#2f6bff", text: "#ffffff" },
   next: { bg: "#ffffff", border: "#f0a400", dashed: true, text: "#141a3a" },
   optional: { bg: "#ffffff", border: "#c9d1e6", dashed: true, text: "#6b7393" },
-  locked: { bg: "#e9edf7", border: "#dfe4f1", text: "#8a92b0" },
+  locked: { bg: "#e9edf7", border: "#dfe4f1", text: "#5f6787" },
 };
 
 function SkillNode({ data }: NodeProps<Node<{ n: RoadmapNode; reason: string | null }>>) {

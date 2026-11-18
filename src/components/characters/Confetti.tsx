@@ -1,6 +1,7 @@
 "use client";
 // Block-particle confetti burst, re-triggered whenever `burst` changes.
 import { useEffect, useState } from "react";
+import { reduceMotionNow } from "@/lib/a11y/settings";
 
 const COLORS = ["#3fae49", "#ffc83d", "#f28c28", "#7cc7ff", "#ff9bb0", "#ffffff"];
 
@@ -8,7 +9,7 @@ export default function Confetti({ burst }: { burst: number }) {
   const [pieces, setPieces] = useState<{ id: number; dx: number; dy: number; rot: number; c: string; s: number }[]>([]);
   useEffect(() => {
     if (!burst) return;
-    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    if (reduceMotionNow()) return; // OS reduced motion or the calm mode
     const ps = Array.from({ length: 22 }, (_, i) => ({
       id: burst * 100 + i,
       dx: (Math.random() - 0.5) * 260,

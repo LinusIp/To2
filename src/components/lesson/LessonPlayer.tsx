@@ -36,6 +36,7 @@ import SuccessScreen from "@/components/ui/SuccessScreen";
 import type { StartAt } from "@/lib/lesson/resume";
 import AnswerInput from "./AnswerInput";
 import MicButton from "./MicButton";
+import LessonA11y from "@/components/a11y/LessonA11y"; // a11y-hook
 
 // three.js + handwriting engine are code-split: the page shell paints first on phones.
 const ClassroomStage = lazy(() => import("./ClassroomStage"));
@@ -45,7 +46,7 @@ function Stage({ characterId }: { characterId: string }) {
   const active = useLesson((s) => s.active);
   const skillId = useLesson((s) => s.skillId);
   return (
-    <div className="overflow-hidden bg-[#e3d6bd] md:rounded-[24px] md:shadow-[0_10px_30px_rgba(31,54,120,.18)]">
+    <div data-a11y-stage className="overflow-hidden bg-[#e3d6bd] md:rounded-[24px] md:shadow-[0_10px_30px_rgba(31,54,120,.18)]"> {/* a11y-hook: keeps its scale at 150 % text */}
       <Suspense fallback={<div className="w-full bg-[#e3d6bd]" style={{ aspectRatio: "16 / 9" }} />}>
         <ClassroomStage board={board} active={active} characterId={characterId} label={`Sinfxona: ustoz doskada "${getSkill(skillId)?.title_uz ?? ""}" mavzusini tushuntirmoqda`} />
       </Suspense>
@@ -342,6 +343,7 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
           <div className="relative z-10 mt-3 md:mt-0">
             <Bubble name={ch.name} />
           </div>
+          <LessonA11y voice={characterId} /> {/* a11y-hook: inclusive mode (renders nothing when off) */}
           <div className="md:hidden">
             <div className="text-[12px] font-extrabold text-mut">
               {skill.section} · {t.lesson.lessonN(lessonNo)}

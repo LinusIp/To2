@@ -14,6 +14,7 @@ import AnswerInput from "@/components/lesson/AnswerInput";
 import SuccessScreen from "@/components/ui/SuccessScreen";
 import TutorPortrait from "@/components/characters/TutorPortrait";
 import QuizThinker from "@/components/lesson/QuizThinker";
+import QuizA11y from "@/components/a11y/QuizA11y";
 import { Bar } from "@/components/ui/hud";
 import { CloseIcon } from "@/components/ui/icons";
 import { getSkill } from "@/data/skills";
@@ -160,6 +161,7 @@ export default function QuizPage({ params }: { params: Promise<{ skillId: string
             {flash && <div className="mt-2 text-center text-[16px] font-black text-green">{t.lesson.correct}</div>}
           </div>
           {p && !flash && <AnswerInput key={p.key} expect={p.expect} disabled={busy} wrong={wrong} onSubmit={(v) => void submit(v)} />}
+          {p && !flash && <QuizA11y questionKey={p.key} question={p.q} choices={p.expect.kind === "choice" ? p.expect.choices : undefined} voice={ch.id} busy={busy} onAnswer={(v) => void submit(v)} />}
           {tries > 0 && p && !flash && (
             <div className="rounded-[14px] bg-[#fff4e8] px-3.5 py-3 text-[14px] font-extrabold text-[#c2410c]" role="status">
               {t.lesson.hint}: {p.hint}

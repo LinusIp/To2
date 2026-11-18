@@ -29,6 +29,10 @@ export default function Landing() {
               <br />
               {t.splash.tagline2}
             </div>
+            <Link href="/qulaylik?next=/home" className="mx-auto mt-4 inline-flex max-w-[460px] items-start gap-2 rounded-2xl bg-white/15 px-3.5 py-2 text-left text-[14px] leading-snug font-extrabold text-white no-underline ring-2 ring-white/40 md:mx-0" data-testid="a11y-badge">
+              <span className="flex-none rounded-full bg-white px-2 py-0.5 text-[12px] font-black text-[#1f4fd0]">{t.a11y.badge}</span>
+              <span>{t.a11y.splash}</span>
+            </Link>
             <p className="mx-auto mt-4 hidden max-w-[460px] text-[17px] leading-normal font-bold opacity-90 md:block">{t.landing.subtitle}</p>
             <div className="mt-8 hidden w-[340px] md:block">
               <SplashCta />
@@ -69,7 +73,7 @@ export default function Landing() {
       <section className="bg-bg py-12">
         <div className="mx-auto max-w-[1100px] px-5">
           <h2 className="m-0 mb-5 text-[28px] font-black">{t.landing.charactersTitle}</h2>
-          <div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5 pb-2">
+          <div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5 pb-2" tabIndex={0} role="region" aria-label={t.landing.charactersTitle}>
             {CHARACTERS.map((c) => (
               <div key={c.id} className="card relative flex h-[210px] w-[160px] flex-none flex-col items-center justify-end overflow-hidden">
                 <TutorPortrait id={c.id} pose="sig" frame="half" alt={c.name} className="absolute top-0 left-1/2 h-[160px] w-[160px] -translate-x-1/2" style={c.status === "soon" ? { opacity: 0.5 } : undefined} />

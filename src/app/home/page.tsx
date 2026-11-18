@@ -96,7 +96,7 @@ export default function HomePage() {
               {s.title}
             </Link>
           ))}
-          <div className="flex h-24 items-center justify-center rounded-[20px] bg-[#e6ebf8] text-center text-[13px] font-extrabold text-[#8a92b0]">{t.home.soon}</div>
+          <div className="flex h-24 items-center justify-center rounded-[20px] bg-[#e6ebf8] text-center text-[13px] font-extrabold text-[#5f6787]">{t.home.soon}</div>
         </div>
 
         {/* progress */}
@@ -107,7 +107,7 @@ export default function HomePage() {
             <div className="mt-0.5 mb-2 text-[13px] font-bold text-mut">
               {t.home.lessonsOf(masteredAll, totalAll)} · {pathNodes.length ? t.roadmap.steps(pathNodes.filter((n) => n.status === "mastered").length, pathNodes.length) : ""}
             </div>
-            <Bar value={masteredAll} max={totalAll} />
+            <Bar value={masteredAll} max={totalAll} label={t.home.yourProgress} />
           </div>
         </Link>
       </div>

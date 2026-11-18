@@ -77,7 +77,7 @@ export default function AppShell({ children, wide = false, hideTabs = false }: {
               key={href}
               href={href}
               aria-current={on(match) ? "page" : undefined}
-              className={`flex h-[62px] flex-col items-center justify-center gap-1 text-[12px] font-extrabold no-underline ${on(match) ? "text-blue" : "text-[#8a92b0]"}`}
+              className={`flex h-[62px] flex-col items-center justify-center gap-1 text-[12px] font-extrabold no-underline ${on(match) ? "text-blue" : "text-[#5f6787]"}`}
             >
               <Icon size={24} />
               {label}

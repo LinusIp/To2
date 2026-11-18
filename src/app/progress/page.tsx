@@ -95,7 +95,7 @@ export default function ProgressPage() {
         <h2 className="mx-0.5 mt-2 mb-0 text-[18px] font-black">{t.profile.badges}</h2>
         <div className="flex flex-wrap gap-2">
           {badges.map((b) => (
-            <div key={b.label} className={`flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[14px] font-extrabold ${b.on ? "bg-[#fff3d1] text-[#a86b00]" : "bg-[#e9edf7] text-[#8a92b0]"}`}>
+            <div key={b.label} className={`flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[14px] font-extrabold ${b.on ? "bg-[#fff3d1] text-[#a86b00]" : "bg-[#e9edf7] text-[#5f6787]"}`}>
               {b.on ? <StarIcon size={16} /> : <LockIcon size={12} />}
               {b.label}
             </div>

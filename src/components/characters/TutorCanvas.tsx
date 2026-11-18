@@ -12,6 +12,7 @@ import type { AnimInput, TutorAnimator } from "./anim/animator";
 import { restSpot, type Box } from "@/lib/board/tutorSpot";
 import { measure } from "@/lib/board/layout";
 import { SIDE_BOARD, type BoardState } from "@/lib/board/model";
+import { useA11y } from "@/lib/a11y/settings";
 
 export interface TutorView {
   x0: number;
@@ -159,9 +160,10 @@ export default function TutorCanvas({
       driverRef.current(inp, viewRef.current);
       anim.prime(inp);
       const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-      const onMq = () => (anim.reducedMotion = mq.matches);
+      const onMq = () => (anim.reducedMotion = mq.matches || useA11y.getState().calm); // + the calm mode
       onMq();
       mq.addEventListener("change", onMq);
+      const offCalm = useA11y.subscribe(onMq);
       readyRef.current?.(anim);
 
       // dev only: lets tests read the rig state (mouth/lid frames, chalk vs. tip, state) + per-frame work time
@@ -212,6 +214,7 @@ export default function TutorCanvas({
         ren.setAnimationLoop(null);
         document.removeEventListener("visibilitychange", onVis);
         mq.removeEventListener("change", onMq);
+        offCalm();
         ro.disconnect();
         ch?.dispose();
         ren.dispose();
