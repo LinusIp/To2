@@ -870,6 +870,12 @@ Each course = a voxel town; each building on the route = a quest; all buildings 
 - ➕ (13:15) Event name changed to feat/roadmap's **`to2:voice`**, detail `{command: next|prev|open|back|continue|home}`, game answers `{command:"answer", n:1–4}` (`toVoiceDetail` in `src/lib/a11y/bus.ts`, tested). Decision: TownScreen handles back/home itself without preventDefault, so the app's back/home fallback is skipped on `/town/…` (no double navigation). Lesson-only commands aren't sent. TODO(main/games): feat/games has no `to2:voice` listener yet; on the quiz page the choice answers are still handled by QuizA11y, so a game screen there should not also submit on `answer`.
 
 ## 🔀 Integration release (main agent, 2026-11-18 13:00–14:30)
+**LIVE: https://to2.locallabs-io.workers.dev — `8bf833a` (clean build, released ~14:00 via scripts/release.mjs).**
+Production checks: `/version` = 8bf833a; demo-check `--no-gen` ×3 tutors → lesson=demo, question=pinned, 72/72 clips cached-v2,
+0 live generation; English "To be" lesson = demo source, voice cached (0 credits); /home /towns /games /fan/ingliz /fan/fizika → 200.
+⚠️ English 🔊 pronunciation is OFF: `GEMINI_API_KEY` is not a Worker secret (`/api/english/say?check=1` → enabled:false; buttons hidden).
+To enable: `pnpm wrangler secret put GEMINI_API_KEY` (team). release.mjs note: its `pull --rebase` replays merge commits — push the
+merged main first (fast-forward), then run it.
 **Merged into main** (in order, `--no-ff`, both features kept on every conflict): feat/ui-polish → feat/roadmap → feat/subjects-2 →
 feat/games → feat/languages → feat/inclusive → docs/pitch-numbers, then each branch's follow-up pushes up to the 13:45 freeze.
 - **Conflicts resolved**: REPORT.md (both sides kept); `AppShell.tsx` tab bar = ui-polish styling + 6 tabs (Bosh sahifa · Darslar → /towns ·

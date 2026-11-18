@@ -37,5 +37,7 @@ Other teams show a lab with every subject in one menu. We differ on three things
 3. **Native Uzbek voice.** The tutor hears and speaks Uzbek and uses school terms (*kasr, maxraj, EKUK*), not a translated English tutor.
 
 ## What is built (be honest on stage)
-- In **production** (`main`): math lessons on the board, voice interrupt, diagnostic, roadmap, 8 tutors.
-- In **feature branches, merging before the demo**: town view (`feat/roadmap`), games + career missions (`feat/games`), physics (`feat/subjects-2`), English + Gemini pronunciation (`feat/languages`), Inklyuziv rejim (`feat/inclusive`). TODO(team): update this line after the merge and say only what runs on the demo URL.
+- **Everything below is live on the demo URL** (https://to2.locallabs-io.workers.dev, release `8bf833a`, 18 Nov): math lessons on the board,
+  voice interrupt, diagnostic, roadmap + course towns (Matematika, Fizika, Ingliz tili), games + career missions (O'yinlar, Kasb sinovi),
+  Fizika (7-sinf), Ingliz tili (Beta, pinned "To be" lesson + practice), Inklyuziv rejim, 8 tutors, Ilmobod brand.
+- English 🔊 word pronunciation (Gemini) is built but switched off until its API key is set — the button stays hidden; don't promise it on stage.
