@@ -781,3 +781,46 @@ Judges' feedback: make To2 inclusive. Details: `docs/INCLUSIVE.md`.
 - ✅ Tests: 214 unit (+21: parser, presets, 13 narrator formulas, board, quiz); `e2e/a11y.spec.ts` axe-core WCAG 2.1 AA on 6 screens × mode off/on → 0 serious/critical (+2 behaviour checks).
 - Decisions: worked in the existing isolated worktree on a new branch `feat/inclusive` instead of `../To2-inclusive` (same isolation) · narration = cached tutor voice (`check=1`, free) else device speech synthesis, never new VoiceLab audio → **0 credits** · always-on commands use the browser recogniser (free), lesson mic path runs commands via the engine hook · stop = background-pause (exact resume) · brand blue `#2f6bff`→`#2a5ce8`, muted `#6b7393`→`#5f6787` (pre-existing AA contrast failures, visually near-identical) · 150 % text = CSS zoom with the lesson stage counter-zoomed · dyslexia font = Lexend (Google Fonts, loaded only when on) · local dev for tests = `MOCK_AI=1` on port 5188.
 - ⚠️ Not verified on a real phone with TalkBack / a physical mic; Uzbek recognition + synthesis quality depends on the device; number words by voice not parsed; LLM segment length unchanged in calm mode (display shortened instead).
+
+## 🏘️ Course towns — the core loop (branch `feat/roadmap`, 2026-11-18, not released)
+Each course = a voxel town; each building on the route = a quest; all buildings built = course mastered.
+- **Data**: the team's real art — `public/ui/town-{math,physics,english}.{webp,json}` (900×1200, 7 quests each, x,y in 0..1),
+  validated by `parseTown()`; replaced the island placeholder. Towns ↔ curricula in `src/config/towns.ts`:
+  math → matematika · physics → fizika · english → ingliz. **All three towns are playable.** The Fizika and English skill
+  graphs are **byte-identical copies** of `feat/subjects-2:src/data/skills.fizika.uz.json` and
+  `feat/languages:src/config/courses/english/skills.json` (same blob hashes → clean merge). Their towns are `practiceOnly`:
+  school / library / temple open `/practice/<skill>` until those courses' lessons merge (arena / workshop → games).
+  ⚠️ Before feat/subjects-2 and feat/languages are merged, practice for `fiz-…` / `en-…` skills doesn't exist on this branch.
+- `buildPath`: when no skill was measured, the fallback targets use the **nearest grade the course has** (a grade-6 learner
+  in Fizika, which starts at grade 7, got an empty town). Maths unchanged (still equal to `buildRoadmap`, tested).
+- Pin alignment checked at 375×812 on all three towns: `docs/screenshots/town-phone-built.png` (math),
+  `town-phone-physics.png`, `town-phone-english.png`, picker `towns-phone.png`.
+- **Logic** (`src/lib/learning/town.ts`, pure, 8 tests): buildings in route order take the personal path (`path.ts`) step
+  by step; a **weak** step keeps its topic from a school to the following arena (school + arena first); the temple (final
+  test) = the path's goal. First unfinished building = current, the rest locked.
+- **Quest types**: school → `/lesson/<skill>`, library → `/practice/<skill>`, temple → `/practice/<skill>?final=1`,
+  arena → `/games/<tower|speed|memory>?skill=<skill>` (stable pick per building), workshop → `/games/mission?skill=<skill>` —
+  the same URLs as `openQuest()` in `feat/games` (`src/lib/games/quest.ts`); not imported, so this branch builds without it.
+  If `/games/…` answers non-OK (feat/games not merged), the pin opens a practice stand-in instead (`questFallback`). Games
+  report answers to `/api/games/answer` (mastery up) → the building completes like any other quest.
+- **Voice (inclusive)**: the town listens for a window event `to2:voice` with `detail.command` = `next` · `prev` · `open` ·
+  `back` (also feat/inclusive's `continue` → open, `home` → back): next/prev move focus along the route (the caption is
+  announced), open starts the focused building, back → `/towns`. **TODO(inclusive owner)**: feat/inclusive's recogniser
+  only runs inside the lesson today — dispatch `to2:voice` from it to drive the town hands-free.
+- **Screens**: `/towns` (the "Darslar" tab now opens it; `/roadmap` stays reachable and is still where the diagnostic lands)
+  = town cards with "N/7 bino"; `/town/<id>` = image full width, dashed SVG route, pins: done gold ✓ · current pulsing with
+  the chosen tutor's face · locked grey + lock with the area dimmed and a scaffold icon. Header "Shaharni o'qib quring!".
+- **Completion**: tapping a pin stores `{town, n, skill, p0}` in sessionStorage and opens the quest; back on `/towns` or
+  `/town/<id>`, if that topic's mastery went **up** (finished lesson / right answers) the building is marked done →
+  confetti + gold pin + "+1 bino qurildi!". No change to the lesson/practice screens (code freeze).
+- **Persistence**: `GET/POST /api/town` → D1 `kv_store` key `town:<userId>:<townId>` via `store.ts` (no KV writes).
+- **Inclusive**: pins are real `<button>`s, `aria-label` "3. Kutubxona — ochiq" / "4. Maktab — qulflangan", DOM order =
+  route order = Tab order; focusing a pin writes "N. Kind · state / Action: topic" into an `aria-live` caption.
+- Checked (Playwright, 375×812, mock mode): D1 store round-trip, picker "1/7 bino", simulated finished quest → toast +
+  "2/7 bino", labels + Shift+Tab focus order, current pin opens `/practice/…?town=math&q=3`. 226 unit tests, build green.
+  Screenshots: `docs/screenshots/towns-phone.png`, `town-phone-built.png`, `town-phone-focus.png`.
+- Decisions: temple's Uzbek name = **"Minora"** (neutral word for a school app); no TTS generated for quest names (0 credits) —
+  the aria-live caption is read by screen readers; completion = "mastery went up" (simplest signal without editing lesson
+  screens); Fizika/English towns = "Tez orada".
+- ⚠️ Known: completion is only detected when the learner comes back to a town screen in the same tab session; a quest
+  replayed after mastery hits its ceiling may not register; arena/workshop fall back to practice until feat/games is merged.

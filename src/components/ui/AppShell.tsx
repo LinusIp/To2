@@ -12,7 +12,7 @@ import { Toaster } from "./Toast";
 
 const TABS = [
   { href: "/home", label: t.tabs.home, Icon: HomeIcon, match: ["/home"] },
-  { href: "/roadmap", label: t.tabs.lessons, Icon: BookIcon, match: ["/roadmap", "/lesson", "/practice"] },
+  { href: "/towns", label: t.tabs.lessons, Icon: BookIcon, match: ["/towns", "/town", "/map", "/roadmap", "/lesson", "/practice"] },
   { href: "/games", label: t.games.tab, Icon: BlocksIcon, match: ["/games"] },
   { href: "/progress", label: t.tabs.progress, Icon: ChartIcon, match: ["/progress"] },
   { href: "/rewards", label: t.tabs.rewards, Icon: CupIcon, match: ["/rewards"] },
