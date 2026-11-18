@@ -6,6 +6,7 @@ import Link from "next/link";
 import { t } from "@/i18n/uz";
 import { getSkill } from "@/data/skills";
 import { subjectOfSkill } from "@/config/subjects";
+import EnglishSay from "./EnglishSay";
 import { getCharacter } from "@/config/characters";
 import { useMe } from "@/lib/client/me";
 import { readPref } from "@/lib/client/prefs";
@@ -316,8 +317,9 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
   const subject = subjectOfSkill(skill);
   const isMath = subject.id === "matematika";
   const backHref = isMath ? "/roadmap" : (subject.href ?? "/home");
-  const practiceHref = isMath ? `/practice/${skillId}?from=lesson` : backHref;
-  const nextLabel = isMath ? t.lesson.toPractice : subject.href ? `${subject.name}: boshqa mavzular` : t.tabs.home;
+  const hasPractice = isMath || subject.id === "ingliz"; // English has its own generators (courses/english/practice.ts)
+  const practiceHref = hasPractice ? `/practice/${skillId}?from=lesson` : backHref;
+  const nextLabel = hasPractice ? t.lesson.toPractice : subject.href ? `${subject.name}: boshqa mavzular` : t.tabs.home;
   const sectionLabel = isMath ? skill.section : subject.status === "beta" ? `${subject.name} · Beta` : `${subject.name} · ${skill.section}`;
 
   return (
@@ -365,6 +367,7 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
               {error}
             </div>
           )}
+          <EnglishSay skillId={skillId} />
           {started && <Steps />}
           {!loaded ? (
             <div className="btn w-full opacity-60" aria-busy="true">
