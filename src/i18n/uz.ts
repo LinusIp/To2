@@ -1,6 +1,6 @@
 // All Uzbek UI copy. Keep strings out of components so `ru` can be added later.
 // The product name appears here and in src/config/brand.ts only.
-export const productName = "To2";
+export const productName = "Ilmobod";
 
 export const t = {
   meta: {
@@ -220,7 +220,7 @@ export const t = {
   },
   streakToday: (n: number) => `${n} kunlik seriya — bugun ham davom eting`,
   tabs: { home: "Bosh sahifa", lessons: "Darslar", progress: "Progress", rewards: "Mukofotlar", profile: "Profil", settings: "Sozlamalar" },
-  splash: { tagline1: "Matematika endi", tagline2: "yanada qiziqarli!", start: "Boshlash", login: "Kirish", cont: "Davom etish" },
+  splash: { tagline1: "Har bir fan — bir shahar.", tagline2: "Har bir topshiriq — bir bino.", start: "Boshlash", login: "Kirish", cont: "Davom etish" },
   home: {
     today: "Bugungi dars",
     subjects: "Fanlar",

@@ -8,7 +8,7 @@ const { url } = JSON.parse(readFileSync(join(__dirname, "..", "production.json")
 
 const config: CapacitorConfig = {
   appId: "uz.to2.app",
-  appName: "To2",
+  appName: "Ilmobod",
   webDir: "www",
   server: {
     url,

@@ -7,6 +7,8 @@ import { t } from "@/i18n/uz";
 export const metadata: Metadata = {
   title: `${brand.name} — ${t.meta.title}`,
   description: t.meta.description,
+  applicationName: brand.name,
+  manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {

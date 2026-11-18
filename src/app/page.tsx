@@ -24,7 +24,7 @@ export default function Landing() {
         </div>
         <div className="relative z-10 flex w-full max-w-[1100px] flex-1 flex-col items-center px-6 md:flex-row md:items-center md:justify-between md:gap-10">
           <div className="stagger mt-[11vh] text-center md:mt-0 md:text-left">
-            <div className="text-[96px] leading-none font-black tracking-[-2px] [text-shadow:0_6px_0_rgba(0,0,0,.12)] md:text-[120px]">{brand.name}</div>
+            <div className="text-[64px] leading-none font-black tracking-[-1.5px] [text-shadow:0_6px_0_rgba(0,0,0,.12)] min-[400px]:text-[72px] md:text-[112px]">{brand.name}</div>
             <div className="mt-2.5 text-[20px] leading-[1.3] font-extrabold opacity-95 md:text-[26px]">
               {t.splash.tagline1}
               <br />
