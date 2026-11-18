@@ -3,7 +3,7 @@
 // The personal path is drawn as a numbered blue route through the leaves.
 // Status = colour + icon (+ the word in the legend / detail card), never colour alone (CLAUDE.md §10 rule 5).
 import type { MindMap as MindMapData, MindLeaf, StepStatus } from "@/lib/learning/path";
-import { subjectOfSection } from "@/config/subjects";
+import { subjectOfSection } from "@/config/mathTopics";
 import { t } from "@/i18n/uz";
 import { C, R_NODE, SIZE, layoutMindMap } from "./mindmapLayout";
 

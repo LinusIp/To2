@@ -7,8 +7,9 @@ import { t } from "@/i18n/uz";
 import AppShell from "@/components/ui/AppShell";
 import TutorPortrait from "@/components/characters/TutorPortrait";
 import { Bar, StreakChip } from "@/components/ui/hud";
-import { ArrowIcon, BarsIcon, Logo, TriangleIcon, TrophyIcon, GearIcon } from "@/components/ui/icons";
+import { ArrowIcon, TrophyIcon, GearIcon } from "@/components/ui/icons";
 import { SUBJECTS } from "@/config/subjects";
+import TopicAsk from "@/components/home/TopicAsk";
 import { getCharacter } from "@/config/characters";
 import { useMe } from "@/lib/client/me";
 
@@ -85,19 +86,39 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="grid grid-cols-3 gap-2.5">
-          {SUBJECTS.map((s) => (
-            <Link
-              key={s.id}
-              href={`/roadmap?subject=${s.id}`}
-              className="flex h-24 flex-col items-center justify-center gap-1.5 rounded-[20px] text-[14px] font-extrabold text-white no-underline shadow-[inset_0_-4px_0_rgba(0,0,0,.12)]"
-              style={{ background: `linear-gradient(160deg,${s.from},${s.to})` }}
-            >
-              {s.icon === "triangle" ? <TriangleIcon /> : s.icon === "bars" ? <BarsIcon /> : <b className="text-[26px] leading-none font-black">{s.glyph}</b>}
-              {s.title}
-            </Link>
-          ))}
-          <div className="flex h-24 items-center justify-center rounded-[20px] bg-[#e6ebf8] text-center text-[13px] font-extrabold text-[#8a92b0]">{t.home.soon}</div>
+          {SUBJECTS.map((s) => {
+            const body = (
+              <>
+                <b className={`${s.icon.length > 3 ? "text-[19px]" : "text-[26px]"} leading-none font-black`}>{s.icon}</b>
+                <span className="px-1 text-center leading-tight">{s.name}</span>
+                {s.status !== "live" && (
+                  <span className={`rounded-full px-2 py-[1px] text-[10px] font-black ${s.status === "beta" ? "bg-white/25 text-white" : "bg-white text-[#8a92b0]"}`}>
+                    {s.status === "beta" ? t.home.beta : t.home.soon}
+                  </span>
+                )}
+              </>
+            );
+            const cls = "flex h-24 flex-col items-center justify-center gap-1 rounded-[20px] text-[14px] font-extrabold no-underline";
+            if (s.status === "soon")
+              return (
+                <div key={s.id} aria-disabled="true" className={`${cls} bg-[#e6ebf8] text-[#8a92b0]`}>
+                  {body}
+                </div>
+              );
+            return (
+              <Link
+                key={s.id}
+                href={s.href ?? "#istalgan-mavzu"}
+                onClick={s.href ? undefined : () => setTimeout(() => document.getElementById("topic-input")?.focus(), 50)}
+                className={`${cls} text-white shadow-[inset_0_-4px_0_rgba(0,0,0,.12)]`}
+                style={{ background: `linear-gradient(160deg,${s.from},${s.to})` }}
+              >
+                {body}
+              </Link>
+            );
+          })}
         </div>
+        <TopicAsk />
 
         {/* progress */}
         <Link href="/progress" className="card mt-4 mb-4 flex items-center gap-3.5 p-4 no-underline">

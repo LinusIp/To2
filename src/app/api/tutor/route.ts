@@ -14,6 +14,7 @@ import { createObjectSplitter } from "@/lib/ai/streamJson";
 import { interruptMessages, lessonMessages } from "@/lib/ai/prompts/tutor.uz";
 import { demoLessonFor, mockInterrupt } from "@/lib/ai/mock/lessons";
 import { cannedLesson } from "@/lib/ai/canned";
+import { TOPIC_EXAMPLE_SEGMENTS } from "@/lib/ai/prompts/examples";
 import { getSkill } from "@/data/skills";
 import { getCharacter } from "@/config/characters";
 import { CANONICAL, matchPinned, normalizeQuestion, pinnedAnswer } from "@/lib/ai/pinned";
@@ -26,7 +27,7 @@ import type { Msg } from "@/lib/ai/types";
 
 const Body = z.object({
   mode: z.enum(["lesson", "interrupt"]),
-  skillId: z.string().max(64),
+  skillId: z.string().max(128),
   characterId: z.string().max(32).default("blokbek"),
   grade: z.coerce.number().int().min(5).max(9).default(6),
   question: z.string().max(500).optional(),
@@ -174,8 +175,10 @@ export async function POST(req: Request) {
           return;
         }
         if (ai.mock || !(await rateLimit(`llm:${clientKey(req, userId)}`, 20))) {
-          const segs = demo?.segments ?? cannedLesson(skill);
-          await send("meta", { source: demo ? "demo" : "canned" });
+          // offline "Istalgan mavzu": only the Fotosintez example exists; any other topic → honest notice
+          const mockTopic = ai.mock && skill.subject === "any" && /fotosintez/i.test(skill.title_uz) ? TOPIC_EXAMPLE_SEGMENTS : null;
+          const segs = demo?.segments ?? mockTopic ?? cannedLesson(skill);
+          await send("meta", { source: demo ? "demo" : mockTopic ? "mock" : "canned" });
           for (const s of segs) await send("segment", s);
           return;
         }

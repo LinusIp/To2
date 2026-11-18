@@ -1,0 +1,11 @@
+[
+  { "id": "fiz-masofa-vaqt", "title_uz": "Masofa va vaqt", "grade": 7, "prereqs": [], "section": "Harakat", "subject": "fizika" },
+  { "id": "fiz-tezlik", "title_uz": "Tezlik", "grade": 7, "prereqs": ["fiz-masofa-vaqt"], "section": "Harakat", "subject": "fizika" },
+  { "id": "fiz-ortacha-tezlik", "title_uz": "O'rtacha tezlik", "grade": 7, "prereqs": ["fiz-tezlik"], "section": "Harakat", "subject": "fizika" },
+  { "id": "fiz-massa", "title_uz": "Massa", "grade": 7, "prereqs": [], "section": "Modda va massa", "subject": "fizika" },
+  { "id": "fiz-zichlik", "title_uz": "Zichlik", "grade": 7, "prereqs": ["fiz-massa"], "section": "Modda va massa", "subject": "fizika" },
+  { "id": "fiz-kuch", "title_uz": "Kuch", "grade": 7, "prereqs": ["fiz-massa"], "section": "Kuch va bosim", "subject": "fizika" },
+  { "id": "fiz-bosim", "title_uz": "Bosim", "grade": 7, "prereqs": ["fiz-kuch"], "section": "Kuch va bosim", "subject": "fizika" },
+  { "id": "fiz-ish", "title_uz": "Mexanik ish", "grade": 7, "prereqs": ["fiz-kuch", "fiz-masofa-vaqt"], "section": "Ish va quvvat", "subject": "fizika" },
+  { "id": "fiz-quvvat", "title_uz": "Quvvat", "grade": 7, "prereqs": ["fiz-ish"], "section": "Ish va quvvat", "subject": "fizika" }
+]

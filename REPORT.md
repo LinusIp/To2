@@ -42,6 +42,39 @@ Per CLAUDE.md "★ Design update" and `docs/prototypes/`:
 - ⚠️ If the learner switches apps mid-lesson the chalk timeline pauses until the tab is visible again (rAF), by design.
 - Team files committed as found: `public/characters/` (144 Blender renders + `blender/` sources, ~51 MB) and `tools/blender/to2_characters.py`.
 
+## 📚 Subjects: Fizika + "Istalgan mavzu" (2026-11-18, branch `feat/subjects-2`, NOT deployed)
+Judges' feedback: "not only math". The same board + tutor engine now teaches other subjects.
+- **Subjects config** `src/config/subjects.ts`: id, name, icon, colours, status (live/beta/soon), skill-graph file, tutor role,
+  prompt **flavour**, Uzbek terms, allowed board ops. Matematika = default (a skill without `subject` is maths). The old
+  maths topic tiles moved to `src/config/mathTopics.ts` (roadmap filters unchanged).
+- **Prompt** (`src/lib/ai/prompts/tutor.uz.ts`): persona/flavour/terms/board ops come from the skill's subject (lesson +
+  interrupt); fizika uses the Tezlik lesson as few-shot; maths prompt unchanged in content.
+- **FIZIKA (7-sinf)**: `src/data/skills.fizika.uz.json` — 9 skills (masofa-vaqt → tezlik → o'rtacha tezlik; massa → zichlik;
+  massa → kuch → bosim; kuch + masofa → ish → quvvat). Page `/fan/fizika` (prerequisites first). Kept OUT of the maths graph
+  (diagnostic, roadmap, practice generators untouched).
+- **Pinned demo lesson** `fiz-tezlik` (`src/lib/ai/mock/physics.ts`): car (box + wheels) + motion arrow, distance line, s/t
+  definitions, handwritten `v = s/t` fraction, units (km/soat, m/s), two worked examples (120 km / 2 soat = 60; 45 / 3 = 15).
+  Other physics skills = LLM lessons with the physics flavour.
+- **Istalgan mavzu (Beta)**: home field "Qaysi mavzuni o'rganmoqchisiz?" (text or mic → STT) → `/lesson/t:<topic>` → LLM board
+  lesson, 5–6 segments, one choice question, Uzbek. Guardrails: client+server `cleanTopic()` (3–80 chars, letters only, blocklist),
+  prompt refuses non-school/unsafe topics with a fixed line, no mastery/XP rows for topics. Mock mode: Fotosintez example only.
+- **Home**: tiles Matematika · Fizika · Istalgan mavzu (Beta) · Kimyo/Biologiya/Ingliz tili = "Tez orada" (no link, no content).
+- **Audio**: `scripts/warm-physics.mjs` (dry-run first) — 11 lines × Blokbek/Lola/Ziyo = 33; 31 generated (lison-v2, ok=31, fail=0,
+  v1-fallback=0), dry-run price ≈ **3,546 credits** (budget 6,000). Re-check: 0 uncached.
+- Tests: `src/config/subjects.test.ts` (+13: config loading, physics DAG/no cycles, demo lesson valid + answers, prompt has the
+  subject flavour, topic guard). 208 unit tests green; `pnpm build` green. Screenshots 375×812: `docs/screenshots/subjects/`.
+### Decisions (autonomy mode)
+- Another session had `feat/subjects` checked out (same task) → built in this worktree on **`feat/subjects-2`** (user's choice).
+- Topic id = `t:<topic text>` so every existing route works unchanged (skillId limit 64 → 128).
+- Physics/topic lessons: no practice button (no generators yet) → "Fizika: boshqa mavzular" / "Bosh sahifa".
+- Example 2 of the Tezlik lesson is written in the right column (the layouter re-places rewritten lines; this is stable).
+### Known issues
+- Tutor greeting before a lesson is still maths-flavoured ("Matematikani blokma-blok quramiz!") — per-subject greetings need audio.
+- The real-LLM "Istalgan mavzu" path was not run end-to-end (no key in this worktree; production runs main). Prompt + guard are
+  unit-tested; run one topic on staging after merge. LLM lessons for other physics skills: same caveat.
+- Topic lessons show the topic twice on the board ("Mavzu: X" + the LLM's own title). `bytes.test.ts` CPU-timing test is flaky
+  under load (passes alone).
+
 ## ❓ Unclear / assumption — design update
 - What: repo `docs/prototypes/*.html` were older than the attached versions (repo `board-handwriting.html` had no `makeChar`). - I assumed: the attached files are current and copied them over. - To change: replace the files.
 - Letters: single-stroke glyphs from **EMS Tech** (SIL OFL, via the MIT `hersheytext` package, extracted to `src/components/board/glyphs.json` by `pnpm glyphs`). It reads like teacher handwriting; the prototype's own glyph table covered only ~15 characters.

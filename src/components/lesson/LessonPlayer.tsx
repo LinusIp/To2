@@ -5,6 +5,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { t } from "@/i18n/uz";
 import { getSkill } from "@/data/skills";
+import { subjectOfSkill } from "@/config/subjects";
 import { getCharacter } from "@/config/characters";
 import { useMe } from "@/lib/client/me";
 import { readPref } from "@/lib/client/prefs";
@@ -308,17 +309,24 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
   }
 
   const started = status !== "idle";
+  // fizika / "Istalgan mavzu": no practice generators yet, and they go back to their own page
+  const subject = subjectOfSkill(skill);
+  const isMath = subject.id === "matematika";
+  const backHref = isMath ? "/roadmap" : (subject.href ?? "/home");
+  const practiceHref = isMath ? `/practice/${skillId}?from=lesson` : backHref;
+  const nextLabel = isMath ? t.lesson.toPractice : subject.href ? `${subject.name}: boshqa mavzular` : t.tabs.home;
+  const sectionLabel = isMath ? skill.section : subject.status === "beta" ? `${subject.name} · Beta` : `${subject.name} · ${skill.section}`;
 
   return (
     <div className="mx-auto flex max-w-[1500px] flex-col md:gap-4 md:px-6 md:pt-6 md:pb-6">
       {/* desktop title row */}
       <div className="hidden items-center gap-3 md:flex">
-        <Link href="/roadmap" aria-label={t.nav.backToMap} title={t.nav.backToMap} className="icon-btn bg-white shadow-[0_4px_12px_rgba(31,54,120,.07)]">
+        <Link href={backHref} aria-label={t.nav.backToMap} title={t.nav.backToMap} className="icon-btn bg-white shadow-[0_4px_12px_rgba(31,54,120,.07)]">
           <BackIcon />
         </Link>
         <div className="min-w-0 flex-1">
           <div className="text-[13px] font-extrabold text-mut">
-            {skill.section} · {t.lesson.lessonN(lessonNo)} · {t.common.grade(user?.grade ?? skill.grade)}
+            {sectionLabel} · {t.lesson.lessonN(lessonNo)} · {t.common.grade(user?.grade ?? skill.grade)}
           </div>
           <h1 className="m-0 truncate text-[26px] font-black xl:text-[30px]">{skill.title_uz}</h1>
         </div>
@@ -331,7 +339,7 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
           <Stage characterId={characterId} />
           {/* mobile overlay: back + tools */}
           <div className="absolute inset-x-3 top-3 flex items-start justify-between md:hidden" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-            <Link href="/roadmap" aria-label={t.nav.backToMap} className="icon-btn bg-white/85">
+            <Link href={backHref} aria-label={t.nav.backToMap} className="icon-btn bg-white/85">
               <BackIcon />
             </Link>
             <Toolbar />
@@ -344,7 +352,7 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
           </div>
           <div className="md:hidden">
             <div className="text-[12px] font-extrabold text-mut">
-              {skill.section} · {t.lesson.lessonN(lessonNo)}
+              {sectionLabel} · {t.lesson.lessonN(lessonNo)}
             </div>
             <h1 className="m-0 text-[20px] leading-tight font-black">{skill.title_uz}</h1>
           </div>
@@ -388,16 +396,16 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
           title={t.success.title}
           subtitle={`${t.success.lessonDone} ${t.lesson.xpGained(xpGained + 20)}`}
           characterId={characterId}
-          primary={{ label: t.lesson.toPractice, href: `/practice/${skillId}?from=lesson` }}
+          primary={{ label: nextLabel, href: practiceHref }}
           secondary={{ label: t.lesson.toMap, onClick: () => setDoneSeen(true) }}
         />
       )}
       {status === "done" && doneSeen && (
         <div className="flex gap-3 px-4 pb-6 md:px-0">
-          <Link href={`/practice/${skillId}?from=lesson`} className="btn btn-primary flex-1">
-            {t.lesson.toPractice}
+          <Link href={practiceHref} className="btn btn-primary flex-1">
+            {nextLabel}
           </Link>
-          <Link href="/roadmap" className="btn flex-1">
+          <Link href={backHref} className="btn flex-1">
             {t.lesson.toMap}
           </Link>
         </div>

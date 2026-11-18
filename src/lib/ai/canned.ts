@@ -4,7 +4,21 @@ import { generateProblem, seeded } from "@/data/problems";
 import type { Skill } from "@/data/skills";
 import type { LessonSegment } from "./schema";
 
+/** Non-maths skills (fizika, "Istalgan mavzu") have no problem generators: an honest short notice. */
+function cannedOther(skill: Skill): LessonSegment[] {
+  return [
+    {
+      id: "c1",
+      type: "explain",
+      emotion: "encouraging",
+      say: `Kechirasan, "${skill.title_uz.slice(0, 40)}" darsini hozir tayyorlay olmadim. Birozdan keyin qayta urinib ko'r!`,
+      board: [{ op: "write", id: "title", x: 50, y: 60, text: skill.title_uz.slice(0, 32), size: "m", color: "yellow" }],
+    },
+  ];
+}
+
 export function cannedLesson(skill: Skill, seed = 7): LessonSegment[] {
+  if (skill.subject && skill.subject !== "matematika") return cannedOther(skill);
   const r = seeded(seed);
   const p1 = generateProblem(skill.id, r);
   const p2 = generateProblem(skill.id, r);
