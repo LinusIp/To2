@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import raw from "../../../public/ui/town-math.json";
+import rawPhysics from "../../../public/ui/town-physics.json";
+import rawEnglish from "../../../public/ui/town-english.json";
+import { validateGraph } from "./path";
 import { ARENA_GAMES, arenaGame, assignQuests, parseTown, questFallback, questHref, townProgress, townVoiceCommand, type TownData } from "./town";
 import { buildPath, type Curriculum } from "./path";
 import { CURRICULA } from "@/data/curricula";
@@ -9,7 +12,30 @@ const town = parseTown(raw);
 const math = CURRICULA.matematika;
 
 describe("town JSON", () => {
-  it("placeholder math town parses: 7 quests, temple last, markers in 0..1", () => {
+  it("all three real towns parse: 7 quests, temple last, image matches, route ≥ 3 points", () => {
+    for (const [id, r] of [["math", raw], ["physics", rawPhysics], ["english", rawEnglish]] as const) {
+      const tw = parseTown(r);
+      expect(tw.quests).toHaveLength(7);
+      expect(tw.quests.at(-1)!.kind).toBe("temple");
+      expect(tw.image).toBe(`/ui/town-${id}.webp`);
+      expect(tw.route.length).toBeGreaterThan(2);
+    }
+  });
+  it("Fizika + Ingliz tili curricula are valid graphs; practice-only towns open practice for lessons", () => {
+    expect(validateGraph(CURRICULA.fizika.skills)).toEqual([]);
+    expect(validateGraph(CURRICULA.ingliz.skills)).toEqual([]);
+    const tw = parseTown(rawPhysics);
+    const q = assignQuests(tw, buildPath(CURRICULA.fizika, {}, 7), [1], { practiceOnly: true });
+    expect(q[0].status).toBe("done");
+    expect(q[0].href).toMatch(/^\/practice\/fiz-/);
+    expect(q[1].href).toMatch(/^\/games\//);
+    expect(q[6].status).toBe("locked");
+    // a grade-6 learner (with maths mastery only) still gets a Fizika path: the course's first grade
+    const p6 = buildPath(CURRICULA.fizika, { lcm: 0.3, "frac-add-unlike": 0.4 }, 6);
+    expect(p6.order.length).toBeGreaterThan(0);
+    expect(buildPath(CURRICULA.ingliz, {}, 9).order.length).toBeGreaterThan(0);
+  });
+  it("math town parses: 7 quests, temple last, markers in 0..1", () => {
     expect(town.quests).toHaveLength(7);
     expect(town.quests.at(-1)!.kind).toBe("temple");
     expect(town.route.length).toBeGreaterThan(2);
@@ -18,8 +44,8 @@ describe("town JSON", () => {
     expect(() => parseTown({ ...raw, quests: [{ i: 0, kind: "castle", marker: [0.1, 0.1] }] })).toThrow();
     expect(() => parseTown({ ...raw, quests: [{ i: 0, kind: "school", marker: [1.4, 0.1] }] })).toThrow();
   });
-  it("every town with a curriculum on this branch has one", () => {
-    expect(TOWNS.filter((t) => CURRICULA[t.curriculum]).map((t) => t.id)).toEqual(["math"]);
+  it("every town has a curriculum", () => {
+    expect(TOWNS.filter((t) => CURRICULA[t.curriculum]).map((t) => t.id)).toEqual(["math", "physics", "english"]);
   });
 });
 

@@ -597,10 +597,17 @@ it already wrote until it steps back.
 
 ## 🏘️ Course towns — the core loop (branch `feat/roadmap`, 2026-11-18, not released)
 Each course = a voxel town; each building on the route = a quest; all buildings built = course mastered.
-- **Data**: `public/ui/town-<id>.json` `{course, image, quests:[{i, kind, marker, path}], route}` (x,y in 0..1 of the image),
-  validated by `parseTown()`. Until the team's files land: `town-math.json` = **placeholder** (island image, 7 buildings);
-  a missing `town-<id>.json` falls back to it. Towns ↔ curricula in `src/config/towns.ts` (math → matematika; Fizika /
-  Ingliz tili shahri show "Tez orada" until their curriculum is on this branch).
+- **Data**: the team's real art — `public/ui/town-{math,physics,english}.{webp,json}` (900×1200, 7 quests each, x,y in 0..1),
+  validated by `parseTown()`; replaced the island placeholder. Towns ↔ curricula in `src/config/towns.ts`:
+  math → matematika · physics → fizika · english → ingliz. **All three towns are playable.** The Fizika and English skill
+  graphs are **byte-identical copies** of `feat/subjects-2:src/data/skills.fizika.uz.json` and
+  `feat/languages:src/config/courses/english/skills.json` (same blob hashes → clean merge). Their towns are `practiceOnly`:
+  school / library / temple open `/practice/<skill>` until those courses' lessons merge (arena / workshop → games).
+  ⚠️ Before feat/subjects-2 and feat/languages are merged, practice for `fiz-…` / `en-…` skills doesn't exist on this branch.
+- `buildPath`: when no skill was measured, the fallback targets use the **nearest grade the course has** (a grade-6 learner
+  in Fizika, which starts at grade 7, got an empty town). Maths unchanged (still equal to `buildRoadmap`, tested).
+- Pin alignment checked at 375×812 on all three towns: `docs/screenshots/town-phone-built.png` (math),
+  `town-phone-physics.png`, `town-phone-english.png`, picker `towns-phone.png`.
 - **Logic** (`src/lib/learning/town.ts`, pure, 8 tests): buildings in route order take the personal path (`path.ts`) step
   by step; a **weak** step keeps its topic from a school to the following arena (school + arena first); the temple (final
   test) = the path's goal. First unfinished building = current, the rest locked.

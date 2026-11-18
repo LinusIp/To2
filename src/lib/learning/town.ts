@@ -63,9 +63,11 @@ export function arenaGame(skillId: string, n: number): (typeof ARENA_GAMES)[numb
  * arena / workshop use the games module's URLs (same as its questHref: /games/<game>?skill=…, /games/mission?skill=…);
  * `questFallback` is the practice stand-in used when /games isn't deployed.
  */
-export function questHref(kind: QuestKind, skillId: string, course: string, n: number): string {
+export function questHref(kind: QuestKind, skillId: string, course: string, n: number, opts: { practiceOnly?: boolean } = {}): string {
   const q = `town=${encodeURIComponent(course)}&q=${n}`;
   const sk = encodeURIComponent(skillId);
+  // courses whose lessons merge later: school / library / temple → practice (games stay games)
+  if (opts.practiceOnly && kind !== "arena" && kind !== "workshop") return `/practice/${sk}?${kind === "temple" ? "final=1&" : ""}${q}`;
   switch (kind) {
     case "school":
       return `/lesson/${sk}?${q}`;
@@ -118,7 +120,7 @@ export function townVoiceCommand(raw: unknown): TownVoice | null {
  * - the temple (final mastery test) always gets the last step of the path (the learner's goal).
  * `done` = building numbers (n) finished; the first unfinished building is current, the rest locked.
  */
-export function assignQuests(town: TownData, path: PersonalPath, done: Iterable<number>): TownQuest[] {
+export function assignQuests(town: TownData, path: PersonalPath, done: Iterable<number>, opts: { practiceOnly?: boolean } = {}): TownQuest[] {
   const doneSet = new Set(done);
   const steps: PathStep[] = path.steps;
   const last = steps[steps.length - 1];
@@ -147,7 +149,7 @@ export function assignQuests(town: TownData, path: PersonalPath, done: Iterable<
       topic: step?.title ?? "",
       weak: step?.reason.kind === "weak",
       status,
-      href: step && status !== "locked" ? questHref(q.kind, step.id, town.course, n) : null,
+      href: step && status !== "locked" ? questHref(q.kind, step.id, town.course, n, opts) : null,
     };
   });
 }

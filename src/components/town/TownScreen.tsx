@@ -61,7 +61,7 @@ export default function TownScreen({ townId }: { townId: string }) {
   const curriculum = meta ? CURRICULA[meta.curriculum] : undefined;
   const started = useMemo(() => roadmap?.nodes.filter((n) => n.started).map((n) => n.id) ?? [], [roadmap]);
   const path = useMemo(() => (curriculum ? buildPath(curriculum, mastery, user?.grade ?? 6, { touched: Object.keys(mastery), started }) : null), [curriculum, mastery, user, started]);
-  const quests = useMemo(() => (town && path ? assignQuests(town, path, done) : []), [town, path, done]);
+  const quests = useMemo(() => (town && path ? assignQuests(town, path, done, { practiceOnly: meta?.practiceOnly }) : []), [town, path, done, meta]);
   const prog = townProgress(quests);
   const ch = getCharacter(user?.characterId);
   const focused = quests.find((q) => q.n === focus) ?? quests.find((q) => q.status === "current") ?? null;

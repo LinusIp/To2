@@ -104,10 +104,12 @@ export function buildPath(curriculum: Curriculum, mastery: MasteryMap, grade: nu
   const isMastered = (id: string) => pOf(id) >= MASTERED;
   const needs = (id: string) => (id in mastery ? mastery[id] < INFERRED_PREREQ : (byId[id]?.grade ?? 0) >= grade);
   const maxGrade = skills.reduce((m, s) => Math.max(m, s.grade), 0);
+  const minGrade = skills.reduce((m, s) => Math.min(m, s.grade), Infinity);
 
   let targets = skills.filter((s) => s.grade <= grade && touched.has(s.id) && pOf(s.id) < 0.5).map((s) => s.id);
   if (targets.length === 0) {
-    const g = Math.min(grade, maxGrade);
+    // nearest grade this course has (a grade-6 learner in a course that starts at grade 7 gets its first grade)
+    const g = Math.min(Math.max(grade, minGrade), maxGrade);
     targets = skills.filter((s) => s.grade === g && !isMastered(s.id)).map((s) => s.id).slice(0, 4);
   }
   const weak = new Set(targets);
