@@ -30,3 +30,4 @@ Docs only: no code, no deploy, **0 VoiceLab credits**. Not merged into `REPORT.m
 ## Known issues
 - All market/price numbers are advertised or secondary-source figures. Say "est." on stage.
 - The free and Premium tiers and billing don't exist in the product yet.
+- **Push blocked:** the GitHub credential on this machine is `goodDeveloper1` (403 on `LinusIp/To2`). The branch is committed locally in worktree `../to2-pitch`. Push it from an account with write access: `git -C ../to2-pitch push -u origin docs/pitch-numbers`.
