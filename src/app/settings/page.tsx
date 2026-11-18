@@ -13,6 +13,7 @@ import { readPref, writePref } from "@/lib/client/prefs";
 import { toast } from "@/components/ui/Toast";
 import { SkeletonPage } from "@/components/ui/Skeleton";
 import { ui } from "@/i18n/uz-ui";
+import { OptionList, PresetCards } from "@/components/a11y/QulaylikPanel";
 
 function Toggle({ on }: { on: boolean }) {
   return (
@@ -148,6 +149,14 @@ export default function SettingsPage() {
             ))}
           </div>
         </div>
+
+        <section aria-labelledby="qulaylik" className="flex flex-col gap-3">
+          <h2 id="qulaylik" className="m-0 mt-1 text-[20px] font-black">
+            {t.a11y.title}
+          </h2>
+          <PresetCards />
+          <OptionList />
+        </section>
 
         <div className="card overflow-hidden">
           <Row href="/tutors">

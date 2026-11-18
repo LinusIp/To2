@@ -774,3 +774,10 @@ courses, games or a11y files), so it merges cleanly next to the 5 feature branch
 ### ⚠️ Known issues
 - Uzbek TTS reading phonetic English is an approximation (not a native accent); listen before the demo.
 - No practice generators for English yet; the lesson end still offers "Mashqqa o'tish" until wired as above.
+## ♿ Inklyuziv rejim (branch `feat/inclusive`, 18 Nov — NOT deployed, needs Main to merge/deploy)
+Judges' feedback: make To2 inclusive. Details: `docs/INCLUSIVE.md`.
+- ✅ 4 presets (ko'zi ojiz · eshitishda qiyinchilik · harakatda qiyinchilik · diqqat/disleksiya) + every option separately: Sozlamalar → Qulaylik, `/qulaylik` ("Sizga qanday qulay?", offered once after onboarding), "Qulaylik" badge on the splash.
+- ✅ `src/lib/a11y/` (settings store, voice-command parser, board/quiz narrator via speakMath, live region / narration / vibration, browser recogniser); UI in `src/components/a11y/`; hooks marked `// a11y-hook` (2 lines in LessonPlayer, a speaking-line getter + mic command hook in engine.ts).
+- ✅ Tests: 214 unit (+21: parser, presets, 13 narrator formulas, board, quiz); `e2e/a11y.spec.ts` axe-core WCAG 2.1 AA on 6 screens × mode off/on → 0 serious/critical (+2 behaviour checks).
+- Decisions: worked in the existing isolated worktree on a new branch `feat/inclusive` instead of `../To2-inclusive` (same isolation) · narration = cached tutor voice (`check=1`, free) else device speech synthesis, never new VoiceLab audio → **0 credits** · always-on commands use the browser recogniser (free), lesson mic path runs commands via the engine hook · stop = background-pause (exact resume) · brand blue `#2f6bff`→`#2a5ce8`, muted `#6b7393`→`#5f6787` (pre-existing AA contrast failures, visually near-identical) · 150 % text = CSS zoom with the lesson stage counter-zoomed · dyslexia font = Lexend (Google Fonts, loaded only when on) · local dev for tests = `MOCK_AI=1` on port 5188.
+- ⚠️ Not verified on a real phone with TalkBack / a physical mic; Uzbek recognition + synthesis quality depends on the device; number words by voice not parsed; LLM segment length unchanged in calm mode (display shortened instead).

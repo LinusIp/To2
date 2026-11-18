@@ -9,6 +9,7 @@ import TutorPicker from "@/components/characters/TutorPicker";
 import { useMe } from "@/lib/client/me";
 import type { PublicUser } from "@/lib/server/repo";
 import { ArrowIcon, BackIcon } from "@/components/ui/icons";
+import { loadSettings } from "@/lib/a11y/settings";
 
 export default function Onboarding() {
   const router = useRouter();
@@ -43,10 +44,12 @@ export default function Onboarding() {
       setUser(j.user);
       // warm the 3D tutor for the first lesson (Draco GLB, ~1 MB) while the diagnostic runs
       void import("@/components/characters/glbTutor").then((m) => m.preloadGlb(ch));
+      // "Sizga qanday qulay?" is offered once, between onboarding and the next screen
+      const ask = !loadSettings().asked;
       if (skipDiagnostic) {
         await load(true);
-        router.push("/home");
-      } else router.push("/diagnostic");
+        router.push(ask ? "/qulaylik?next=/home" : "/home");
+      } else router.push(ask ? "/qulaylik?next=/diagnostic" : "/diagnostic");
     } catch {
       setErr(t.common.error);
       setBusy(false);

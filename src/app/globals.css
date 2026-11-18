@@ -6,8 +6,7 @@
   --color-ph: #f3f6fe;
   --color-card: #ffffff;
   --color-ink: #141a3a;
-  /* muted text: #5b6385 = 5.6:1 on white, 5.2:1 on --color-ph (WCAG AA) */
-  --color-mut: #5b6385;
+    --color-mut: #5f6787; /* inclusive: 5.1:1 on the page bg (e2e/a11y.spec.ts) */
   --color-line: #e3e8f6;
   --color-soft: #eef2fd;
   --color-soft2: #dfe6fa;
@@ -23,7 +22,7 @@
   --color-blue-700: #1d4ed8;
   --color-blue-800: #1e40af;
   --color-blue-900: #1e3a8a;
-  --color-blue: #2563eb;
+  --color-blue: #2a5ce8; /* inclusive: white on it 5.5:1 (WCAG AA) */
   --color-blue2: #3b74f6;
 
   /* subject accents (fill · dark edge for the 3D bottom · text-safe ink) */
@@ -591,6 +590,7 @@
 .mindmap-route { animation: mm-route 1.6s linear infinite; }
 @media (prefers-reduced-motion: reduce) {
   .mindmap-pulse, .mindmap-route { animation: none; }
+}
 /* ───────── O'yinlar (games) ───────── */
 .vx-block {
   position: relative; height: 30px; border-radius: 6px;
@@ -647,3 +647,59 @@
   .vx-fall { opacity: 0; }
   .mem-inner { animation: none !important; }
 }
+
+/* ── Inklyuziv rejim (src/lib/a11y, docs/INCLUSIVE.md) — set on <html data-*> by A11yRoot ── */
+/* text size: the app uses px sizes, so the whole UI is zoomed; the lesson stage keeps its own scale */
+html[data-text="125"] body { zoom: 1.25; }
+html[data-text="150"] body { zoom: 1.5; }
+html[data-text="125"] [data-a11y-stage] { zoom: 0.8; }
+html[data-text="150"] [data-a11y-stage] { zoom: 0.6667; }
+
+/* high contrast (also automatic with prefers-contrast: more) */
+html[data-contrast] {
+  --color-mut: #2b3150;
+  --color-line: #141a3a;
+  --color-ink: #000;
+  --color-blue: #0039c6;
+  --color-green: #0b6b2f;
+}
+html[data-contrast] .card { box-shadow: none; outline: 2px solid #141a3a; }
+html[data-contrast] .btn { outline: 2px solid #141a3a; }
+html[data-contrast] :focus-visible { outline: 4px solid #000; outline-offset: 3px; box-shadow: 0 0 0 7px #ffc42e; }
+
+/* big tap targets ≥ 56 px */
+html[data-big] .btn,
+html[data-big] .icon-btn,
+html[data-big] .opt,
+html[data-big] [role="switch"],
+html[data-big] [role="radio"],
+html[data-big] nav a { min-height: 56px; min-width: 56px; }
+
+/* calm mode (also automatic with prefers-reduced-motion): nothing bounces, flies or pulses */
+html[data-calm] *,
+html[data-calm] *::before,
+html[data-calm] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
+
+/* dyslexia-friendly reading: Lexend (loaded only when on) + wider spacing, no all-caps, left aligned */
+html[data-dyslexia] body,
+html[data-dyslexia] .btn,
+html[data-dyslexia] input,
+html[data-dyslexia] button {
+  font-family: Lexend, Verdana, system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  word-spacing: 0.14em;
+}
+html[data-dyslexia] p,
+html[data-dyslexia] li,
+html[data-dyslexia] [data-a11y-caption] { line-height: 1.7; }
+
+/* live captions: the word being spoken */
+.a11y-word-now { background: #ffc42e; color: #141a3a; border-radius: 6px; box-shadow: 0 0 0 2px #ffc42e; }

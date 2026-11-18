@@ -241,6 +241,7 @@ async function playSegment(track: "main" | "note", index: number, resume?: { t: 
   speech = sp;
   const dur = await sp.started;
   if (my !== gen || !tl) return;
+  a11yLine = { text: seg.say, dur, speech: sp }; // a11y-hook: word-by-word captions
   tl.slots = scheduleSegment(seg.board, dur);
   tl.start = now();
   tl.running = true;
@@ -251,6 +252,18 @@ async function playSegment(track: "main" | "note", index: number, resume?: { t: 
   if (!tl.running) {
     // paused exactly as speech ended — tick() will finish on resume
   }
+}
+
+// a11y-hook: the inclusive mode (src/lib/a11y) reads these; nothing in the engine depends on them
+let a11yLine: { text: string; dur: number; speech: Speech } | null = null;
+/** the line being spoken now: its text, duration and position (ms) — for synced live captions */
+export function a11yNowSpeaking(): { text: string; dur: number; pos: number } | null {
+  return a11yLine ? { text: a11yLine.text, dur: a11yLine.dur, pos: a11yLine.speech.position() } : null;
+}
+let a11yCommandHook: ((text: string) => (() => void) | null) | null = null;
+/** register the voice-command parser: returns the action to run, or null (= a question for the tutor) */
+export function setA11yCommandHook(h: typeof a11yCommandHook) {
+  a11yCommandHook = h;
 }
 
 /** said once (≤ 1 per minute) when a line's voice didn't come within VOICE_WAIT_MS */
@@ -585,6 +598,16 @@ export async function stopListening() {
     const j = (await r.json()) as { text?: string };
     const text = (j.text ?? "").trim();
     if (!text) throw new Error("empty");
+    // a11y-hook: a spoken voice command ("davom et", "javob B"…) is run, not sent to the tutor
+    if (a11yCommandHook) {
+      const run = a11yCommandHook(text);
+      if (run) {
+        fire({ type: "CANCEL" });
+        resumeAfterInterrupt();
+        run();
+        return;
+      }
+    }
     await ask(text, true);
   } catch {
     set({ error: T.lesson.sttFailed });

@@ -108,7 +108,7 @@ export default function HomePage() {
                 <b className={`${s.icon.length > 3 ? "text-[19px]" : "text-[26px]"} leading-none font-black`}>{s.icon}</b>
                 <span className="px-1 text-center leading-tight">{s.name}</span>
                 {s.status !== "live" && (
-                  <span className={`rounded-full px-2 py-[1px] text-[10px] font-black ${s.status === "beta" ? "bg-white/25 text-white" : "bg-white text-[#8a92b0]"}`}>
+                  <span className={`rounded-full px-2 py-[1px] text-[10px] font-black ${s.status === "beta" ? "bg-white/25 text-white" : "bg-white text-[#5f6787]"}`}>
                     {s.status === "beta" ? t.home.beta : t.home.soon}
                   </span>
                 )}
@@ -117,7 +117,7 @@ export default function HomePage() {
             const cls = "flex h-24 flex-col items-center justify-center gap-1 rounded-[20px] text-[14px] font-extrabold no-underline";
             if (s.status === "soon")
               return (
-                <div key={s.id} aria-disabled="true" className={`${cls} bg-[#e6ebf8] text-[#8a92b0]`}>
+                <div key={s.id} aria-disabled="true" className={`${cls} bg-[#e6ebf8] text-[#5f6787]`}>
                   {body}
                 </div>
               );
@@ -144,7 +144,7 @@ export default function HomePage() {
             <div className="mt-0.5 mb-2 text-[13px] font-bold text-mut">
               {t.home.lessonsOf(masteredAll, totalAll)} · {pathNodes.length ? t.roadmap.steps(pathNodes.filter((n) => n.status === "mastered").length, pathNodes.length) : ""}
             </div>
-            <Bar value={masteredAll} max={totalAll} />
+            <Bar value={masteredAll} max={totalAll} label={t.home.yourProgress} />
           </div>
         </Link>
       </div>
