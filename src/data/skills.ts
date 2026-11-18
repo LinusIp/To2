@@ -1,4 +1,5 @@
 import raw from "./skills.uz.json";
+import { ENGLISH_SKILLS } from "@/config/courses/english";
 
 export interface Skill {
   id: string;
@@ -13,7 +14,8 @@ export const SKILL_BY_ID: Record<string, Skill> = Object.fromEntries(SKILLS.map(
 export const SECTIONS: string[] = [...new Set(SKILLS.map((s) => s.section))];
 
 export function getSkill(id: string): Skill | undefined {
-  return SKILL_BY_ID[id];
+  // English course skills (feat/languages) — lessons + practice; not part of the maths roadmap
+  return SKILL_BY_ID[id] ?? ENGLISH_SKILLS.find((s) => s.id === id);
 }
 
 /** Skills that list `id` as a prerequisite. */

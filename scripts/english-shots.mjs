@@ -25,6 +25,12 @@ const browser = await chromium.launch();
 const ctx = await browser.newContext({ ...devices["Pixel 7"], viewport: { width: 375, height: 812 }, baseURL: BASE });
 const page = await ctx.newPage();
 await page.route("**/api/tts**", (r) => r.fulfill({ status: 204 }));
+// pronunciation: pretend the Gemini key is set (enabled) and serve silence — 0 Gemini calls
+await page.route("**/api/english/say**", (r) =>
+  r.request().url().includes("check=1")
+    ? r.fulfill({ status: 200, contentType: "application/json", body: '{"enabled":true}' })
+    : r.fulfill({ status: 200, contentType: "audio/wav", body: Buffer.from("UklGRiQAAABXQVZFZm10IBAAAAABAAEAwF0AAIC7AAACABAAZGF0YQAAAAA=", "base64") }),
+);
 await page.route("**/api/tutor", (r) => {
   const req = JSON.parse(r.request().postData() ?? "{}");
   if (req.mode !== "lesson") return r.continue();
@@ -32,7 +38,7 @@ await page.route("**/api/tutor", (r) => {
 });
 const u = await page.request.post("/api/user", { data: { nickname: "Shots", grade: 6, characterId: "blokbek" } });
 if (!u.ok()) throw new Error("user " + u.status());
-await page.goto("/lesson/frac-add-unlike?fresh=1");
+await page.goto("/lesson/en-to-be");
 await page.getByRole("button", { name: "Darsni boshlash" }).click();
 const pick = async (text) => {
   const r = page.getByRole("radio").filter({ has: page.getByText(text, { exact: true }) }).first();
@@ -45,6 +51,7 @@ const pick = async (text) => {
   return r;
 };
 // first question (She ___ a teacher.)
+await page.getByText("Inglizcha talaffuz").waitFor({ timeout: 120_000 });
 let r = await pick("is");
 await page.screenshot({ path: `${OUT}/english-phone-1.png` });
 await r.click();
@@ -56,5 +63,10 @@ await r.click();
 await page.getByRole("button", { name: "Tekshir" }).click();
 await page.waitForTimeout(6000);
 await page.screenshot({ path: `${OUT}/english-phone-3.png` });
+// English practice (real /api/practice + /api/answer)
+await page.goto("/practice/en-to-be");
+await page.getByRole("radio").first().waitFor({ timeout: 60_000 });
+await page.waitForTimeout(800);
+await page.screenshot({ path: `${OUT}/english-practice.png` });
 await browser.close();
 console.log("ok");

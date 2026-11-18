@@ -37,3 +37,11 @@ export const ENGLISH: Course = {
 export function englishSkill(id: string): CourseSkill | undefined {
   return ENGLISH_SKILLS.find((s) => s.id === id);
 }
+
+/** UI strings for English-only bits (kept here, not in src/i18n/uz.ts, until the merge) */
+export const EN_UI = {
+  title: "Inglizcha talaffuz",
+  listen: (p: string) => `Tinglash: ${p}`,
+};
+
+export { EN_PAIRS, generateEnglishProblem, type WordPair } from "./practice";

@@ -2,6 +2,7 @@
 // so practice never runs out and every answer is checkable with mathjs.
 import type { Expect } from "@/lib/ai/schema";
 import { SKILLS } from "../skills";
+import { generateEnglishProblem } from "@/config/courses/english/practice";
 
 export interface Problem {
   skillId: string;
@@ -248,6 +249,9 @@ let counter = 0;
 
 /** Generate one problem for a skill. Falls back to a simple arithmetic problem. */
 export function generateProblem(skillId: string, rng: Rng = Math.random): Problem {
+  // English course (feat/languages): 4-choice problems from the course's own generators
+  const en = skillId.startsWith("en-") ? generateEnglishProblem(skillId, rng) : null;
+  if (en) return en;
   const gens = GENERATORS[skillId] ?? GENERATORS["nat-add-sub"];
   const g = gens[Math.floor(rng() * gens.length)];
   const p = g(rng);

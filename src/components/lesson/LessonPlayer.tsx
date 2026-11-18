@@ -5,6 +5,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { t } from "@/i18n/uz";
 import { getSkill } from "@/data/skills";
+import EnglishSay from "./EnglishSay";
 import { getCharacter } from "@/config/characters";
 import { useMe } from "@/lib/client/me";
 import { readPref } from "@/lib/client/prefs";
@@ -353,6 +354,7 @@ export default function LessonPlayer({ skillId }: { skillId: string }) {
               {error}
             </div>
           )}
+          <EnglishSay skillId={skillId} />
           {started && <Steps />}
           {!loaded ? (
             <div className="btn w-full opacity-60" aria-busy="true">
