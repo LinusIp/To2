@@ -31,3 +31,10 @@ Docs only: no code, no deploy, **0 VoiceLab credits**. Not merged into `REPORT.m
 - All market/price numbers are advertised or secondary-source figures. Say "est." on stage.
 - The free and Premium tiers and billing don't exist in the product yet.
 - **Push blocked:** the GitHub credential on this machine is `goodDeveloper1` (403 on `LinusIp/To2`). The branch is committed locally in worktree `../to2-pitch`. Push it from an account with write access: `git -C ../to2-pitch push -u origin docs/pitch-numbers`.
+
+## Update 18 Nov 13:30 — Ilmobod story
+- Renamed the pitch to **Ilmobod** (*ilm* + *-obod*, "the town of knowledge"), tagline *Har bir fan — bir shahar. Har bir topshiriq — bir bino.*
+- New `story.md`: town/building quest loop (Maktab lesson, Arena game, Kutubxona test, Ustaxona "Kasb sinovi", temple mastery), placement test decides unlock order, 3 courses, Inklyuziv rejim, Uzbek VoiceLab tutors, differentiator vs "all-subjects lab".
+- `pitch-script.md`, `business.md` (B3 table + differentiator, B5), `pedagogy.md`, `mentor-qa.md` (new Qs 10a, 15a, 15b + "don't claim" lines) updated.
+- Assumption: town, games, physics, English and inclusive mode were in feature branches (`feat/roadmap`, `feat/games`, `feat/subjects-2`, `feat/languages`, `feat/inclusive`), not on `main`. The docs say so; update after the merge.
+- Not changed: app code, `src/config/brand.ts` / `src/i18n/uz.ts` still say To2 (code freeze).

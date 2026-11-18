@@ -1,4 +1,6 @@
-# Business — To2
+# Business — Ilmobod
+
+> **Ilmobod** = *ilm* (knowledge) + *-obod* (Uzbek town suffix): "the town of knowledge". *Har bir fan — bir shahar. Har bir topshiriq — bir bino.* Story and core loop: `story.md`.
 
 > Numbers below are public figures (sources at the bottom) or our own estimates, marked **est.** Prices are hypotheses to validate in a pilot.
 > Exchange rate used: **1 USD ≈ 12,000 so'm** (Central Bank of Uzbekistan, 12 Nov 2026: 11,964–12,014).
@@ -24,7 +26,7 @@
 **Illustrative revenue (est.):** if 1 % of grade 5–9 learners (≈ 31,000) pay Premium for a 10-month school year, that is **≈ 15.2 bn so'm (≈ $1.27 M) per year**. Adding 100 schools on B2B brings **≈ 3.4 bn so'm** more.
 
 ## B3 · Competitive advantage
-| | To2 | YouTube lessons | Offline tutor | Global AI tutors |
+| | Ilmobod | YouTube lessons | Offline tutor | Global AI tutors |
 |---|---|---|---|---|
 | Uzbek voice in & out | yes | listen only | yes | no / weak |
 | Finds *your* gaps, builds a path | yes | no | sometimes | partly |
@@ -32,6 +34,14 @@
 | Local curriculum + terms (EKUK, EKUB, maxraj) | yes | varies | yes | no |
 | Price | 49k so'm / month | free | 500k–1.3M so'm / month | subscription in USD |
 | Fun (characters, XP, streaks) | yes | no | no | some |
+| Game world: subject = town, task = building | yes | no | no | no |
+| Inklyuziv rejim (voice-first, captions, hands-free, calm/dyslexia) | yes | captions only | depends | partly |
+| Courses | Matematika, Fizika, Ingliz tili | any | one subject | many |
+
+**vs. "all-subjects lab" competitors** (one menu with every subject):
+1. **A reason to come back:** each subject is a town that grows; buildings open in the order *your* placement test decided, tutors unlock. A menu has no "tomorrow".
+2. **Accessibility:** voice-first lessons, live captions, hands-free voice commands, calm/dyslexia mode. It reaches learners who can't read well, type or watch busy screens.
+3. **Native Uzbek voice:** Lola, Ziyo, Blokbek speak on Uzbek VoiceLab voices with school terminology; English words are pronounced by Gemini, explained in Uzbek.
 
 **Moat over time:**
 1. A skill graph and problem bank aligned to the national curriculum (47 skills today).
@@ -64,7 +74,7 @@
 - **Budget guard in the product:** a daily credit cap with a warning level, and captions-only above the hard cap. A demo or a viral spike can't run up an unbounded bill.
 
 ## B5 · Growth
-- More subjects on the same engine: physics, chemistry (formulas on the board), English.
+- More towns on the same engine: Matematika, Fizika and Ingliz tili today; chemistry and informatics next. Each new subject is a new town, not a new app.
 - Russian and Karakalpak UI (all strings are in `src/i18n/uz.ts`, ready for `ru`).
 - Central Asia: Kazakh, Kyrgyz, Tajik (VoiceLab already lists `kk`, `ky`, `tg`).
 - Channels: school partnerships (teacher panel), Telegram mini-app, parents' word of mouth (weekly report), Android app (APK already built with Capacitor).

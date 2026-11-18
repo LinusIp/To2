@@ -37,6 +37,9 @@ TypeScript strict, zod on every API input and LLM output, **193 unit tests + 12 
 **10. "Why this stack?"**
 Cloudflare Workers + vinext gives one deploy for UI + API on the edge with near-zero idle cost. D1 is SQL without a server, three.js renders a 20-box voxel tutor at 60 fps, mathjs checks answers deterministically, and VoiceLab is Uzbek-first. See `docs/ARCHITECTURE.md` → "Why this stack".
 
+**10a. "Why the name Ilmobod?"**
+*Ilm* = knowledge, *-obod* = the Uzbek town suffix: "the town of knowledge". *Har bir fan — bir shahar, har bir topshiriq — bir bino.* It is the product: each course is a town, each building is a quest.
+
 ## Business mentor (B1–B5)
 
 **11. "Who pays?"**
@@ -53,6 +56,12 @@ A curriculum-aligned skill graph + problem bank, Uzbek voice and terminology, an
 
 **15. "Why would kids use it?"**
 Characters, XP, streaks, unlockable tutors, and a diagnostic that feels like a game (no timers, no red X). They can also ask questions they'd be shy to ask in class.
+
+**15a. "Other teams have an all-subjects lab. Why you?"**
+A lab is a menu. We have (1) **a game world with a reason to come back**: towns grow and buildings open in the order your placement test decided; (2) **accessibility**: Inklyuziv rejim is voice-first, captioned, hands-free, calm/dyslexia mode; (3) **native Uzbek voice** tutors (Lola, Ziyo, Blokbek on VoiceLab).
+
+**15b. "Why Gemini for English?"**
+Only for pronouncing English words (native accent, cached once per word). The tutor still explains in Uzbek on VoiceLab.
 
 ## Domain mentor (S1–S5)
 
@@ -84,6 +93,8 @@ The prompt tells the tutor to give one friendly sentence steering back to math, 
 
 ## Things NOT to claim
 - That billing / Premium exists (it doesn't yet).
+- Anything about the town, games, physics, English or Inklyuziv rejim that isn't running on the demo URL (they were in feature branches on 18 Nov; check after the merge).
+- That inclusive mode is certified or tested with learners with disabilities (it isn't yet).
 - That the diagnostic is scientifically validated (it isn't yet).
 - That a teacher or lawyer has reviewed the content / legal setup (not yet).
 - Exact STT cost (rate not public; ask VoiceLab).

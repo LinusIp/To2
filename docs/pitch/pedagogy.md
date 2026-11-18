@@ -1,4 +1,4 @@
-# Pedagogy — why To2 teaches this way
+# Pedagogy — why Ilmobod teaches this way
 
 ## Curriculum alignment
 - 47 skills in 10 sections, grades 5–8(9): *Natural sonlar · Bo'linish va EKUK/EKUB · Kasrlar · O'nli kasrlar · Foizlar · Manfiy sonlar · Ifodalar · Chiziqli tenglamalar · Geometriya · Koordinatalar va grafiklar* (`src/data/skills.uz.json`).
@@ -18,7 +18,9 @@
 | **Questions are welcome** | The learner can interrupt at any moment by voice; the answer is drawn in a side note and the lesson resumes exactly where it stopped. |
 | **Retrieval practice** | Infinite generated practice problems per skill; mastery grows with each correct answer. |
 | **Motivation** | Characters, XP, levels, streaks, unlockable tutors — game feel without ads or pressure (no timers in the diagnostic). |
-| **Accessibility** | Captions always on (sound-off works and doubles as reading practice), keyboard operable, large tap targets, reduced-motion respected. |
+| **Quest structure (Ilmobod town)** | One skill = one set of buildings: *Maktab* (lesson) → *Arena* (game practice) → *Kutubxona* (test) → *Ustaxona* (career mission "Kasb sinovi": the skill in a real job) → *temple* (mastery). The placement test decides which buildings open first. |
+| **Accessibility — Inklyuziv rejim** | Voice-first lessons, live captions always on (sound-off works and doubles as reading practice), hands-free voice commands (*keyingi, orqaga, davom et*), calm/dyslexia mode (fewer animations, dyslexia-friendly font, wider spacing), keyboard operable, large tap targets, reduced-motion respected. |
+| **Native-language explanation** | Lola, Ziyo, Blokbek explain in Uzbek on Uzbek VoiceLab voices; in Ingliz tili the English word is pronounced by Gemini and explained in Uzbek. |
 
 ## What we measure
 Per learner and skill: attempts, correct answers, hints used, time per answer, mastery over time. Per class (teacher panel): which skills are weak for most students → one-click practice sets.
