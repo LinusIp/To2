@@ -4,21 +4,33 @@ import Link from "next/link";
 import { t } from "@/i18n/uz";
 import type { Roadmap, RoadmapNode } from "@/lib/learning/roadmap";
 import TutorPortrait from "@/components/characters/TutorPortrait";
-import { ArrowIcon, CheckIcon, LockIcon } from "@/components/ui/icons";
+import { ArrowIcon, BlocksIcon, CheckIcon, LockIcon } from "@/components/ui/icons";
 import { Bar } from "@/components/ui/hud";
 import { subjectOfSection } from "@/config/mathTopics";
 import { lockReason } from "@/lib/learning/access";
 
+/** "Mashq qilish o'yini" — a Block Tower round on exactly this node's skill (moves its mastery). */
+function GameButton({ n }: { n: RoadmapNode }) {
+  return (
+    <Link href={`/games/tower?skill=${n.id}`} aria-label={`${t.games.nodeButton}: ${n.title}`} title={t.games.nodeButton} className="grid h-11 w-11 flex-none place-items-center rounded-[16px] bg-white text-blue no-underline shadow-[0_4px_12px_rgba(47,107,255,.12)]" data-testid="node-game">
+      <BlocksIcon size={22} />
+    </Link>
+  );
+}
+
 function Tile({ n, roadmap }: { n: RoadmapNode; roadmap: Roadmap }) {
   if (n.status === "mastered")
     return (
-      <Link href={`/practice/${n.id}`} className="card flex w-full items-center gap-3 px-3.5 py-3 no-underline">
+      <div className="flex items-center gap-2">
+      <Link href={`/practice/${n.id}`} className="card flex min-w-0 flex-1 items-center gap-3 px-3.5 py-3 no-underline">
         <span className="grid h-9 w-9 flex-none place-items-center rounded-xl bg-green text-white">
           <CheckIcon size={16} />
         </span>
         <span className="flex-1 text-[15px] font-extrabold">{n.title}</span>
         <span className="text-[12px] font-black text-green">{t.roadmap.status.mastered}</span>
       </Link>
+      <GameButton n={n} />
+      </div>
     );
   if (n.status === "locked") {
     // say WHY it is locked (same rule as everywhere: src/lib/learning/access.ts)
@@ -38,11 +50,14 @@ function Tile({ n, roadmap }: { n: RoadmapNode; roadmap: Roadmap }) {
   }
   const optional = n.status === "optional";
   return (
-    <Link href={`/lesson/${n.id}`} className="card flex w-full items-center gap-3 px-3.5 py-3 no-underline">
+    <div className="flex items-center gap-2">
+    <Link href={`/lesson/${n.id}`} className="card flex min-w-0 flex-1 items-center gap-3 px-3.5 py-3 no-underline">
       <span className={`grid h-9 w-9 flex-none place-items-center rounded-xl text-[15px] font-black ${optional ? "bg-soft text-mut" : "bg-[#fff3d1] text-gold-dark"}`}>{n.order || "+"}</span>
       <span className="flex-1 text-[15px] font-extrabold">{n.title}</span>
       <span className={`text-[12px] font-black ${optional ? "text-mut" : "text-gold-dark"}`}>{n.started ? t.roadmap.resume : optional ? t.roadmap.status.optional : t.roadmap.status.next}</span>
     </Link>
+    <GameButton n={n} />
+    </div>
   );
 }
 
@@ -61,6 +76,9 @@ function CurrentTile({ n, characterId }: { n: RoadmapNode; characterId: string }
       </div>
       <Link href={`/lesson/${n.id}`} className="btn btn-primary relative mt-3 w-full">
         {t.roadmap.continue} <ArrowIcon />
+      </Link>
+      <Link href={`/games/tower?skill=${n.id}`} className="btn relative mt-2 w-full bg-white no-underline" data-testid="node-game">
+        <BlocksIcon size={20} /> {t.games.nodeButton}
       </Link>
     </div>
   );

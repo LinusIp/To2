@@ -1,0 +1,7 @@
+"use client";
+import MemoryGame from "@/components/games/MemoryGame";
+
+// settings={{ calm }} can be passed by the inclusive-mode panel (a11y-hook); default = auto-detect
+export default function Page() {
+  return <MemoryGame />;
+}

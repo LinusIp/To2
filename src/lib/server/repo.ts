@@ -68,6 +68,8 @@ export async function recordAnswer(opts: {
   hintUsed: boolean;
   xp: number;
   msTaken?: number;
+  /** games: mastery may rise only up to this (never lowered by it) — mastering needs a lesson/quiz */
+  maxP?: number;
 }) {
   const db = await getDb();
   const now = Date.now();
@@ -77,7 +79,8 @@ export async function recordAnswer(opts: {
     .where(and(eq(schema.skillMastery.userId, opts.userId), eq(schema.skillMastery.skillId, opts.skillId)))
     .limit(1);
   const before = cur?.pMastery ?? P_START;
-  const p = updateMastery(before, opts.correct, opts.hintUsed);
+  const raw = updateMastery(before, opts.correct, opts.hintUsed);
+  const p = opts.maxP == null ? raw : Math.min(raw, Math.max(before, opts.maxP));
   const user = await getUser(opts.userId);
   const streak = user ? nextStreak(user.streakDays, user.lastActiveAt, now) : 1;
   await db.batch([

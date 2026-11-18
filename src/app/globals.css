@@ -591,4 +591,59 @@
 .mindmap-route { animation: mm-route 1.6s linear infinite; }
 @media (prefers-reduced-motion: reduce) {
   .mindmap-pulse, .mindmap-route { animation: none; }
+/* ───────── O'yinlar (games) ───────── */
+.vx-block {
+  position: relative; height: 30px; border-radius: 6px;
+  box-shadow: inset 0 -7px 0 rgba(0, 0, 0, 0.2), inset 0 5px 0 rgba(255, 255, 255, 0.35), inset -7px 0 0 rgba(0, 0, 0, 0.1), 0 3px 0 rgba(20, 30, 70, 0.12);
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.12) 25%, transparent 25% 50%, rgba(0, 0, 0, 0.05) 50% 75%, transparent 75%);
+  background-size: 24px 100%;
+}
+.vx-block .vx-tag { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 900; font-size: 13px; color: #fff; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25); }
+.vx-drop { animation: vx-drop 0.62s cubic-bezier(0.3, 0.7, 0.4, 1) both; }
+@keyframes vx-drop {
+  0% { transform: translateY(-260px) rotate(-4deg); opacity: 0.6; }
+  60% { transform: translateY(0) scaleY(0.82) scaleX(1.06); opacity: 1; }
+  78% { transform: translateY(-10px) scaleY(1.05); }
+  100% { transform: translateY(0) scale(1); }
+}
+.vx-fall { animation: vx-fall 0.95s ease-in both; }
+@keyframes vx-fall {
+  0% { transform: translateY(-40px) rotate(0); }
+  15% { transform: translateY(-40px) rotate(-8deg); }
+  30% { transform: translateY(-40px) rotate(8deg); }
+  45% { transform: translateY(-40px) rotate(-6deg); }
+  100% { transform: translate(150px, 260px) rotate(70deg); opacity: 0; }
+}
+.tower-shake { animation: tower-shake 0.4s ease-in-out; }
+@keyframes tower-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px) rotate(-1deg); } 75% { transform: translateX(5px) rotate(1deg); } }
+.combo-pop { animation: combo-pop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+@keyframes combo-pop { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.game-choice { min-height: 58px; border-radius: 18px; background: #fff; border: 2px solid var(--color-line); font-weight: 900; font-size: 20px; color: var(--color-ink); box-shadow: 0 4px 0 #dfe6fa; transition: transform 0.08s; }
+.game-choice:active { transform: translateY(3px); box-shadow: 0 1px 0 #dfe6fa; }
+.game-choice[data-state="right"] { background: #e6f8ee; border-color: var(--color-green); color: #157a3c; }
+.game-choice[data-state="wrong"] { background: #fff1f1; border-color: var(--color-red); color: #b42323; }
+.game-choice:disabled { cursor: default; }
+.timer-bar { height: 12px; border-radius: 99px; background: #e3e8f6; overflow: hidden; }
+.timer-bar > span { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #2f6bff, #4d86ff); transition: width 0.25s linear; }
+.timer-bar.low > span { background: linear-gradient(90deg, #ff8a1f, #ff6b6b); }
+.mem-card { aspect-ratio: 3 / 4; }
+/* flip = a quick squash (scaleX) + face swap; no preserve-3d (Chrome flattens it inside <button>) */
+.mem-inner { position: relative; width: 100%; height: 100%; }
+.mem-card[data-open="1"] .mem-inner { animation: mem-flip 0.3s ease-out; }
+@keyframes mem-flip { 0% { transform: scaleX(0.05); } 100% { transform: scaleX(1); } }
+.mem-face { position: absolute; inset: 0; border-radius: 16px; display: grid; place-items: center; padding: 6px; text-align: center; }
+.mem-back { background: #2f6bff; box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.18), inset 0 4px 0 rgba(255, 255, 255, 0.25); background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.12) 25%, transparent 25% 75%, rgba(255, 255, 255, 0.12) 75%), linear-gradient(45deg, rgba(255, 255, 255, 0.12) 25%, transparent 25% 75%, rgba(255, 255, 255, 0.12) 75%); background-size: 22px 22px; background-position: 0 0, 11px 11px; }
+.mem-front { background: #fff; border: 2px solid var(--color-line); font-weight: 900; color: var(--color-ink); visibility: hidden; }
+.mem-card[data-open="1"] .mem-front { visibility: visible; }
+.mem-card[data-open="1"] .mem-back { visibility: hidden; }
+.mem-card[data-done="1"] .mem-front { border-color: var(--color-green); background: #e6f8ee; }
+/* calm mode / reduced motion: nothing drops, wobbles, shakes or flips */
+.game-calm .vx-drop, .game-calm .vx-fall, .game-calm .tower-shake, .game-calm .combo-pop { animation: none !important; }
+.game-calm .vx-fall { opacity: 0; }
+.game-calm .mem-inner { animation: none !important; }
+.game-calm .timer-bar > span { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .vx-drop, .vx-fall, .tower-shake, .combo-pop { animation: none !important; }
+  .vx-fall { opacity: 0; }
+  .mem-inner { animation: none !important; }
 }

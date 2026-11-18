@@ -134,3 +134,11 @@ export const Logo = ({ size = 36 }: { size?: number }) => (
     To<span style={{ color: "#2f6bff" }}>2</span>
   </span>
 );
+/** O'yinlar tab: a little stack of voxel blocks */
+export const BlocksIcon = ({ size = 24, className }: P) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden>
+    <rect x="3" y="13" width="8" height="8" rx="1.5" fill="currentColor" />
+    <rect x="13" y="13" width="8" height="8" rx="1.5" fill="currentColor" opacity=".7" />
+    <rect x="8" y="3.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="2.2" />
+  </svg>
+);
