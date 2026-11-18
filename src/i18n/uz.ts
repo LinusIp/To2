@@ -311,6 +311,7 @@ export const t = {
     talking: "gapirmoqda",
     waiting: "kutmoqda",
     thinkingState: "o'ylayapti",
+    voiceWait: "o'ylayapman…",
     listeningState: "tinglamoqda",
   },
   games: {

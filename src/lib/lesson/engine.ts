@@ -61,6 +61,8 @@ export interface LessonStore {
   broken: "main" | "note" | null;
   /** which path answered the last live question (pinned / interrupt-cache / llm / …) — dev only */
   answerSource: string;
+  /** a line's voice is still being made: the tutor is in the think pose ("o'ylayapman…") */
+  voiceWait: boolean;
   error: string | null;
   xpGained: number;
   masteryAfter: number | null;
@@ -89,6 +91,7 @@ const initial = (): Omit<LessonStore, "skillId" | "characterId" | "voice" | "gra
   waiting: false,
   broken: null,
   answerSource: "",
+  voiceWait: false,
   error: null,
   xpGained: 0,
   masteryAfter: null,
@@ -206,6 +209,7 @@ async function playSegment(track: "main" | "note", index: number, resume?: { t: 
     [track === "main" ? "mainIndex" : "noteIndex"]: index,
     caption: seg.say,
     emotion: seg.emotion,
+    voiceWait: false,
     expect: null,
     feedback: track === "main" ? null : s.feedback,
   } as Partial<LessonStore>);
@@ -270,7 +274,8 @@ export function setA11yCommandHook(h: typeof a11yCommandHook) {
 export const DELAY_LINE = "Ovozim biroz kechikmoqda, yozib ko'rsataman.";
 /** cached thinking sounds played every ~3 s while a line's voice is being made */
 export const WAIT_FILLERS = ["Hmm…", "Qani, o'ylab ko'raylik…", "Bir daqiqa…"];
-export const VOICE_WAIT_MS = 15_000;
+/** how long a line (lesson or live answer) waits for its voice before going captions-only */
+export const VOICE_WAIT_MS = 12_000;
 const FILLER_EVERY_MS = 3000;
 /** cached lines come back well within this: no filler for them */
 const FILLER_GRACE_MS = 900;
@@ -290,7 +295,7 @@ async function waitForVoice(seg: LessonSegment, tone: { emotion: string; lead: b
   if (result !== undefined || my !== gen) return result ?? null;
   waitingVoice = true;
   const emotion = get().emotion;
-  set({ emotion: "thinking" });
+  set({ emotion: "thinking", voiceWait: true });
   let k = 0;
   while (result === undefined && my === gen) {
     const t0 = performance.now();
@@ -301,7 +306,7 @@ async function waitForVoice(seg: LessonSegment, tone: { emotion: string; lead: b
     await Promise.race([load, new Promise((r) => setTimeout(r, Math.max(0, FILLER_EVERY_MS - (performance.now() - t0))))]);
   }
   waitingVoice = false;
-  if (my === gen) set({ emotion });
+  if (my === gen) set({ emotion, voiceWait: false });
   await load;
   return result ?? null;
 }

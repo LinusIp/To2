@@ -206,3 +206,28 @@ describe("tutor animator (headless, Blokbek rig)", () => {
     expect(BOARD).toEqual({ x: 420, y: 100, s: 1.104 });
   });
 });
+
+describe("tutor stands beside the writing (not in front of it)", () => {
+  it("stands left of the element being written, within reach; never closer than before", () => {
+    const ch = rig();
+    const a = new TutorAnimator(ch, "blokbek", DESK, { rand: () => 0.5 });
+    const inp: AnimInput = newInput();
+    const reach = 80.1 + 118.9;
+    const S = 1;
+    inp.tipX = 400;
+    a.tip3.x = BOARD.x + 400 * BOARD.s;
+    const comfy = a.tip3.x - (167.1 + reach * 0.45) * S;
+    const furthest = a.tip3.x - (167.1 + reach * 0.9) * S;
+    // unknown element → the old spot
+    expect(a.standGoal(inp, DESK, reach, S)).toBeCloseTo(comfy);
+    // the element started a little left of the tip → the body is moved left of its left edge
+    inp.tipLeft = 400 - 230 / BOARD.s;
+    const g = a.standGoal(inp, DESK, reach, S);
+    expect(g).toBeLessThan(comfy);
+    expect(g).toBeGreaterThanOrEqual(furthest - 1e-6);
+    expect(g).toBeCloseTo(BOARD.x + inp.tipLeft * BOARD.s - 70);
+    // a long line (started far left) → as far left as the arm still reaches
+    inp.tipLeft = 50;
+    expect(a.standGoal(inp, DESK, reach, S)).toBeCloseTo(furthest);
+  });
+});

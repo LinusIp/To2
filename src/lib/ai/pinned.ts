@@ -89,19 +89,24 @@ export const CANONICAL: Record<PinnedId, string> = {
 
 const INDEX: { id: PinnedId; words: string[] }[] = (Object.entries(ALIASES) as [PinnedId, string[]][]).flatMap(([id, list]) => list.map((q) => ({ id, words: tokens(q) })));
 
-/** Minimum word overlap with an alias (full phrase). */
-export const PIN_MIN_OVERLAP = 0.8;
+/** Minimum word overlap with an alias (full phrase). Strong only: a 5-word question may differ by ≤ 0 words. */
+export const PIN_MIN_OVERLAP = 0.85;
+
+/** polite extra words that don't change what is asked ("Ustoz, iltimos, nega olti?") */
+const POLITE = new Set(["ustoz", "iltimos", "menga", "ayting", "aytingchi", "aytib", "bering", "ber", "qani", "xo'sh", "xosh", "endi", "unda", "ha", "yana", "bir"]);
 
 /**
- * Only the demo questions and their listed aliases, as FULL phrases: exact, or ≥ 80 % of the words in
- * common. A single word ("nega", "tushuntir", "boshidan") never matches.
+ * Only the demo questions and their listed aliases, as FULL phrases (strong match only): every word
+ * of the question — polite words aside — must be in the alias, and ≥ 85 % of the words overlap.
+ * "Nega maxrajlarni qo'shmadik?" or "Nega olti emas, yetti?" are NOT the demo question → live answer.
  */
 export function matchPinned(skillId: string, question: string): PinnedId | null {
   if (!PINNED_SKILLS.has(skillId)) return null;
-  const q = tokens(question);
+  const q = tokens(question).filter((w) => !POLITE.has(w));
   if (q.length < 2) return null;
   let best: { id: PinnedId; score: number } | null = null;
   for (const a of INDEX) {
+    if (!q.every((w) => a.words.includes(w))) continue;
     const score = tokenOverlap(q, a.words);
     if (score >= PIN_MIN_OVERLAP && (!best || score > best.score)) best = { id: a.id, score };
   }

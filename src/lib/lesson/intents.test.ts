@@ -14,6 +14,13 @@ describe("isRestartRequest", () => {
       "Tushuntirib bering",
       "yana bir marta tushuntirib ber iltimos",
       "Darsni boshqatdan boshlang",
+      "Darsni qayta boshla",
+      "qayta boshlang iltimos",
+      "Yangidan boshlaymiz",
+      "birinchi qadamdan",
+      "darsni takrorla",
+      "takrorlang",
+      "restart",
     ])
       expect(isRestartRequest(q), q).toBe(true);
   });
@@ -30,6 +37,8 @@ describe("isRestartRequest", () => {
       "tushundim",
       "",
       "Nega eng kichigini olamiz?",
+      "Tezlikni qanday boshlab hisoblaymiz?",
+      "Nega masofani takrorladingiz, vaqt nima bo'ladi?",
     ])
       expect(isRestartRequest(q), q).toBe(false);
   });

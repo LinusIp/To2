@@ -6,6 +6,7 @@
 import type { LessonSegment } from "../schema";
 import { PHYSICS_SPEED } from "./physics";
 import { EN_TO_BE } from "@/config/courses/english/demoLesson";
+import { matchPinned } from "../pinned";
 
 export interface DemoLesson {
   skillId: string;
@@ -361,9 +362,14 @@ const CHECK: LessonSegment = {
   board: [],
 };
 
+/**
+ * Offline (MOCK_AI) answers. The fractions demo questions (strong pinned match only) get their reviewed
+ * answer; any other question gets an answer that names the question — so different questions never
+ * look like "the same answer every time", and it is clear the real answer needs the live tutor.
+ */
 export function mockInterrupt(question: string, skillId: string): LessonSegment[] {
-  const q = question.toLowerCase();
-  if (/maxraj|ko'paytir|oltiga|olti|nega/.test(q) && skillId.startsWith("frac") || /maxraj/.test(q)) {
+  const pin = matchPinned(skillId, question);
+  if (pin === "why-multiply" || pin === "why-six") {
     return [
       {
         id: "n1",
@@ -391,27 +397,16 @@ export function mockInterrupt(question: string, skillId: string): LessonSegment[
       CHECK,
     ];
   }
-  if (/[0-9]|kasr|son|nima|qanday|qanaqa|nega|tenglama|foiz|yuz/.test(q)) {
-    return [
-      {
-        id: "n1",
-        type: "explain",
-        layer: "note",
-        emotion: "thinking",
-        say: "Hechqisi yo'q, yana bir urinib ko'ramiz! Shu qadamni sekinroq ko'rib chiqamiz.",
-        board: [{ op: "write", id: "nq", x: 620, y: 540, text: "qadam-baqadam!", size: "s" }],
-      },
-      CHECK,
-    ];
-  }
+  const q = question.trim().replace(/\s+/g, " ");
+  const short = q.length > 26 ? q.slice(0, 25) + "…" : q;
   return [
     {
       id: "n1",
       type: "explain",
       layer: "note",
-      emotion: "happy",
-      say: "Qiziq savol! Lekin keling, matematikaga qaytamiz. Biz zo'r joyda to'xtadik!",
-      board: [],
+      emotion: "thinking",
+      say: `Savoling: ${q.slice(0, 80)}. Hozir oflayn rejimdaman, to'liq javobni internet bilan beraman.`,
+      board: [{ op: "write", id: "nq", x: 0, y: 0, text: short, size: "s" }],
     },
     CHECK,
   ];

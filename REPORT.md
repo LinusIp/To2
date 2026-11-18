@@ -68,6 +68,18 @@ Per CLAUDE.md "★ Design update" and `docs/prototypes/`:
 - ⚠️ If the learner switches apps mid-lesson the chalk timeline pauses until the tab is visible again (rAF), by design.
 - Team files committed as found: `public/characters/` (144 Blender renders + `blender/` sources, ~51 MB) and `tools/blender/to2_characters.py`.
 
+## 🐞 Tutor bugs (all subjects) — 2026-11-18, branch `feat/subjects-2`, NOT deployed, 0 credits
+| Bug | Cause found | Fix | Proof |
+|---|---|---|---|
+| 1. "Same answer every time" | (a) pinned matching accepted ≥ 80 % word overlap → look-alike questions could get the demo answer; (b) cache key had no subject (topic lessons only differed by skill id); (c) offline/mock answers were the same "maxraj" explanation for almost any question; (d) a rate-limited lesson silently served the NEAREST skill's demo lesson | (a) strong match only: every question word (polite words aside) must be in the alias + ≥ 85 % overlap; (b) key `int:v4:<subject>:<skill>:…:<hash(skill+question)>`; (c) mock names the question + says it is offline; (d) only the skill's own demo, else canned, `meta.reason` = rate-limited/mock | `src/app/api/tutor/route.test.ts`: 3 different questions → 3 different answers (maths + fizika), repeat = cache, same question in another subject ≠ cached, demo question still pinned |
+| 2. Silent live answers | the engine already waits for slow voice with fillers; no 4 s cut in the current path | wait exactly **12 s** (`VOICE_WAIT_MS`) for every line (lesson + live), think pose + bubble status **"o'ylayapman…"** (`voiceWait`), then captions-only | not unit-tested (engine has no test harness) |
+| 3. Restart replays on the side board | restart phrases the client didn't recognise ("darsni qayta boshla", "yangidan", "takrorla", "restart") went to the LLM → answered on the side slate | `isRestartRequest` recognises them → `restartLesson()` (main board, side slate cleared) | `intents.test.ts` +7 restart / +2 real-question cases |
+| 4. Tutor in front of the text / toolbar over the heading | he stood a fixed 45 % of reach left of the chalk tip (on the line he just wrote); lessons didn't reserve the phone's toolbar/back-button bands | he stands left of the element's left edge, as far as the arm still reaches (90 %) — `standGoal()`; lesson layouter reserves toolbar (top-right) + back button (top-left); "Mavzu: …" title right of the back button, ≤ 18 chars | animator test (beside / max reach); screenshot `docs/screenshots/subjects/7-title-below-toolbar-tutor-beside.jpg` |
+- **Physics question bank for the games** `src/data/questions.fizika.ts`: 27 hand-written questions (3 per skill) as
+  `{id, skillId, question, choices, answer, hint}` + `PHYSICS_BANK` in feat/games' `Bank` shape (skillId → generators → `{q, hint, expect:{kind:"choice"}}`). Tested: answer ∈ choices, checker accepts right / rejects wrong.
+- Tests 215 green, build green. ⚠️ Known: writing that starts at the board's far-left edge can still be partly covered on phones
+  (the stage edge clamps him); the interrupt cache keys changed (v3 → v4), so old cached live answers are regenerated once.
+
 ## 📚 Subjects: Fizika + "Istalgan mavzu" (2026-11-18, branch `feat/subjects-2`, NOT deployed)
 Judges' feedback: "not only math". The same board + tutor engine now teaches other subjects.
 - **Subjects config** `src/config/subjects.ts`: id, name, icon, colours, status (live/beta/soon), skill-graph file, tutor role,

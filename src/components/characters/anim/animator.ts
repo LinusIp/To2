@@ -37,6 +37,8 @@ export interface AnimInput {
   tipActive: boolean;
   tipX: number;
   tipY: number;
+  /** left edge of the element being written (board coords; NaN = unknown): he stands beside it */
+  tipLeft: number;
   /** a highlighted board element (board coords); bump `focusCount` to point at it */
   focusCount: number;
   focusX: number;
@@ -50,9 +52,12 @@ export interface AnimInput {
   restX: number;
 }
 
+/** half the body's width + a margin (rig px): how far left of a written element the body centre stays */
+const BODY_CLEAR = 70;
+
 export const newInput = (): AnimInput => ({
   talking: false, amp: 0, listening: false, thinking: false, emotion: "neutral",
-  tipActive: false, tipX: 0, tipY: 0, focusCount: 0, focusX: 0, focusY: 0, praiseCount: 0, restX: NaN,
+  tipActive: false, tipX: 0, tipY: 0, tipLeft: NaN, focusCount: 0, focusX: 0, focusY: 0, praiseCount: 0, restX: NaN,
 });
 
 export interface AnimView {
@@ -274,7 +279,7 @@ export class TutorAnimator {
         // walk first when the chalk is out of comfortable reach (60%)
         const shX = this.x - rig.shX * Math.cos(this.cur[J.yaw]) * S;
         // ...but only if walking helps (the stage edge may stop him: then he reaches from where he is)
-        const goal = clamp(this.tip3.x - (rig.shX + reach * 0.45) * S, view.x0 + 140 * view.s, view.x0 + view.w - 200 * view.s);
+        const goal = this.standGoal(inp, view, reach, S);
         // 60% of reach when a new stroke starts (walk first), 75% mid-stroke (no shuffling)
         const lim = t - this.strokeAt < 150 ? 0.6 : 0.75;
         const far = Math.abs(this.tip3.x - shX) > lim * reach * S && Math.abs(goal - this.x) > 24 * S;
@@ -286,10 +291,9 @@ export class TutorAnimator {
     }
 
     // ---- locomotion (root x) ----
-    const standOff = rig.shX + reach * 0.45;
     if (this.facing === "board" || this.state === "turnToBoard") {
       if (this.state === "walkAlongBoard" || this.state === "turnToBoard")
-        this.walkTarget = clamp(this.tip3.x - standOff * S, view.x0 + 140 * view.s, view.x0 + view.w - 200 * view.s);
+        this.walkTarget = this.standGoal(inp, view, reach, S);
     } else this.walkTarget = Number.isFinite(inp.restX) ? inp.restX : view.frontX; // never in front of writing
     const vMax = 560 * Math.max(S, 0.6);
     const vWant = clamp((this.walkTarget - this.x) * 7, -vMax, vMax);
@@ -339,6 +343,24 @@ export class TutorAnimator {
   private tipVx = 0;
   private tipVy = 0;
   private strokeAt = -1e9;
+  /**
+   * Where to stand while writing: BESIDE the element being written (left of its left edge, so the body
+   * covers none of it), as far as the arm still reaches (90 %); never closer than the old comfortable
+   * spot (45 % of reach left of the tip). Stage edges clamp it.
+   */
+  standGoal(inp: AnimInput, view: AnimView, reach: number, S: number): number {
+    const rig = this.ch.rig;
+    const comfy = this.tip3.x - (rig.shX + reach * 0.45) * S;
+    const furthest = this.tip3.x - (rig.shX + reach * 0.9) * S;
+    let goal = comfy;
+    if (Number.isFinite(inp.tipLeft)) {
+      const left3 = BOARD.x + inp.tipLeft * BOARD.s;
+      const beside = left3 - BODY_CLEAR * S;
+      goal = Math.max(furthest, Math.min(comfy, beside));
+    }
+    return clamp(goal, view.x0 + 140 * view.s, view.x0 + view.w - 200 * view.s);
+  }
+
   /** where the writing arm's chalk tip is now (three.js coords, forward kinematics) */
   chalk3 = { x: 0, y: 0 };
   private rootY3 = 900 - FLOOR;

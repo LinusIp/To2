@@ -152,3 +152,31 @@ describe("istalgan mavzu ids", () => {
     expect(cleanTopic("O'zbekiston daryolari")).toBe("O'zbekiston daryolari");
   });
 });
+
+describe("physics question bank (games shape)", async () => {
+  const { PHYSICS_QUESTIONS, PHYSICS_BANK } = await import("@/data/questions.fizika");
+  it("every physics skill has ≥ 3 questions; answer ∈ choices; unique choices and ids", () => {
+    expect(new Set(PHYSICS_QUESTIONS.map((q) => q.id)).size).toBe(PHYSICS_QUESTIONS.length);
+    for (const s of PHYSICS_SKILLS) expect(PHYSICS_QUESTIONS.filter((q) => q.skillId === s.id).length, s.id).toBeGreaterThanOrEqual(3);
+    for (const q of PHYSICS_QUESTIONS) {
+      expect(getSkill(q.skillId)?.subject, q.id).toBe("fizika");
+      expect(q.choices).toContain(q.answer);
+      expect(new Set(q.choices).size, q.id).toBe(q.choices.length);
+      expect(q.choices.length).toBeGreaterThanOrEqual(3);
+    }
+  });
+  it("the Bank generators give a checkable choice question (right answer accepted, a wrong one not)", () => {
+    let seed = 7;
+    const r = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (const [skillId, gens] of Object.entries(PHYSICS_BANK)) {
+      expect(gens.length, skillId).toBeGreaterThanOrEqual(3);
+      for (const g of gens) {
+        const p = g(r);
+        expect(p.expect.choices).toContain(p.expect.answer);
+        expect(checkAnswer(p.expect, p.expect.answer).correct).toBe(true);
+        const wrong = p.expect.choices!.find((c) => c !== p.expect.answer)!;
+        expect(checkAnswer(p.expect, wrong).correct, `${skillId}: ${wrong}`).toBe(false);
+      }
+    }
+  });
+});
