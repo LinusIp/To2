@@ -3,12 +3,12 @@ import { z } from "zod";
 import { Expect } from "@/lib/ai/schema";
 import { checkAnswer } from "@/lib/learning/checker";
 import { level, xpFor } from "@/lib/learning/mastery";
-import { getSkill } from "@/data/skills";
+import { getSkill, isTopicSkill } from "@/data/skills";
 import { bad, json, userIdFor } from "@/lib/server/session";
 import { getUser, recordAnswer } from "@/lib/server/repo";
 
 const Body = z.object({
-  skillId: z.string().max(64),
+  skillId: z.string().max(128),
   expect: Expect,
   given: z.string().max(100),
   hintUsed: z.boolean().default(false),
@@ -26,6 +26,8 @@ export async function POST(req: Request) {
   const res = checkAnswer(expect, given);
   if (res.unreadable) return json({ correct: false, unreadable: true, xp: 0 });
   const xp = xpFor(res.correct, hintUsed, firstTry);
+  // "Istalgan mavzu" (beta) is not part of any skill graph: checked, but no mastery row / XP
+  if (isTopicSkill(skillId)) return json({ correct: res.correct, xp: 0 });
   const user = await getUser(await userIdFor(req));
   if (!user) return json({ correct: res.correct, xp: 0 });
   const r = await recordAnswer({ userId: user.id, skillId, problem: { q: question, expect }, answer: given, correct: res.correct, hintUsed, xp, msTaken });

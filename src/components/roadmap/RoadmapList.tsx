@@ -6,7 +6,7 @@ import type { Roadmap, RoadmapNode } from "@/lib/learning/roadmap";
 import TutorPortrait from "@/components/characters/TutorPortrait";
 import { ArrowIcon, CheckIcon, LockIcon } from "@/components/ui/icons";
 import { Bar } from "@/components/ui/hud";
-import { subjectOfSection } from "@/config/subjects";
+import { subjectOfSection } from "@/config/mathTopics";
 import { lockReason } from "@/lib/learning/access";
 
 function Tile({ n, roadmap }: { n: RoadmapNode; roadmap: Roadmap }) {

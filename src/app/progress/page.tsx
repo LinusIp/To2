@@ -7,8 +7,8 @@ import { t } from "@/i18n/uz";
 import AppShell, { ScreenTop } from "@/components/ui/AppShell";
 import { Bar } from "@/components/ui/hud";
 import { BarsIcon, CheckIcon, FlameIcon, LockIcon, StarIcon, TriangleIcon } from "@/components/ui/icons";
-import { SUBJECTS } from "@/config/subjects";
-import { SKILLS, SKILL_BY_ID } from "@/data/skills";
+import { SUBJECTS } from "@/config/mathTopics";
+import { SKILLS, getSkill } from "@/data/skills";
 import { MASTERED } from "@/lib/learning/mastery";
 import { useMe } from "@/lib/client/me";
 
@@ -111,7 +111,7 @@ export default function ProgressPage() {
                   <span className="grid h-8 w-8 place-items-center rounded-lg bg-green text-white">
                     <CheckIcon size={14} />
                   </span>
-                  <span className="font-extrabold">{SKILL_BY_ID[id]?.title_uz ?? id}</span>
+                  <span className="font-extrabold">{getSkill(id)?.title_uz ?? id}</span>
                 </Link>
               ))}
             </div>

@@ -10,7 +10,7 @@ import IslandMap from "@/components/roadmap/IslandMap";
 import TutorPortrait from "@/components/characters/TutorPortrait";
 import { useMe } from "@/lib/client/me";
 import { getCharacter } from "@/config/characters";
-import { SUBJECTS, SUBJECT_BY_ID } from "@/config/subjects";
+import { SUBJECTS, SUBJECT_BY_ID } from "@/config/mathTopics";
 
 const RoadmapGraph = lazy(() => import("@/components/roadmap/RoadmapGraph"));
 

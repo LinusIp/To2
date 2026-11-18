@@ -4,6 +4,7 @@
 //  - the canned fallback when the LLM output fails validation.
 // Board canvas is 1000×625. `say` spells numbers in words so TTS reads them well.
 import type { LessonSegment } from "../schema";
+import { PHYSICS_SPEED } from "./physics";
 
 export interface DemoLesson {
   skillId: string;
@@ -325,6 +326,7 @@ export const DEMO_LESSONS: Record<string, DemoLesson> = {
   "eq-two-step": { skillId: "eq-two-step", segments: equation },
   "pct-of-number": { skillId: "pct-of-number", segments: percent },
   "geo-area-rect": { skillId: "geo-area-rect", segments: area },
+  "fiz-tezlik": { skillId: "fiz-tezlik", segments: PHYSICS_SPEED },
 };
 
 /** Related skills reuse the closest demo lesson in mock mode. */
