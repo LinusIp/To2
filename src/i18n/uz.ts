@@ -144,6 +144,9 @@ export const t = {
     micDenied: "Mikrofonga ruxsat berilmadi. Savolni yozib yuboring.",
     sttFailed: "Ovozni tushunmadim. Yana bir bor ayting yoki yozing.",
     tutorFailed: "Ustoz hozir javob bera olmadi. Darsni davom ettiramiz.",
+    // the tutor's stream broke before the server finished (REPORT.md: "never stuck")
+    streamBroken: "Ustoz gapini tugatmadi. Davom etamizmi?",
+    retry: "Davom etish",
     xpGained: (n: number) => `+${n} XP`,
     tryAgain: "Yana bir urinib ko'r!",
     correct: "Barakalla! To'g'ri!",

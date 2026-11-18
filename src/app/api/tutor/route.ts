@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getEnv } from "@/lib/env";
 import { getAI } from "@/lib/ai";
 import { LessonSegment, parseSegments, type LessonSegment as Seg } from "@/lib/ai/schema";
+import { continuationMessages, segmentFromLLM } from "@/lib/ai/llmSegments";
 import { createObjectSplitter } from "@/lib/ai/streamJson";
 import { interruptMessages, lessonMessages } from "@/lib/ai/prompts/tutor.uz";
 import { demoLessonFor, mockInterrupt } from "@/lib/ai/mock/lessons";
@@ -31,6 +32,17 @@ const Body = z.object({
   segment: z.string().max(600).optional(),
   board: z.array(z.object({ id: z.string(), op: z.string(), text: z.string().optional(), x: z.number(), y: z.number() })).max(80).optional(),
   history: z.array(z.object({ role: z.string(), text: z.string().max(600) })).max(12).optional(),
+  /**
+   * Retry after a stream that closed without `done`: the client already has `prior` (in order).
+   * Deterministic sources (demo, cache, pinned, mock, canned) are re-sent minus what the client has;
+   * an LLM lesson/answer is continued from `prior` (it can't be regenerated identically).
+   */
+  resume: z
+    .object({
+      source: z.string().max(16),
+      prior: z.array(z.unknown()).max(30),
+    })
+    .optional(),
 });
 
 const CHECK: Seg = { id: "chk", type: "check", layer: "note", emotion: "encouraging", say: "Tushunarli bo'ldimi? Davom etamizmi?", board: [] };
@@ -46,39 +58,34 @@ function sse() {
   return { res, send, close: () => w.close().catch(() => {}) };
 }
 
-/** Stream an LLM reply, emitting each segment as soon as its JSON object is complete. */
-async function streamLLM(messages: Msg[], emit: (s: Seg) => Promise<void>, opts: { note: boolean; maxTokens: number }): Promise<{ count: number; raw: string; error?: string }> {
+/**
+ * Stream an LLM reply, emitting each segment as soon as its JSON object is complete. An object that
+ * fails validation is dropped (logged) and the stream continues — it never stalls the lesson.
+ * `prior` = segments the learner already has (continuation after a broken stream): ids stay unique.
+ */
+async function streamLLM(
+  messages: Msg[],
+  emit: (s: Seg) => Promise<void>,
+  opts: { note: boolean; maxTokens: number; prior?: Seg[] },
+): Promise<{ count: number; raw: string; error?: string }> {
   const { llm } = getAI();
   const split = createObjectSplitter();
   let raw = "";
   let count = 0;
   let lastErr: string | undefined;
-  const seen = new Set<string>();
-  const handle = async (obj: string) => {
-    let data: unknown;
-    try {
-      data = JSON.parse(obj);
-    } catch {
-      return;
-    }
-    if (data && typeof data === "object" && !("id" in data)) (data as Record<string, unknown>).id = `s${count + 1}`;
-    const r = LessonSegment.safeParse(data);
-    if (!r.success) {
-      lastErr = `${r.error.issues[0]?.path.join(".")}: ${r.error.issues[0]?.message}`;
-      return;
-    }
-    let s = r.data;
-    if (s.type === "ask" && !s.expect) s = { ...s, type: "explain" };
-    if (seen.has(s.id)) s = { ...s, id: `${s.id}_${count}` };
-    seen.add(s.id);
-    s = { ...s, board: s.board.map(fitToBoard) };
-    if (opts.note) s = { ...s, layer: "note" };
-    count++;
-    await emit(s);
-  };
+  const st = { count: opts.prior?.length ?? 0, seen: new Set((opts.prior ?? []).map((s) => s.id)), note: opts.note };
   for await (const delta of llm.stream(messages, { maxTokens: opts.maxTokens })) {
     raw += delta;
-    for (const obj of split(delta)) await handle(obj);
+    for (const obj of split(delta)) {
+      const r = segmentFromLLM(obj, st, fitToBoard);
+      if (!r.ok) {
+        lastErr = r.error;
+        console.warn("[tutor] dropped an invalid segment:", r.error);
+        continue;
+      }
+      count++;
+      await emit(r.seg);
+    }
   }
   return { count, raw, error: lastErr };
 }
@@ -98,7 +105,18 @@ export async function POST(req: Request) {
   // what's already on the board (LLM coordinates are only a hint). Covers LLM, KV cache and demo
   // lessons; note-layer (interrupt) segments pass through and keep using noteLayouter.
   const layMain = mainLayouter();
-  const send = (ev: string, data: unknown) => sendRaw(ev, ev === "segment" && b.mode === "lesson" ? layMain(data as Seg) : data);
+  // Retry after a broken stream: the client already has the first `skip` segments. They still go
+  // through the layouter (so the board state matches what the client shows) but aren't re-sent.
+  const prior = (b.resume?.prior ?? []).map((p) => LessonSegment.safeParse(p)).flatMap((r) => (r.success ? [r.data] : []));
+  const skip = prior.length;
+  const llmResume = b.resume?.source === "llm" && skip > 0;
+  let segIndex = 0;
+  const send = (ev: string, data: unknown) => {
+    if (ev !== "segment") return sendRaw(ev, data);
+    const out = b.mode === "lesson" ? layMain(data as Seg) : data;
+    if (segIndex++ < skip) return Promise.resolve();
+    return sendRaw(ev, out);
+  };
 
   const run = async () => {
     try {
@@ -106,6 +124,20 @@ export async function POST(req: Request) {
         if (userId) await startLessonRow(userId, skill.id).catch(() => {});
         const demo = demoLessonFor(skill.id);
         const cacheKey = `lesson:v1:${skill.id}:${ch.id}`;
+        if (llmResume) {
+          // continue the SAME generated lesson from where the learner's stream broke
+          await send("meta", { source: "llm", resumedAt: skip });
+          for (const s of prior) await send("segment", s); // layout state only (skipped)
+          const mastery = userId ? ((await getMastery(userId))[skill.id] ?? 0.3) : 0.3;
+          const msgs = continuationMessages(lessonMessages({ ch, skill, grade: b.grade, mastery, mistakes: [] }), prior);
+          const got: Seg[] = [...prior];
+          await streamLLM(msgs, async (s) => {
+            got.push(s);
+            await send("segment", s);
+          }, { note: false, maxTokens: 3500, prior }).catch((e) => console.warn("[tutor] continuation failed", (e as Error).message));
+          if (got.length > skip && got.some((s) => s.type === "ask")) await storePut(cacheKey, JSON.stringify(got), { ttlSec: 60 * 60 * 24 * 7 });
+          return;
+        }
         if (demo && !b.fresh && demo.skillId === skill.id) {
           await send("meta", { source: "demo" });
           for (const s of demo.segments) await send("segment", s);
@@ -187,7 +219,7 @@ export async function POST(req: Request) {
         for (const s of cachedInt) await send("segment", s);
         return;
       }
-      await send("meta", { source: "llm" });
+      await send("meta", llmResume ? { source: "llm", resumedAt: skip } : { source: "llm" });
       const sent: Seg[] = [];
       const boardDesc = b.board ?? [];
       const free = freeArea({ ...emptyBoard(), els: [] });
@@ -212,6 +244,17 @@ export async function POST(req: Request) {
         sent.push(out);
         await send("segment", out);
       };
+      if (llmResume) {
+        // continue the same answer: the learner already has `prior` (note rows stay in order)
+        for (const s of prior) {
+          sent.push(lay(s));
+          await send("segment", s); // skipped
+        }
+        sawCheck = prior.some((s) => s.type === "check");
+        if (!sawCheck) await streamLLM(continuationMessages(msgs, prior), emit, { note: true, maxTokens: 900, prior }).catch((e) => console.warn("[tutor] continuation failed", (e as Error).message));
+        if (!sawCheck) await send("segment", CHECK);
+        return;
+      }
       const r = await streamLLM(msgs, emit, { note: true, maxTokens: 900 }).catch((e) => ({ count: 0, raw: "", error: (e as Error).message }));
       if (n === 0) {
         console.warn("[tutor] interrupt LLM failed", r.error);
@@ -228,7 +271,8 @@ export async function POST(req: Request) {
       console.error("[tutor]", (e as Error).message);
       await send("error", { message: "tutor_failed" }).catch(() => {});
     } finally {
-      await send("done", {}).catch(() => {});
+      // ALWAYS end with done (the client treats a stream that closes without it as broken → retry)
+      await sendRaw("done", { segments: segIndex }).catch(() => {});
       await close();
     }
   };

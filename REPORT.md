@@ -419,7 +419,9 @@ Source: `docs/prototypes/mobile-app-v2/index.html` + `docs/design/target-ui.png`
   cached (≈ 1,420 credits to fill; his old copies became misses with the base64 fix) — waiting for the team: the demo path can't
   be 100 % cached for Blokbek without generating them.
 - Lip-sync offset spot checks: see Block 2 (onsets within −65…+5 ms of the audio for all 3 tutors).
-### Block 7 — Android APK ✅ (CI green)
+### Block 7 — Android APK ⏸ PARKED (known issue)
+> **Parked — known issue: the APK opens the browser at "home" instead of staying in the app. Use the website
+> (https://to2.locallabs-io.workers.dev) for the demo.** Nothing below has been changed since; don't touch `mobile/`.
 - **Download**: run https://github.com/LinusIp/To2/actions/runs/44192356223 → Artifacts → **To2-debug.apk**
   (direct: https://github.com/LinusIp/To2/actions/runs/44192356223/artifacts — needs a GitHub login). Signed builds appear
   on Releases as `apk-<short-sha>` once the 4 signing secrets are added; without them the job skips cleanly (verified).
@@ -467,3 +469,19 @@ Source: `docs/prototypes/mobile-app-v2/index.html` + `docs/design/target-ui.png`
   captions-only (as designed; the tutor never froze). Later segments get audio once their background generation finishes
   (segment 2 was requested at 6.8 s and played at ~20 s; not captured). Pinned demo answers are fully cached (instant voice).
 - After this: code freeze — only bugs reported from the phone test.
+
+## 🐞 "Tutors stop answering mid-way" — fixed (2026-11-18, under the code freeze)
+**Reproduced on production (14b7183)**, per tutor: a fresh LLM lesson, the demo lesson and a live question, with the SSE
+events and the Worker tail. **Server: 9/9 streams ended with `done`, no 1102, no exceptions** (CPU 15–219 ms). Board layout
+is not the cost: 1.3–3.2 ms per lesson (3 real LLM lessons + the demo lesson). LLM streams are not truncated:
+`finish_reason=stop`, 1,448–1,993 of 3,500 tokens (lessons) and 420 of 900 (answer). So the stops came from the player:
+
+| cause | what the learner saw | fix | test |
+|---|---|---|---|
+| **The "nothing is playing" timeout read the SHARED `<audio>` element** (`a.paused && a.currentTime === 0`). After any earlier clip, `currentTime` sits at that clip's end (≠ 0), so from the 2nd line on the 13 s / 4 s timeout never fired. A slow or hung TTS request or a stuck `play()` then left the line's `started` unresolved → the chalk timeline never started → **the tutor stopped for good**. (It is also why the live-answer timeline above shows ~14–20 s of silence instead of captions after 4 s.) | lesson or live answer freezes on a line | per-line `playing` flag; on timeout the request is aborted and the line goes captions-only; a late `play()` of such a line is paused; a stopped line only detaches its own handlers (`src/lib/audio/player.ts`) | `player.test.ts` (fails on the old code, passes now) + e2e #2 (hung TTS after a played clip → lesson moves on) |
+| **A stream that closed without `done` counted as finished** (`readTutorStream` just returned). Worker killed / network drop mid-stream → the lesson silently ended early ("Dars tugadi") or an answer was cut off. | lesson ends early / answer stops mid-way | `readTutorStream` returns `{done}`; the engine marks the lesson/answer `broken`; when playback reaches the end of what arrived, the bubble says **"Ustoz gapini tugatmadi. Davom etamizmi?"** with one button **Davom etish** → `retryStream()` | `sse.test.ts` + e2e #1 (lesson) and #3 (live answer) |
+| Retry must **resume, not restart** | — | `/api/tutor` takes `resume: {source, prior}`: deterministic sources (demo, cache, pinned, mock, canned) are re-sent minus what the client has; an LLM lesson/answer is **continued** from `prior` (assistant = what was said, "faqat QOLGAN segmentlar"). Skipped segments still go through the layouters, so the board matches. | e2e #1/#3 check the retry body (`source`, `prior` ids) and that the next segment plays |
+| A zod-failed LLM segment | (no stall found) | dropped + logged, the stream continues (`src/lib/ai/llmSegments.ts`, extracted from the route) | `llmSegments.test.ts` |
+| Server must **always** end with `done` | — | `finally` sends `done {segments}` (also after an `error` event); an `ask` without `expect` becomes `explain` | — |
+- Live answers that get **no** segment at all: the tutor says "Ustoz hozir javob bera olmadi…" and the lesson continues (as before).
+- Tests: **161 unit (+15), 8 e2e (+3: stream.spec.ts), all green**. E2E stub TTS → 0 credits.

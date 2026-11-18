@@ -20,6 +20,7 @@ import {
   resumeFromBackground,
   savedProgress,
   replayStep,
+  retryStream,
   setMuted,
   setRate,
   showMe,
@@ -151,6 +152,18 @@ function Actions() {
   const feedback = useLesson((s) => s.feedback);
   const [typing, setTyping] = useState(false);
   const [busy, setBusy] = useState(false);
+  // the tutor's stream broke and playback caught up: one clear way on ("Davom etamizmi?")
+  const stuck = useLesson((s) => !!s.broken && s.waiting && (s.track === s.broken || s.main.length === 0));
+
+  if (stuck) {
+    return (
+      <div className="flex flex-col gap-2.5">
+        <button type="button" className="btn btn-primary w-full" data-testid="stream-retry" onClick={() => void retryStream()} autoFocus>
+          {t.lesson.retry} <ArrowIcon />
+        </button>
+      </div>
+    );
+  }
 
   if (status === "checking") {
     return (

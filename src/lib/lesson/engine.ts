@@ -10,6 +10,7 @@ import { resolveStart, type StartAt } from "./resume";
 import { startRecording, stopRecording, micSupported } from "@/lib/audio/recorder";
 import { initialPlayer, transition, type PlayerEvent, type PlayerState } from "./player";
 import { readTutorStream } from "./sse";
+
 import { tutorGate } from "@/lib/board/tip";
 import { t as T } from "@/i18n/uz";
 
@@ -51,6 +52,11 @@ export interface LessonStore {
   feedback: Feedback | null;
   celebrate: number;
   waiting: boolean; // waiting for the next streamed segment
+  /**
+   * The tutor's stream (main lesson or live answer) closed WITHOUT the server's `done`: we show
+   * "Davom etamizmi?" once playback reaches the end of what arrived, and retryStream() resumes it.
+   */
+  broken: "main" | "note" | null;
   error: string | null;
   xpGained: number;
   masteryAfter: number | null;
@@ -77,6 +83,7 @@ const initial = (): Omit<LessonStore, "skillId" | "characterId" | "voice" | "gra
   feedback: null,
   celebrate: 0,
   waiting: false,
+  broken: null,
   error: null,
   xpGained: 0,
   masteryAfter: null,
@@ -235,8 +242,10 @@ function onSegmentDone(g: number, track: "main" | "note", index: number) {
     nextMain();
   } else {
     if (index + 1 < s.note.length) void playSegment("note", index + 1);
-    else if (!s.noteDone) set({ waiting: true });
-    else {
+    else if (!s.noteDone) {
+      set({ waiting: true });
+      showStuckPrompt();
+    } else {
       fire({ type: "REPLY_END" });
       set({ caption: s.note[index]?.type === "check" ? s.note[index].say : T.lesson.understood });
     }
@@ -247,8 +256,10 @@ function nextMain() {
   const s = get();
   const i = s.mainIndex + 1;
   if (i < s.main.length) void playSegment("main", i);
-  else if (!s.mainDone) set({ waiting: true, mainIndex: i });
-  else {
+  else if (!s.mainDone) {
+    set({ waiting: true, mainIndex: i });
+    showStuckPrompt(); // the stream already broke: ask "Davom etamizmi?" instead of waiting forever
+  } else {
     fire({ type: "FINISH" });
     clearProgress(s.skillId, s.characterId);
     set({ caption: T.lesson.finished, emotion: "excited", celebrate: get().celebrate + 1 });
@@ -361,20 +372,43 @@ function context() {
 /** Start the lesson: unlock audio (user gesture), stream segments. */
 export async function startLesson(at: StartAt = 0) {
   unlockAudio();
-  const s = get();
   startAt = at;
   began = false;
+  mainSource = "";
   fire({ type: "START" });
-  set({ caption: T.common.loading, waiting: true });
+  set({ caption: T.common.loading, waiting: true, broken: null });
+  await streamMain();
+}
+
+/** where the main lesson came from (meta event): decides how a retry resumes it */
+let mainSource = "";
+
+/**
+ * Stream the main lesson. On a retry (`resume`) the server gets what we already have and sends
+ * only the rest. The lesson counts as complete ONLY when the server's `done` arrives; a stream
+ * that closes without it marks the lesson `broken` instead of silently ending it.
+ */
+async function streamMain(resume = false) {
+  const s = get();
   abort = new AbortController();
+  let complete = false;
   try {
     const res = await fetch("/api/tutor", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ mode: "lesson", skillId: s.skillId, characterId: s.characterId, grade: s.grade }),
+      body: JSON.stringify({
+        mode: "lesson",
+        skillId: s.skillId,
+        characterId: s.characterId,
+        grade: s.grade,
+        ...(resume && s.main.length ? { resume: { source: mainSource || "llm", prior: s.main } } : {}),
+      }),
       signal: abort.signal,
     });
-    await readTutorStream(res, {
+    const r = await readTutorStream(res, {
+      onMeta: (m) => {
+        if (!resume && typeof m.source === "string") mainSource = m.source;
+      },
       onSegment: (seg) => {
         set((st) => ({ main: [...st.main, seg] }));
         if (!began) return begin(false);
@@ -385,16 +419,42 @@ export async function startLesson(at: StartAt = 0) {
         }
       },
     });
+    complete = r.done;
   } catch (e) {
     if ((e as Error).name === "AbortError") return;
-    set({ error: T.lesson.tutorFailed });
   }
-  set({ mainDone: true });
+  if (!complete) {
+    // closed without `done` (or an error event): keep what arrived, offer to resume
+    set({ broken: "main" });
+    showStuckPrompt();
+    return;
+  }
+  set({ mainDone: true, broken: null });
   if (!began) begin(true);
   const st = get();
   if (st.waiting && st.player.status === "speaking" && st.mainIndex >= st.main.length) {
     set({ waiting: false });
     nextMain();
+  }
+}
+
+/** If playback has caught up with a broken stream, the bubble asks "Davom etamizmi?". */
+function showStuckPrompt() {
+  const s = get();
+  if (!s.broken || !s.waiting) return;
+  if ((s.broken === "main" && s.track === "main") || (s.broken === "note" && s.track === "note") || !began)
+    set({ caption: T.lesson.streamBroken, emotion: "encouraging" });
+}
+
+/** [Davom etish] after a broken stream: fetch the rest and carry on from the last segment. */
+export async function retryStream() {
+  const s = get();
+  if (s.broken === "main") {
+    set({ broken: null, caption: T.common.loading });
+    await streamMain(true);
+  } else if (s.broken === "note") {
+    set({ broken: null, caption: T.lesson.thinking });
+    await streamNote(lastQuestion, lastSimpler, true);
   }
 }
 
@@ -478,12 +538,12 @@ export async function ask(question: string, voice = false, simpler = false) {
     error: null,
     note: [],
     noteDone: false,
+    broken: null,
     transcript: simpler ? s.transcript : [...s.transcript, { who: "me", text: q, voice }],
     board: { ...s.board, noteDim: false, els: s.board.els.filter((e) => e.layer !== "note") },
   }));
-  abort?.abort();
-  abort = new AbortController();
-  let first = true;
+  lastSimpler = simpler;
+  noteSource = "";
   let fillerDone: Promise<void> = Promise.resolve();
   // Fill the LLM wait with a short, pre-cached phrase so there is no dead air.
   if (!simpler) {
@@ -494,14 +554,41 @@ export async function ask(question: string, voice = false, simpler = false) {
     fillerDone = Promise.race([fs.ended, new Promise<void>((r) => setTimeout(r, 4000))]);
     set({ caption: filler });
   }
+  await streamNote(q, simpler, false, fillerDone);
+}
+
+let lastSimpler = false;
+/** where the live answer came from (meta event): decides how a retry resumes it */
+let noteSource = "";
+
+/**
+ * Stream a live answer onto the note track. Complete ONLY with the server's `done`; a stream that
+ * closes without it after some segments marks the answer `broken` ("Davom etamizmi?" + retry that
+ * resumes from the last segment). Nothing at all → the tutor says so and the lesson continues.
+ */
+async function streamNote(q: string, simpler: boolean, resume: boolean, fillerDone: Promise<void> = Promise.resolve()) {
+  abort?.abort();
+  abort = new AbortController();
+  let first = get().note.length === 0;
+  let complete = false;
   try {
+    const s0 = get();
     const res = await fetch("/api/tutor", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ mode: "interrupt", question: q, simpler, ...context() }),
+      body: JSON.stringify({
+        mode: "interrupt",
+        question: q,
+        simpler,
+        ...context(),
+        ...(resume && s0.note.length ? { resume: { source: noteSource || "llm", prior: s0.note } } : {}),
+      }),
       signal: abort.signal,
     });
-    await readTutorStream(res, {
+    const r = await readTutorStream(res, {
+      onMeta: (m) => {
+        if (!resume && typeof m.source === "string") noteSource = m.source;
+      },
       onSegment: (seg) => {
         const idx = get().note.length;
         set((st) => ({ note: [...st.note, { ...seg, layer: "note" }] }));
@@ -523,19 +610,28 @@ export async function ask(question: string, voice = false, simpler = false) {
         }
       },
     });
-    set({ noteDone: true });
-    const s = get();
-    if (first) throw new Error("no segments");
-    if (s.waiting && s.track === "note") {
-      set({ waiting: false });
-      fire({ type: "REPLY_END" });
-      set({ caption: T.lesson.understood });
-    }
+    complete = r.done;
   } catch (e) {
     if ((e as Error).name === "AbortError") return;
-    set({ error: T.lesson.tutorFailed });
+  }
+  if (get().note.length === 0) {
+    // nothing arrived at all: say so and go back to the lesson (never a silent tutor)
+    set({ error: T.lesson.tutorFailed, broken: null });
     fire({ type: "REPLY_FAILED" });
     resumeAfterInterrupt(true);
+    return;
+  }
+  if (!complete) {
+    set({ broken: "note" });
+    showStuckPrompt();
+    return;
+  }
+  set({ noteDone: true, broken: null });
+  const s = get();
+  if (s.waiting && s.track === "note") {
+    set({ waiting: false });
+    fire({ type: "REPLY_END" });
+    set({ caption: T.lesson.understood });
   }
 }
 
@@ -562,7 +658,7 @@ function resumeAfterInterrupt(alreadyTransitioned = false) {
     void playSegment("main", r.index, r);
   } else if (s.mainIndex < s.main.length) {
     void playSegment("main", s.mainIndex);
-  }
+  } else showStuckPrompt(); // back at the end of a broken lesson stream: ask again
 }
 
 /** [Davom et] — dim the orange notes and resume exactly where we paused. */

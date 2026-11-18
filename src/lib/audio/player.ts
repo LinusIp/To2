@@ -79,6 +79,13 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
   let fbTimer: ReturnType<typeof setTimeout> | null = null;
   let fbDuration = estimateMs(text);
   let done = false;
+  /**
+   * THIS line's audio has started playing. Must be per speech: the <audio> element is shared, so its
+   * paused/currentTime still describe the PREVIOUS clip (currentTime sits at that clip's end, never 0).
+   * Checking those made the start timeout never fire after the first line → a hung TTS request or
+   * play() froze the tutor for good.
+   */
+  let playing = false;
   /** lip-sync envelope of exactly this audio (x-tts-env header), null → live analyser */
   let envelope: Uint8Array | null = null;
   const ctrl = new AbortController();
@@ -87,18 +94,35 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
   const ended = new Promise<void>((r) => (resolveEnded = r));
   const started = new Promise<number>((r) => (resolveStarted = r));
 
+  const onError = () => startFallback();
+  const onPlaying = () => {
+    if (done || fallback) {
+      a.pause(); // a late play() of a line that already went captions-only
+      return;
+    }
+    playing = true;
+    startMouth(a, envelope);
+    const d = Number.isFinite(a.duration) ? a.duration * 1000 : estimateMs(text);
+    resolveStarted(d);
+  };
+  const onEnded = () => finish();
+
   const finish = () => {
     if (done) return;
     done = true;
     stopMouth();
-    a.onended = a.onerror = a.onplaying = null;
+    // only detach our own handlers: a newer line may already own the shared element
+    if (a.onended === onEnded) a.onended = null;
+    if (a.onerror === onError) a.onerror = null;
+    if (a.onplaying === onPlaying) a.onplaying = null;
     resolveEnded();
   };
 
   const startFallback = () => {
     if (done || fallback) return;
     fallback = true;
-    a.pause();
+    ctrl.abort(); // stop waiting for this line's audio
+    if (a.onplaying === onPlaying) a.pause();
     fbDuration = estimateMs(text, 1);
     fbStart = performance.now();
     fbRunning = true;
@@ -111,14 +135,9 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
   if (opts.muted) {
     startFallback();
   } else {
-    a.onerror = () => startFallback();
-    a.onplaying = () => {
-      if (done) return;
-      startMouth(a, envelope);
-      const d = Number.isFinite(a.duration) ? a.duration * 1000 : estimateMs(text);
-      resolveStarted(d);
-    };
-    a.onended = () => finish();
+    a.onerror = onError;
+    a.onplaying = onPlaying;
+    a.onended = onEnded;
     a.playbackRate = rate;
     const seek = () => {
       if (opts.fromMs) a.currentTime = opts.fromMs / 1000;
@@ -142,10 +161,11 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
         if (!done) startFallback();
       }
     })();
-    // If nothing plays within 13 s (the server waits up to 11 s for v2), this line goes captions-only.
+    // If THIS line isn't playing within 13 s (the server waits up to 11 s for v2) — slow or hung
+    // request, stuck play() — it goes captions-only. Live answers pass 4 s: never a frozen tutor.
     setTimeout(() => {
-      if (!done && !fallback && a.paused && a.currentTime === 0) startFallback();
-    }, opts.startTimeoutMs ?? 13_000); // live answers pass 4 s: never a frozen tutor
+      if (!done && !fallback && !playing) startFallback();
+    }, opts.startTimeoutMs ?? 13_000);
   }
 
   return {
