@@ -569,3 +569,25 @@ Tests: **193 unit, 12 e2e** (new `e2e/answers.spec.ts`: voice-first + fillers, r
 New voice lines warmed for the 3 tutors (18 clips). ⚠️ Known, not in this fix: an LLM lesson's own first heading can still
 sit under the phone toolbar (the lesson layout doesn't reserve that band yet); while writing, the tutor's body covers lines
 it already wrote until it steps back.
+
+## 🧭 Mind map + personalized path — branch `feat/roadmap` (2026-11-18, not released)
+- **`src/lib/learning/path.ts`** (pure, subject-agnostic): the subject is an input — `Curriculum {id, title, skills}`.
+  `buildPath(curriculum, mastery, grade, {touched, started})` → ordered steps (same rules as `buildRoadmap`: weak targets +
+  transitive unmastered prereqs, Kahn order, lowest mastery → most blocking → lowest grade), each with status, **reason**
+  ("Zaif nuqta" or "«X» uchun kerak") and `lockedBy`. `buildMindMap()` → centre (subject) → branches (sections, mastered/total)
+  → leaves (status, onPath, order). `validateGraph()` → duplicate ids, missing prereqs, self-loops, cycles.
+- **`src/data/curricula.ts`**: `CURRICULA = { matematika }` — only math data here. Fizika/Kimyo/Biologiya (branch
+  `feat/subjects`) plug in by adding `{id, title, skills}`; `/map?subject=<id>` picks it.
+- **`/map` "Aql xaritasi"** (linked from `/roadmap`): radial SVG mind map — sections sized by skill count, leaves coloured
+  **+ icon** (✓ / number / lock / +) with the word in the legend and detail card; the personal path is a dashed blue numbered
+  route; tap a section → its skills as a list; tap a skill → card (status, %, why it's on the path, lock reason, start/practice).
+  Below: "Sening yo'ling" — the ordered path with reasons. Primary action: "Darsni davom ettirish: <current>".
+- `roadmap.ts`, `RoadmapList`, the API and the demo path are **unchanged** (code freeze); `/map` computes the path in the
+  browser from `/api/user` mastery + the roadmap's `started` flags.
+- Tests: `path.test.ts` (21) — for maths `buildPath` order/current/weakCount **equal** `buildRoadmap` on 5 mastery maps,
+  prereqs before dependents, valid DAG, mind-map counts, started never locks, a fake Fizika curriculum works. All 214 unit
+  tests green, `pnpm build` green. Screenshots (375×812, mock mode, seeded mastery): `docs/screenshots/mindmap-phone.png`,
+  `docs/screenshots/mindmap-phone-path.png`.
+- ❓ **Assumption**: the original feature spec ("NEW FEATURE: mind map + personalized roadmap", sections 1–4) was never pasted;
+  the team approved building a best guess. Compare with the real spec before merging.
+- ⚠️ With 44 skills a few leaves still touch at small-section boundaries on a phone; skills > grade+1 are hidden.
