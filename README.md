@@ -51,3 +51,7 @@ Bindings live in `cloudflare.config.ts` (D1 `to2`, KV, optional R2 `AUDIO`). The
 vinext (Next.js 16 App Router on Vite) · Cloudflare Workers + D1 + KV (+ R2 when enabled) · Drizzle · Tailwind v4 · zustand · three.js voxel tutors · SVG handwriting board (single-stroke chalk glyphs) · mathjs · React Flow + dagre · zod · vitest · VoiceLab STT/TTS/LLM.
 
 More: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/pitch/](docs/pitch) · build log & open questions: [REPORT.md](REPORT.md)
+
+## 📊 Pitch deck
+
+[**⬇️ Download the Buddy pitch deck (PDF)**](https://github.com/LinusIp/To2/raw/main/buddy-pitch-deck.pdf) · [View on GitHub](buddy-pitch-deck.pdf)
