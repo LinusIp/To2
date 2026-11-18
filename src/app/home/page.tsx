@@ -77,6 +77,22 @@ export default function HomePage() {
           )
         )}
 
+        {/* O'yinlar: a 5-minute game on today's skill */}
+        <Link href={cur ? `/games/tower?skill=${cur.id}` : "/games/tower"} className="card mt-4 flex items-center gap-3.5 p-4 no-underline" data-testid="home-game-card">
+          <span className="grid h-[60px] w-[60px] flex-none place-items-center rounded-[18px] shadow-[inset_0_-5px_0_rgba(0,0,0,.14)]" style={{ background: "linear-gradient(160deg,#4d86ff,#2f6bff)" }} aria-hidden>
+            <span className="flex flex-col-reverse items-center gap-[2px]">
+              {["#22b45a", "#ff8a1f", "#ffc42e"].map((c, i) => (
+                <span key={c} className="vx-block block w-[34px]" style={{ background: c, height: 12, marginLeft: (i % 2) * 6 - 3 }} />
+              ))}
+            </span>
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[17px] font-black">{t.games.homeCard}</span>
+            <span className="mt-0.5 block text-[13px] font-bold text-mut">{t.games.homeCardText}</span>
+          </span>
+          <ArrowIcon size={18} />
+        </Link>
+
         {/* subjects */}
         <div className="mx-0.5 mt-6 mb-2.5 flex items-center justify-between">
           <h2 className="m-0 text-[22px] font-black">{t.home.subjects}</h2>

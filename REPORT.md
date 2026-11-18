@@ -27,6 +27,25 @@
 6. Same URL on tablet/laptop.
 - Before the demo: run `node scripts/warm-tts.mjs` once (idempotent) and do a dry run on the demo phone (mic permission prompt!).
 
+## 🎮 O'yinlar (Games) tab — branch `feat/games` (2026-11-18, not deployed)
+Three short learning games on the course question banks (`src/data/problems` generators + skill graph). **No LLM calls, 0 VoiceLab credits used** (no new audio; reactions are the existing pose renders + captions).
+- **Blok minorasi** `/games/tower` — 10 four-choice questions; right → a voxel block drops with a bounce, 3+ in a row = ×2 block, 5+ = ×3; wrong → the block wobbles and falls, the tower shakes, the tutor points at the hint + "Keyingi". Height = score; confetti + record at the end.
+- **Tezkor hisob** `/games/speed` — 60 s, short questions first, combo streak (×2/×3 points), timer bar (pauses when the tab is hidden), **Vaqtsiz rejim** checkbox (no timer, 20 questions; remembered per device).
+- **Juftini top** `/games/memory` — 12 cards / 6 pairs: fraction ↔ fraction-bar picture, formula ↔ name, same number two ways (½ ↔ 0,5 ↔ 25 %…); pairs on the round's skill come first.
+- **Entry points:** 6th bottom tab / sidebar item "O'yinlar" (`/games`, shows best scores), "5 daqiqalik o'yin" card on Home (tower on today's skill), "Mashq qilish o'yini" button on every open roadmap node (current node = secondary button under the primary CTA) → `/games/tower?skill=<id>`.
+- **Mastery:** `POST /api/games/answer` re-checks on the server (mathjs `checkAnswer`, or the pair id) and calls the lessons' `recordAnswer` (→ `updateMastery`, XP, streak). Best scores: `GET/POST /api/games/best` in the D1 `kv_store` (`games:best:<userId>`) + localStorage fallback.
+- **Accessibility:** answers are real buttons (Tab/Enter, keys 1–4), memory cards are buttons with spoken faces ("Rasm: 4 bo'lakdan 1 tasi bo'yalgan"), one `aria-live` region per game reads every question and result. Calm mode: `useGameSettings()` reads `html[data-calm]` (set by feat/inclusive's A11yRoot) or `prefers-reduced-motion`, live; a `settings={{calm}}` prop also works (`// a11y-hook`). Calm = no drop/wobble/shake/flip animation, no confetti.
+- Tests: `src/lib/games/games.test.ts` (14) — combo/scoring, question picking (no repeats, only the requested skills, right answer present, no distractor accepted by the checker, works for all 47 skills), memory dealing/flip logic, game answer → `recordAnswer` called with the skill (and not on a wrong answer). Full suite 207/207, `vite build` green.
+- Screenshots 375×812: `docs/screenshots/games/` (tab, home card, roadmap node, tower combo + end, speed start + play, memory in calm mode).
+
+## ❓ Unclear / assumption — O'yinlar
+- Worktree: this session already ran in its own worktree, so `feat/games` was created there from `main` (same commit) instead of `../To2-games`. - To change: nothing, the branch is the same.
+- **Only right answers are recorded**, as "hint used" (small gain, 5 XP), and games can raise mastery only up to 0.84 (`GAME_MAX_P`, just under "mastered"): two tower rounds alone had pushed a skill to 0.945. A wrong tap in a 4-choice game must not cut mastery by 40 %. - To change: `src/lib/games/answer.ts` (`recordAnswer` got an optional `maxP`).
+- No "think" pose exists as a single image: the thinking reaction reuses `QuizThinker` (think1/think2 renders), the hint reaction uses `point`, right answers `cheer`.
+- Subjects (feat/subjects) not merged yet: `pickQuestions({ bank })` and `deal({ bank })` take another course's generator table / pair list; English word ↔ translation pairs go into `src/lib/games/memory.ts` when the language course lands.
+- 6 bottom tabs at 375 px: labels 11 px; fits (see screenshot). If the team prefers 5, drop "Mukofotlar" into Profil.
+- Code freeze note: this is a feature branch, nothing released; the only shared-code change is the optional `maxP` in `recordAnswer` (default = old behaviour).
+
 ## ★ Design update — re-skin + voxel tutors (17 Nov, evening) ✅
 Per CLAUDE.md "★ Design update" and `docs/prototypes/`:
 - **App UI = `mobile-app.html`**: light lavender/white, blue primary `#2f6bff`, Nunito 700–900, white cards r22, bottom tabs **Bosh sahifa · Darslar · Progress · Sozlamalar** (sidebar on ≥768 px). All 8 prototype screens exist: splash `/`, home `/home`, lesson `/lesson/[id]`, tutors `/tutors`, progress `/progress`, quiz style in `/diagnostic` + `/practice/[id]`, "A'lo!" success screen, settings `/settings`. Onboarding, roadmap (list + React Flow), teacher and privacy re-skinned.
