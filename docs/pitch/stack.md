@@ -3,7 +3,7 @@
 ```
             ┌───────────────────────── Browser (phone · tablet · laptop) ─────────────────────────┐
             │  vinext / React 19 · Tailwind v4 · zustand                                          │
-            │  SVG chalkboard (rough.js, chalk math, KaTeX)  ·  pixel characters + lip-sync       │
+            │  SVG chalkboard (single-stroke handwriting)  ·  3D voxel tutor (three.js, IK)       │
             │  MediaRecorder (push-to-talk)  ·  React Flow + dagre roadmap                        │
             └──────────────────────────────▲───────────────────────┬─────────────────────────────┘
                                            │ SSE segments          │ fetch
