@@ -48,21 +48,21 @@ Status key: **active** = running or has work in flight · **done** = finished, w
 **archived** = retired (stopped, context full or superseded; the app may still list it).
 At this snapshot **no session is running** except the current orchestrator, and every feature branch is merged into `main` and live.
 
-| # | Current name → suggested name | Session id | Branch / worktree | Status |
+| # | Old title → **final session title** (renamed in the app 2026-11-25) | Session id | Branch / worktree | Status |
 |---|---|---|---|---|
-| 1 | main agent 2 → **Orchestrator · integration & release** *(current)* | `local_490d08cd…` | `claude/to2-integration-release-3ff198` · `.claude/worktrees/to2-integration-release-3ff198` | active |
-| 2 | main agent → **Orchestrator v1 · demo lock-down** *(archived, context full)* | `local_48179255…` | `main` · `Desktop/To2` (the main checkout) | archived |
-| 3 | AI Math Tutor mockups → **Core · original build** | `local_e5dea886…` | `main` · `Desktop/To2` | archived ⚠️ |
-| 4 | Tutor animation: springs + state machine → **Tutor · animation** | `local_590813f3…` | `main` · `Desktop/To2` | done |
-| 5 | UI polish for kids learning game → **UI · design system & brand** | `local_da4f7361…` | `feat/ui-polish` · `worktrees/ui-polish-kids-game-79ea75` (PR LinusIp/To2#1, merged) | done |
-| 6 | Mind map and personalized roadmap → **Roadmap · planner** | `local_76d430f4…` | `claude/mind-map-personalized-roadmap-685f5f` (no commits; it delegated to #7) | done ⚠️ |
-| 7 | Mind map + personalized roadmap (feat/roadmap) → **Roadmap · towns & mind map** | `local_52b3c9ac…` | `feat/roadmap` · checked out in **`Desktop/To2-roadmap`**, not in its own worktree `sweet-cray-31a608` | done ⚠️ |
-| 8 | Multi-subject engine with Physics demo → **Subjects · physics & multi-subject engine** | `local_9050a48f…` | `feat/subjects-2` · `worktrees/multi-subject-physics-demo-a72871` | done |
-| 9 | language → **Subjects · English course** | `local_0af84270…` | `feat/languages` · `worktrees/multi-subject-physics-demo-eae58d` (misleading folder name) | done ⚠️ |
-| 10 | O'yinlar (Games) tab → **Games · arena & career missions** | `local_32b4f583…` | `feat/games` · `worktrees/oyinlar-games-tab-dacd57` | done |
-| 11 | Inklyuziv rejim: To2 accessibility → **Access · inclusive mode** | `local_c07e1fd4…` | `feat/inclusive` · `worktrees/to2-inclusive-accessibility-bc99f9` | done |
-| 12 | Ilmobod pitch update → **Pitch · story & docs** | `local_ccdd7d76…` | `docs/pitch-numbers` · `worktrees/ilmobod-pitch-update-fecf04` (local branch `pitch-ilmobod`) | done |
-| 13 | Restore chats from folder → **Ops · chat restore** | `local_99ee1f0f…` | `claude/restore-chats-folder-8b734a` (no code changes) | done |
+| 1 | main agent 2 → **To2-Orchestrator v2 · release (current)** | `local_490d08cd…` | `claude/to2-integration-release-3ff198` · `.claude/worktrees/to2-integration-release-3ff198` | active |
+| 2 | main agent → **To2-Orchestrator v1 (retired)** | `local_48179255…` | `main` · `Desktop/To2` (the main checkout) | archived |
+| 3 | AI Math Tutor mockups → **To2-Core · original build (retired)** | `local_e5dea886…` | `main` · `Desktop/To2` | archived ⚠️ |
+| 4 | Tutor animation: springs + state machine → **To2-Tutor · animation** | `local_590813f3…` | `main` · `Desktop/To2` | done |
+| 5 | UI polish for kids learning game → **To2-UI · design system & brand** | `local_da4f7361…` | `feat/ui-polish` · `worktrees/ui-polish-kids-game-79ea75` (PR LinusIp/To2#1, merged) | done |
+| 6 | Mind map and personalized roadmap → **To2-Roadmap · planner (duplicate)** | `local_76d430f4…` | `claude/mind-map-personalized-roadmap-685f5f` (no commits; it delegated to #7) | done ⚠️ |
+| 7 | Mind map + personalized roadmap (feat/roadmap) → **To2-Roadmap · towns & mind map** | `local_52b3c9ac…` | `feat/roadmap` · checked out in **`Desktop/To2-roadmap`**, not in its own worktree `sweet-cray-31a608` | done ⚠️ |
+| 8 | Multi-subject engine with Physics demo → **To2-Subjects · physics & engine** | `local_9050a48f…` | `feat/subjects-2` · `worktrees/multi-subject-physics-demo-a72871` | done |
+| 9 | language → **To2-Subjects · English course** | `local_0af84270…` | `feat/languages` · `worktrees/multi-subject-physics-demo-eae58d` (misleading folder name) | done ⚠️ |
+| 10 | O'yinlar (Games) tab → **To2-Games · arena & careers** | `local_32b4f583…` | `feat/games` · `worktrees/oyinlar-games-tab-dacd57` | done |
+| 11 | Inklyuziv rejim: To2 accessibility → **To2-Access · inclusive mode** | `local_c07e1fd4…` | `feat/inclusive` · `worktrees/to2-inclusive-accessibility-bc99f9` | done |
+| 12 | Ilmobod pitch update → **To2-Pitch · story & docs** | `local_ccdd7d76…` | `docs/pitch-numbers` · `worktrees/ilmobod-pitch-update-fecf04` (local branch `pitch-ilmobod`) | done |
+| 13 | Restore chats from folder → **To2-Ops · chat restore** | `local_99ee1f0f…` | `claude/restore-chats-folder-8b734a` (no code changes) | done |
 
 ### 1 · Orchestrator · integration & release *(current)*
 - **Responsible for:** merging the feature branches, the cross-feature wiring, the single release, production checks, and this file.
