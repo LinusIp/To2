@@ -88,7 +88,7 @@ def dilate(img, mask, px=24, erode=1):
 def stats(cid, path=None):
     """Import a GLB into an empty scene and count triangles / open edges per part."""
     path = path or DST + rf"\public\models\tripo\{cid}.glb"
-    bpy.ops.wm.read_homefile(use_empty=True)
+    _clear_scene()
     bpy.ops.import_scene.gltf(filepath=path)
     hg = _ns("tripo_hinged.py")
     parts = {}
@@ -107,15 +107,38 @@ def stats(cid, path=None):
 def rebuild(cid, portraits=True):
     pl = _ns("tripo_pipeline.py"); hg = _ns("tripo_hinged.py"); _paths(pl, hg)
     raw = pl["load_raw"](RAW[cid])
-    low = pl["make_low"](raw, target_tris=TARGET)                    # M8 (+ weld)
+    low = pl["make_low"](raw, target_tris=int(TARGET * 0.8))         # M8 (+ weld); caps/fills add ~25 %
     img = pl["bake_colour"](raw, low, cid)                           # M4: 24 px Extend margin
     dilate(img, uv_mask([low], *img.size)); img.save()               # M4: extra dilation, re-save the JPEG
     bpy.data.objects.remove(raw, do_unlink=True)
     low.name = "low"
     res = hg["build_hinged"](cid)                                    # M1 M2 M3 M5 inside; raises if a part is open
-    bpy.ops.wm.save_as_mainfile(filepath=SRC + rf"\public\models\raw\{cid}_hinged_v2.blend")
+    os.makedirs(DST + r"\public\models\raw", exist_ok=True)   # git-ignored; never write into SRC
+    bpy.ops.wm.save_as_mainfile(filepath=DST + rf"\public\models\raw\{cid}_hinged_v2.blend", copy=True)
     if portraits: res["portraits"] = render_portraits(cid)
     return res
+
+
+def run_async(fn, *args, **kw):
+    """Run a long job (bake, portraits) on a Blender timer so a remote caller (MCP) doesn't time out.
+    Poll bpy.app.driver_namespace["_job"] for {"state": "running" | "done" | "error", ...}."""
+    import time, traceback
+    job = bpy.app.driver_namespace["_job"] = {"state": "running", "fn": fn.__name__, "args": args, "t0": time.time()}
+    def go():
+        try:
+            job["result"] = fn(*args, **kw); job["state"] = "done"
+        except Exception:
+            job["error"] = traceback.format_exc()[-3000:]; job["state"] = "error"
+        job["sec"] = round(time.time() - job["t0"])
+        try:  # status file for a watcher outside Blender (public/models/raw is git-ignored)
+            os.makedirs(DST + r"\public\models\raw", exist_ok=True)
+            with open(DST + r"\public\models\raw\_job.txt", "w", encoding="utf-8") as fh:
+                fh.write(f"{job['state']} {job['fn']} {job['args']} {job['sec']}s\n{job.get('error', '')}")
+        except Exception:
+            pass
+        return None
+    bpy.app.timers.register(go, first_interval=0.2)
+    return job
 
 
 # ---------------------------------------------------------------- Route B: clean the shipping GLB in place
@@ -127,11 +150,19 @@ def _apply_decimate(ob, ratio):
     if old.users == 0: bpy.data.meshes.remove(old)
 
 
-def fix_glb(cid, target=TARGET):
+def _clear_scene():
+    for o in list(bpy.data.objects): bpy.data.objects.remove(o, do_unlink=True)
+    for coll in (bpy.data.meshes, bpy.data.materials, bpy.data.images, bpy.data.cameras, bpy.data.lights):
+        for d in list(coll):
+            if d.users == 0: coll.remove(d)
+
+
+def fix_glb(cid, target=TARGET, src=None):
+    """src: the GLB to clean (default: the shipping one in DST). Output always goes to DST."""
     hg = _ns("tripo_hinged.py"); _paths(hg)
     S = SCALE
-    bpy.ops.wm.read_homefile(use_empty=True)
-    bpy.ops.import_scene.gltf(filepath=DST + rf"\public\models\tripo\{cid}.glb", merge_vertices=True)
+    _clear_scene()
+    bpy.ops.import_scene.gltf(filepath=src or DST + rf"\public\models\tripo\{cid}.glb", merge_vertices=True)
     root = bpy.data.objects["tutor"]
     parts = [o for o in bpy.data.objects if o.type == "MESH" and o.name.endswith("_mesh")]
     neck_z = bpy.data.objects["head"].matrix_world.translation.z
@@ -143,10 +174,7 @@ def fix_glb(cid, target=TARGET):
         bm = bmesh.new(); bm.from_mesh(ob.data); bm.transform(mw)
         hg["weld"](bm, 0.0001 * S)
         dropped = hg["drop_small_islands"](bm, 0.03 * S)                            # M1
-        for _ in range(3):                                                         # M2
-            if not hg["_cap"](bm, px, all_open=True): break
-            hg["weld"](bm, 0.0001 * S)
-        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+        hg["repair_manifold"](bm, px)                                              # M2
         if plug:                                                                   # M3
             hg["neck_plug"](bm, neck_z, depth=0.015 * S, band=0.07 * S, halfw=0.13 * S)
             bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
