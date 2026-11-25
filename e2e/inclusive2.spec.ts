@@ -1,10 +1,11 @@
 // feat/inclusive-2 (docs/INCLUSIVE.md): real text scaling with no horizontal overflow at 360/375 px,
 // voice answers in the games through "to2:voice", motor profile → untimed Tezkor hisob, profile cards.
-// Screenshots → docs/screenshots/inclusive-2/. TTS is stubbed: 0 VoiceLab credits.
+// Screenshots → test-results/inclusive-2/ (SHOTS=1 → docs/screenshots/inclusive-2/, committed). TTS is stubbed: 0 VoiceLab credits.
 import { expect, test, type Page } from "@playwright/test";
 
 const SKILL = "frac-add-unlike";
-const SHOTS = "docs/screenshots/inclusive-2";
+// committed screenshots are refreshed only on request (SHOTS=1 pnpm e2e …); normal runs write to test-results/
+const SHOTS = process.env.SHOTS === "1" ? "docs/screenshots/inclusive-2" : "test-results/inclusive-2";
 
 async function guest(page: Page, a11y: Record<string, unknown>) {
   await page.route("**/api/tts**", (r) => r.fulfill({ status: 204 }));

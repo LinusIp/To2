@@ -67,7 +67,7 @@ the app-wide one (`claimListening`). Any town or game command they don't use the
   - Fixed-height rows (`h-11/12/14/24`, `h-[52px]`) grow with their text, and whole words wrap.
   - Tab-bar labels grow up to 13.5 px and wrap; AppShell is untouched.
   - Captions scale with everything else.
-  - `e2e/inclusive2.spec.ts` checks 360 and 375 px × 100/125/150 % on /home, /qulaylik, a lesson and a game: no horizontal overflow. Screenshots are in `docs/screenshots/inclusive-2/`.
+  - `e2e/inclusive2.spec.ts` checks 360 and 375 px × 100/125/150 % on /home, /qulaylik, a lesson and a game: no horizontal overflow. Screenshots are in `docs/screenshots/inclusive-2/` (refresh them with `SHOTS=1 pnpm e2e e2e/inclusive2.spec.ts`; normal runs write to `test-results/`).
 - **Board text bigger / typed board.** At 125–150 % text, and with the typed-board option (dyslexia and vision profiles), a **"Doskada yozilgan"** card under the stage shows everything on the chalkboard as large typed text, in reading order, one board row per line. At 150 % it is 33 px, in Lexend when the dyslexia font is on (`LessonA11y` → `boardLines()`).
   - **Planned, waiting for #4's Board.tsx work:** Board.tsx reads `<html data-typed-board>` (already set by A11yRoot). When it is set, `write`, `latex` and fraction text render as **one Lexend `<text>`** at the same x/y/size instead of handwriting strokes. Shapes, highlights, wipes, timing and the stroke cache stay untouched, and there is no ClassroomStage change.
 - **Voice in the 4 games.**
