@@ -56,6 +56,15 @@ async function once(tutor) {
     return window.__frames;
   });
   const glOk = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
+  const dprEnd = await page.evaluate(() => window.__tutor?.dpr?.ratio ?? null);
+  // dev builds only: the tutor loop's own work per frame (animate + three.js render), ms
+  const work = await page.evaluate(() => {
+    const p = window.__tutor?.perf;
+    if (!p) return null;
+    const n = Math.min(p.i, p.ms.length);
+    const a = Array.from(p.ms.slice(0, n)).sort((x, y) => x - y);
+    return n ? +a[Math.floor(n / 2)].toFixed(1) : null;
+  });
   await browser.close();
   const dts = frames.slice(1).map((t, i) => t - frames[i]);
   const s = [...dts].sort((a, b) => a - b);
@@ -67,6 +76,8 @@ async function once(tutor) {
     p95: +q(0.95).toFixed(1),
     long: dts.filter((d) => d > 50).length,
     gl: glOk,
+    dpr: dprEnd,
+    work,
   };
 }
 
@@ -120,6 +131,8 @@ for (const tutor of [true, false]) {
       longFrames: med(rs.map((r) => r.long)),
       runs: rs.map((r) => r.fps),
       webgl: rs[0].gl,
+      dprAtEnd: rs.map((r) => r.dpr),
+      tutorWorkMs_p50: rs.map((r) => r.work),
     }),
   );
 }

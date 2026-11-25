@@ -3,7 +3,7 @@
 // (./anim/animator.ts): states with crossfades, springs on every joint, IK writing, lip-sync.
 // This component only owns the renderer and fills the animator's input from shared mutable
 // state (boardTip, boardFocus, mouth) and the lesson store — or from a `driver` (dev page).
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { getCharacter } from "@/config/characters";
 import { boardFocus, boardTip, tutorGate } from "@/lib/board/tip";
 import { mouth } from "@/lib/audio/lipsync";
@@ -13,6 +13,7 @@ import { restSpot, type Box } from "@/lib/board/tutorSpot";
 import { measure } from "@/lib/board/layout";
 import { SIDE_BOARD, type BoardState } from "@/lib/board/model";
 import { useA11y } from "@/lib/a11y/settings";
+import { newDpr, resetDpr, stepDpr } from "@/lib/anim/pixelRatio";
 
 export interface TutorView {
   x0: number;
@@ -65,7 +66,7 @@ function lessonDriver(inp: AnimInput, view: TutorView) {
   inp.restX = spotX; // while talking: at the board's left edge, never in front of writing
 }
 
-export default function TutorCanvas({
+export default memo(function TutorCanvas({
   characterId,
   view,
   driver = lessonDriver,
@@ -147,9 +148,11 @@ export default function TutorCanvas({
       }
       if (!ch) ch = V.makeChar(cfg, scene, false);
 
+      // adaptive pixel ratio: ≤ 1.5×, stepped down while the frame rate stays low (src/lib/anim/pixelRatio.ts)
+      const dpr = newDpr(window.devicePixelRatio || 1);
       const fit = () => {
         const r = canvas.getBoundingClientRect();
-        ren.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+        ren.setPixelRatio(dpr.ratio);
         ren.setSize(Math.max(1, r.width), Math.max(1, r.height), false);
       };
       fit();
@@ -170,7 +173,7 @@ export default function TutorCanvas({
       // dev only: lets tests read the rig state (mouth/lid frames, chalk vs. tip, state) + per-frame work time
       const perf = { ms: new Float32Array(600), i: 0 };
       const dev = process.env.NODE_ENV !== "production";
-      if (dev) (window as unknown as { __tutor?: unknown }).__tutor = { ch, anim, inp, boardTip, perf };
+      if (dev) (window as unknown as { __tutor?: unknown }).__tutor = { ch, anim, inp, boardTip, perf, dpr };
 
       let last = -1;
       const shadow = shadowRef.current;
@@ -179,6 +182,7 @@ export default function TutorCanvas({
         const w0 = dev ? performance.now() : 0;
         const dt = last < 0 ? 0 : (now - last) / 1000;
         last = now;
+        if (dt > 0 && stepDpr(dpr, dt * 1000)) fit();
         syncCam();
         const v = viewRef.current;
         driverRef.current(inp, viewRef.current);
@@ -204,6 +208,7 @@ export default function TutorCanvas({
         }
         else {
           last = -1;
+          resetDpr(dpr); // the hidden time says nothing about how fast we draw
           ren.setAnimationLoop(frame);
         }
       };
@@ -239,4 +244,4 @@ export default function TutorCanvas({
       <canvas ref={canvasRef} aria-hidden className="pointer-events-none absolute inset-0 h-full w-full" />
     </>
   );
-}
+});

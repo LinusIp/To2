@@ -2,7 +2,7 @@
 // The lesson stage (ported from docs/prototypes/board-handwriting.html):
 // warm classroom SVG (1600×900) + the chalk board (1000×625 at translate(420,100) scale(1.104))
 // + the live 3D voxel tutor on a transparent canvas above it (TutorCanvas).
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { BoardInk } from "@/components/board/Board";
 import type { BoardState } from "@/lib/board/model";
 import TutorCanvas from "@/components/characters/TutorCanvas";
@@ -51,7 +51,7 @@ function Frieze() {
   );
 }
 
-export function Room() {
+export const Room = memo(function Room() {
   return (
     <>
       <defs>
@@ -143,7 +143,114 @@ export function Room() {
       <rect x="408" y="94" width="1150" height="740" fill="#000" opacity=".16" />
     </>
   );
+});
+
+// ── layers ──────────────────────────────────────────────────────────────────────────────
+// While the tutor writes, the lesson store changes every frame. Everything that does not depend
+// on the writing is memoized, and the stage is split into stacked <svg> layers (same viewBox,
+// same board transform), because a browser repaints — and re-filters — a whole <svg> when any
+// part of it changes:
+//   1. back:  room + board background                       (never changes)
+//   2. done:  finished writing, side board, wipes, smudges  (changes when an element finishes)
+//   3. live:  the element being written + the chalk piece   (every frame, small filter region)
+//   4. front: chalk ledge + room vignette                   (never changes)
+//   5–6. cinematic light, blended over everything below (soft-light, screen)
+// The stacking order is the same as the old single <svg>, so the picture is the same.
+
+const BOARD_T = `translate(${BOARD_X},${BOARD_Y}) scale(${BOARD_S})`;
+const vb = (v: StageView) => `${v.x0} ${v.y0} ${v.w} ${v.h}`;
+const LAYER = "pointer-events-none absolute inset-0 h-full w-full";
+
+const StageBack = memo(function StageBack({ view, label }: { view: StageView; label: string }) {
+  return (
+    <svg viewBox={vb(view)} className="absolute inset-0 h-full w-full" role="img" aria-label={label}>
+      <Room />
+      <g transform={BOARD_T}>
+        <rect x="-18" y="-18" width="1036" height="661" fill="#7a4f2c" />
+        <rect x="-18" y="-18" width="1036" height="6" fill="#86603d" />
+        <rect x="0" y="0" width="1000" height="625" fill="#253a30" />
+        {/* a faint chalk grid, like a ruled school board */}
+        <defs>
+          <pattern id="board-grid" width="50" height="50" patternUnits="userSpaceOnUse">
+            <path d="M50 0H0V50" fill="none" stroke="#fff" strokeOpacity=".045" strokeWidth="1.5" />
+          </pattern>
+        </defs>
+        <rect x="0" y="0" width="1000" height="625" fill="url(#board-grid)" />
+        <ellipse cx="300" cy="300" rx="380" ry="200" fill="url(#board-smudge)" />
+        <ellipse cx="760" cy="470" rx="260" ry="140" fill="url(#board-smudge)" />
+      </g>
+    </svg>
+  );
+});
+
+/** Finished writing: re-renders only when the board changes or an element starts/finishes. */
+const InkDone = memo(function InkDone({ view, board, exclude }: { view: StageView; board: BoardState; exclude: string | null }) {
+  return (
+    <svg viewBox={vb(view)} className={LAYER} aria-hidden style={{ willChange: "transform" }}>
+      <g transform={BOARD_T}>
+        <BoardInk state={board} part="done" exclude={exclude} />
+      </g>
+    </svg>
+  );
+});
+
+/** The element being written (every frame while writing) + the chalk piece; reports the tip. */
+function InkLive({ view, board, active }: { view: StageView; board: BoardState; active: { key: string; p: number } | null }) {
+  return (
+    <svg viewBox={vb(view)} className={LAYER} aria-hidden style={{ willChange: "transform" }}>
+      <g transform={BOARD_T}>
+        <BoardInk state={board} active={active} part="live" reportTip />
+      </g>
+    </svg>
+  );
 }
+
+const StageFront = memo(function StageFront({ view }: { view: StageView }) {
+  return (
+    <>
+      <svg viewBox={vb(view)} className={LAYER} aria-hidden>
+        <g transform={BOARD_T}>
+          <rect x="-30" y="643" width="1060" height="16" fill="#5d3d24" />
+          <rect x="-30" y="643" width="1060" height="4" fill="#7a5233" />
+          <g fill="#efebe0">
+            <rect x="120" y="635" width="40" height="9" />
+            <rect x="176" y="637" width="26" height="7" />
+          </g>
+          <rect x="222" y="636" width="30" height="8" fill="#f2c94c" />
+          <rect x="880" y="628" width="70" height="16" fill="#3a3f4a" />
+          <rect x="880" y="628" width="70" height="6" fill="#c9b79a" />
+        </g>
+        <rect width="1600" height="900" fill="url(#room-vig)" />
+      </svg>
+      {/* cinematic light (mockup v2): warm window key from the left, cool fill from the right, a warm
+          spot on the board — same directions as the three.js key/fill/rim on the tutor (voxel.ts addLights).
+          The blend mode sits on each <svg> element so it blends with ALL the layers below. */}
+      <svg viewBox={vb(view)} className={LAYER} aria-hidden style={{ mixBlendMode: "soft-light" }}>
+        <defs>
+          <radialGradient id="cine-key" gradientUnits="userSpaceOnUse" cx="60" cy="250" r="1000">
+            <stop offset="0" stopColor="#ffc97a" stopOpacity=".42" />
+            <stop offset="1" stopColor="#ffc97a" stopOpacity="0" />
+          </radialGradient>
+          <radialGradient id="cine-fill" gradientUnits="userSpaceOnUse" cx="1600" cy="520" r="760">
+            <stop offset="0" stopColor="#8fb6ff" stopOpacity=".26" />
+            <stop offset="1" stopColor="#8fb6ff" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <rect width="1600" height="900" fill="url(#cine-key)" />
+        <rect width="1600" height="900" fill="url(#cine-fill)" />
+      </svg>
+      <svg viewBox={vb(view)} className={LAYER} aria-hidden style={{ mixBlendMode: "screen" }}>
+        <defs>
+          <radialGradient id="cine-spot" gradientUnits="userSpaceOnUse" cx={BOARD_X + 520 * BOARD_S} cy={BOARD_Y + 280 * BOARD_S} r="560">
+            <stop offset="0" stopColor="#ffe7b4" stopOpacity=".24" />
+            <stop offset="1" stopColor="#ffe7b4" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <rect width="1600" height="900" fill="url(#cine-spot)" />
+      </svg>
+    </>
+  );
+});
 
 export default function ClassroomStage({
   board,
@@ -157,57 +264,14 @@ export default function ClassroomStage({
   label: string;
 }) {
   const view = useStageView();
+  // the live layer draws the element only while it is being written (p < 1); then it moves to "done"
+  const exclude = active && active.p < 1 ? active.key : null;
   return (
-    <div className="relative w-full overflow-hidden" style={{ aspectRatio: `${view.w} / ${view.h}` }}>
-      <svg viewBox={`${view.x0} ${view.y0} ${view.w} ${view.h}`} className="absolute inset-0 h-full w-full" role="img" aria-label={label}>
-        <Room />
-        <g transform={`translate(${BOARD_X},${BOARD_Y}) scale(${BOARD_S})`}>
-          <rect x="-18" y="-18" width="1036" height="661" fill="#7a4f2c" />
-          <rect x="-18" y="-18" width="1036" height="6" fill="#86603d" />
-          <rect x="0" y="0" width="1000" height="625" fill="#253a30" />
-          {/* a faint chalk grid, like a ruled school board */}
-          <defs>
-            <pattern id="board-grid" width="50" height="50" patternUnits="userSpaceOnUse">
-              <path d="M50 0H0V50" fill="none" stroke="#fff" strokeOpacity=".045" strokeWidth="1.5" />
-            </pattern>
-          </defs>
-          <rect x="0" y="0" width="1000" height="625" fill="url(#board-grid)" />
-          <ellipse cx="300" cy="300" rx="380" ry="200" fill="url(#board-smudge)" />
-          <ellipse cx="760" cy="470" rx="260" ry="140" fill="url(#board-smudge)" />
-          <BoardInk state={board} active={active} reportTip />
-          <rect x="-30" y="643" width="1060" height="16" fill="#5d3d24" />
-          <rect x="-30" y="643" width="1060" height="4" fill="#7a5233" />
-          <g fill="#efebe0">
-            <rect x="120" y="635" width="40" height="9" />
-            <rect x="176" y="637" width="26" height="7" />
-          </g>
-          <rect x="222" y="636" width="30" height="8" fill="#f2c94c" />
-          <rect x="880" y="628" width="70" height="16" fill="#3a3f4a" />
-          <rect x="880" y="628" width="70" height="6" fill="#c9b79a" />
-        </g>
-        <rect width="1600" height="900" fill="url(#room-vig)" pointerEvents="none" />
-        {/* cinematic light (mockup v2): warm window key from the left, cool fill from the right, a warm
-            spot on the board — same directions as the three.js key/fill/rim on the tutor (voxel.ts addLights) */}
-        <defs>
-          <radialGradient id="cine-key" gradientUnits="userSpaceOnUse" cx="60" cy="250" r="1000">
-            <stop offset="0" stopColor="#ffc97a" stopOpacity=".42" />
-            <stop offset="1" stopColor="#ffc97a" stopOpacity="0" />
-          </radialGradient>
-          <radialGradient id="cine-fill" gradientUnits="userSpaceOnUse" cx="1600" cy="520" r="760">
-            <stop offset="0" stopColor="#8fb6ff" stopOpacity=".26" />
-            <stop offset="1" stopColor="#8fb6ff" stopOpacity="0" />
-          </radialGradient>
-          <radialGradient id="cine-spot" gradientUnits="userSpaceOnUse" cx={BOARD_X + 520 * BOARD_S} cy={BOARD_Y + 280 * BOARD_S} r="560">
-            <stop offset="0" stopColor="#ffe7b4" stopOpacity=".24" />
-            <stop offset="1" stopColor="#ffe7b4" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-        <g pointerEvents="none" style={{ mixBlendMode: "soft-light" }}>
-          <rect width="1600" height="900" fill="url(#cine-key)" />
-          <rect width="1600" height="900" fill="url(#cine-fill)" />
-        </g>
-        <rect width="1600" height="900" fill="url(#cine-spot)" pointerEvents="none" style={{ mixBlendMode: "screen" }} />
-      </svg>
+    <div className="relative w-full overflow-hidden" style={{ aspectRatio: `${view.w} / ${view.h}`, isolation: "isolate" }}>
+      <StageBack view={view} label={label} />
+      <InkDone view={view} board={board} exclude={exclude} />
+      <InkLive view={view} board={board} active={active} />
+      <StageFront view={view} />
       <TutorCanvas characterId={characterId} view={view} />
       {/* vignette over everything, tutor included (a camera effect) */}
       <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(120% 90% at 45% 40%, transparent 55%, rgba(20,10,0,.35))" }} />
