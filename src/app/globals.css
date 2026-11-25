@@ -654,8 +654,17 @@
 :root { --ts: 1; }
 html[data-text="125"] { --ts: 1.25; }
 html[data-text="150"] { --ts: 1.5; }
-/* bigger text must wrap, never push the page sideways */
-html[data-text] body { overflow-wrap: anywhere; }
+/* bigger text must wrap, never push the page sideways (whole words move down; only a word longer
+   than its box is broken) */
+html[data-text] body { overflow-wrap: break-word; }
+/* fixed-height rows that hold text grow with it (headers, list rows, chips) */
+html[data-text] .h-\[52px\] { height: auto; min-height: 52px; }
+html[data-text] .h-14 { height: auto; min-height: 56px; }
+html[data-text] .h-24 { height: auto; min-height: 96px; padding-top: 10px; padding-bottom: 10px; }
+html[data-text] .h-12 { height: auto; min-height: 48px; }
+html[data-text] .h-11 { height: auto; min-height: 44px; }
+/* the phone tab bar is a fixed 5-column control: its labels grow a little and wrap; the icons carry the meaning */
+html[data-text] nav.fixed > a { font-size: min(calc(12px * var(--ts, 1)), 13.5px); white-space: normal; text-align: center; height: auto; min-height: 62px; word-break: keep-all; overflow-wrap: normal; }
 html[data-text] .btn,
 html[data-text] .opt,
 html[data-text] .game-choice { height: auto; white-space: normal; text-align: center; line-height: 1.2; padding-top: 8px; padding-bottom: 8px; }
@@ -723,6 +732,10 @@ html[data-dyslexia] button {
 html[data-dyslexia] p,
 html[data-dyslexia] li,
 html[data-dyslexia] [data-a11y-caption] { line-height: 1.7; }
+
+/* typed board (LessonA11y): clear letters, Lexend when the dyslexia font is on */
+.typed-board { font-family: var(--font-body); letter-spacing: 0.02em; overflow-wrap: anywhere; }
+html[data-dyslexia] .typed-board { font-family: Lexend, Verdana, system-ui, sans-serif; }
 
 /* live captions: the word being spoken */
 .a11y-word-now { background: #ffc42e; color: #141a3a; border-radius: 6px; box-shadow: 0 0 0 2px #ffc42e; }
