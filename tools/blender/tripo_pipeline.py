@@ -70,21 +70,50 @@ def load_raw(cid):
     return raw
 
 
-def make_low(raw, ratio=0.025):
+TARGET_TRIS = 30000   # M8: ~30k triangles per tutor (was ~235k → ~7 fps in the lesson; 30k → ~18 fps+)
+
+
+def make_low(raw, ratio=None, target_tris=TARGET_TRIS):
     low = raw.copy(); low.data = raw.data.copy(); low.name = "low"
     bpy.context.scene.collection.objects.link(low)
-    m = low.modifiers.new("dec", "DECIMATE"); m.ratio = ratio
+    # Weld first: the glTF importer splits verts at Tripo's UV seams → decimation would keep those as holes (M2)
+    bm = bmesh.new(); bm.from_mesh(low.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=0.0001)
+    bm.to_mesh(low.data); bm.free()
+    if ratio is None:
+        tris = sum(len(p.vertices) - 2 for p in low.data.polygons)
+        ratio = min(1.0, target_tris / max(1, tris))
+    m = low.modifiers.new("dec", "DECIMATE"); m.ratio = ratio; m.use_collapse_triangulate = True
+    # apply via the evaluated mesh (modifier_apply's poll fails when run from the MCP / a timer)
+    dg = bpy.context.evaluated_depsgraph_get()
+    me = bpy.data.meshes.new_from_object(low.evaluated_get(dg))
+    low.modifiers.clear(); old = low.data; low.data = me
+    if old.users == 0: bpy.data.meshes.remove(old)
     bpy.context.view_layer.objects.active = low
     for o in bpy.context.view_layer.objects: o.select_set(False)
     low.select_set(True)
-    bpy.ops.object.modifier_apply(modifier="dec")
     # fresh UVs
     while low.data.uv_layers: low.data.uv_layers.remove(low.data.uv_layers[0])
     low.data.uv_layers.new(name="UV")
-    bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.006)
-    bpy.ops.object.mode_set(mode="OBJECT")
+    with bpy.context.temp_override(**_view3d_ctx(low)):
+        bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT")
+        # island_margin 0.012 ≈ 25 px at 2048: room for the 24 px bake margin below (M4)
+        bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.012)
+        bpy.ops.object.mode_set(mode="OBJECT")
     return low
+
+
+def _view3d_ctx(ob):
+    """Context override with a 3D viewport, so edit-mode operators work from scripts / the MCP."""
+    ctx = {"object": ob, "active_object": ob, "selected_objects": [ob], "selected_editable_objects": [ob]}
+    win = bpy.context.window or (bpy.context.window_manager.windows[0] if bpy.context.window_manager.windows else None)
+    if win:
+        for area in win.screen.areas:
+            if area.type == "VIEW_3D":
+                region = next((r for r in area.regions if r.type == "WINDOW"), None)
+                ctx.update(window=win, screen=win.screen, area=area, region=region)
+                break
+    return ctx
 
 
 def bake_colour(raw, low, cid):
@@ -107,8 +136,16 @@ def bake_colour(raw, low, cid):
     bk = sc.render.bake
     bk.use_selected_to_active = True; bk.cage_extrusion = 0.012; bk.max_ray_distance = 0.04
     bk.use_pass_direct = False; bk.use_pass_indirect = False; bk.use_pass_color = True
-    bk.margin = 10
-    bpy.ops.object.bake(type="DIFFUSE")
+    # M4: a wide "Extend" margin so mipmaps / JPEG never sample the empty (black or white) space between
+    # UV islands → no white streaks along the sleeve seams on the dark hoodie
+    bk.margin = 24
+    try:
+        bk.margin_type = "EXTEND"
+    except Exception:
+        pass
+    ctx = _view3d_ctx(low); ctx.update(selected_objects=[raw, low], selected_editable_objects=[raw, low])
+    with bpy.context.temp_override(**ctx):
+        bpy.ops.object.bake(type="DIFFUSE")
     os.makedirs(OUT, exist_ok=True)
     img.filepath_raw = f"{OUT}\\{cid}_tex.jpg"; img.file_format = "JPEG"; img.save()
     return img

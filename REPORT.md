@@ -1010,3 +1010,49 @@ Details: `docs/INCLUSIVE.md` → "25 Nov update". 0 VoiceLab credits (game narra
   - Voice-first now also starts the app-wide listener (blind learners answer the games by voice). It ignores what it hears while the app is speaking (`narrating()`).
 - Untouched as agreed: AppShell.tsx, `src/lib/audio/player.ts`, Board.tsx, ClassroomStage.tsx, LessonPlayer.tsx, mission scenes.
 - ⚠️ Not verified on a real phone: speech recognition, the device's Uzbek voice, TalkBack.
+## 🧊 3D tutor re-export (branch `fix/3d-reexport`, 25 Nov) — M1–M5, M8, M7 · not deployed
+
+All fixes from the 25 Nov 3D problem report, done in Blender 5.2.3 over the MCP. All 3 tutors are finished.
+
+**Approach: Route B (`tools/blender/tripo_fix.py` → `fix_glb`)** cleans the shipping GLBs in place.
+Rebuilding from the raw T-pose (Route A, `rebuild`) worked technically, but `lola_t.glb` has a *different face*
+(open block mouth instead of her smile) and a 30k-triangle bake left black specks on her jacket. So the shipping
+GLBs stay the source, and their texture and face frames are kept exactly. Route A stays in the script for new models.
+
+| Tutor | Triangles | Bytes | Non-manifold edges | Sliver faces removed | Lesson fps (dev pane) |
+|---|---|---|---|---|---|
+| Lola | 250,313 → **29,940** | 1,322,412 → **355,248** | 16,098 → **0** | 50 | 15 → **30** |
+| Blokbek | 233,925 → **29,512** | 1,188,048 → **304,812** | 13,912 → **0** | 50 | 15 → **30** |
+| Ziyo | 238,514 → **29,974** | 1,189,768 → **309,616** | 9,765 → **0** | 16 | (pane in background) |
+
+Non-manifold "before" = edges not exactly 2-face after welding glTF seam splits (`stats()`). fps = rAF count over
+3 s in the Claude browser pane at 375×812, same machine before/after: a relative number, not a phone.
+
+What each fix is, in the code:
+- **M1** `drop_small_islands`: welds, then deletes islands with a bbox under 3 cm (the biggest piece is kept).
+- **M2** `repair_manifold`: dedupes faces, cuts fins (edges with >2 faces) and bow-tie verts, `holes_fill`, then a
+  **fan fill** for twisted loops (Lola's hair cuts) → 0 non-manifold edges in every part. Export refuses otherwise.
+- **M3** `neck_plug`: Blokbek's head is extruded 1.5 cm into the hoodie, 6 % narrower. Checked with the head
+  turned 40°: no gap. **Blokbek only** (`NECK_PLUG_FOR`): on Lola's open collar it showed as a dark wedge under the
+  chin, which a re-run fixed.
+- **M4** texture dilation (shave 1 px, grow island edges 24 px). No white seam streaks on Blokbek's sleeves
+  (checked from both sides). Route A also has a 24 px Extend bake margin.
+- **M5** `harden`: smooth + sharp edges from 30° (`set_sharp_from_angle`), written into the mesh data.
+- **M8** decimate to ~30k (collapse), plus a **1024 px web texture** at export (`TEX_EXPORT`; 2048 stays for renders).
+- **M7** portraits: **AgX + "Medium High Contrast" look**, exposure 0.2, soft key (2.6 W, 30° sun angle) + fill + rim.
+  Tested against plain AgX / Punchy / Base Contrast: plain AgX washed the black hoodie to grey. Skin is no longer
+  orange. All 54 portraits re-rendered (3 tutors × idle/wave/thumbs/cheer/point × full/half/face + board_full,
+  think1/2_half). Also fixed a bug where `view_transform` was a dynamic enum, so the AgX check silently fell back to Filmic.
+- Pipeline robustness: `run_async` (long jobs on a Blender timer; the MCP times out at ~60 s), context overrides
+  for edit-mode ops, eyelids found per face half (one build lost `lid_R`), and a guard that fails the build when any
+  `glbTutor.ts` REQUIRED node is missing.
+
+Checks: `pnpm vitest run` 325/325 ✅ (one flaky failure on the first run, then green twice) · `pnpm build` ✅ (54 new
+WebP) · all 3 GLBs load in the lesson with no console errors (no makeChar fallback).
+Screenshots in `docs/screenshots/3d/`: `before-*` / `after-*` (lesson per tutor, /home, /tutors), Blender check sheets
+per tutor (front, back, head turned 40°, side, face, sleeves), `portraits-old-top-new-bottom.png`.
+
+Notes:
+- `/tutors` uses the 2D "sig" cut-outs (not 3D renders), so it's unchanged by design.
+- M6 (in-app tone mapping, Tutor · animation session): retune after this lands; the sharp normals light differently.
+- The GLB cache-buster is `?v=<commit>`, so a release with these files fetches the new models.

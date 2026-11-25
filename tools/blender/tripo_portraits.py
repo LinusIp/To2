@@ -15,18 +15,50 @@ POSES = {
 FRAMES = {"full": ((600, 800), 960, 450), "half": ((600, 600), 560, 560), "face": ((240, 240), 300, None)}
 
 
+THINK = {  # same as class_tutor.THINK (quiz "thinking" poses, half frame only)
+    "think1": ({"shP": (-38, -6, 0), "elP": (-128, 0, 0), "shW": (0, 6, 0), "head": (-6, 9, 10)}, "rest"),
+    "think2": ({"shP": (-150, -40, 0), "elP": (-105, 0, 0), "shW": (0, 6, 0), "head": (5, -9, -6)}, "rest"),
+}
+
+# M7 (25 Nov): Standard view + a hard 3.6 W key crushed the skin into orange/brown. AgX keeps skin tones,
+# a soft (wide-angle) key + a front fill lift the shadow side. Tune EXPOSURE if a whole set looks dim.
+VIEW = "AgX"          # Blender 4.0+; falls back to Filmic on older builds
+LOOK = "Medium High Contrast"   # plain AgX washes the black hoodie out to grey (tested 25 Nov: None/Punchy/Base/MHC)
+EXPOSURE = 0.2
+WORLD = 0.6
+LIGHTS = (  # name, energy, rotation, sun angle (softness)
+    ("key", 2.6, (R(50), 0, R(-35)), R(30)),
+    ("fill", 0.9, (R(75), 0, R(25)), R(60)),
+    ("rim", 1.2, (R(60), 0, R(150)), R(10)),
+)
+
+
 def setup():
     sc = bpy.context.scene
     ids = [e.identifier for e in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items]
     sc.render.engine = "BLENDER_EEVEE" if "BLENDER_EEVEE" in ids else "BLENDER_EEVEE_NEXT"
-    sc.view_settings.view_transform = "Standard"; sc.render.film_transparent = True
+    # view_transform / look are dynamic enums (bl_rna lists don't show them): just try, newest first
+    try:
+        sc.view_settings.view_transform = VIEW
+    except TypeError:
+        sc.view_settings.view_transform = "Filmic"
+    sc.view_settings.look = "None"
+    for n in (f"{VIEW} - {LOOK}", LOOK):
+        try:
+            sc.view_settings.look = n; break
+        except TypeError:
+            pass
+    sc.view_settings.exposure = EXPOSURE
+    sc.render.film_transparent = True
     sc.render.image_settings.file_format = "PNG"; sc.render.image_settings.color_mode = "RGBA"
     w = bpy.data.worlds.get("pw") or bpy.data.worlds.new("pw"); sc.world = w; w.use_nodes = True
-    bg = w.node_tree.nodes["Background"]; bg.inputs[1].default_value = 0.55; bg.inputs[0].default_value = (0.9, 0.92, 1.0, 1)
-    for n, e, rot in (("key", 3.6, (R(45), 0, R(-35))), ("rim", 1.2, (R(60), 0, R(150)))):
-        if n not in bpy.data.objects:
-            l = bpy.data.lights.new(n, "SUN"); l.energy = e
-            o = bpy.data.objects.new(n, l); sc.collection.objects.link(o); o.rotation_euler = rot
+    bg = w.node_tree.nodes["Background"]; bg.inputs[1].default_value = WORLD; bg.inputs[0].default_value = (0.9, 0.92, 1.0, 1)
+    for n, e, rot, ang in LIGHTS:
+        o = bpy.data.objects.get(n)
+        if not o or o.type != "LIGHT":
+            l = bpy.data.lights.new(n, "SUN")
+            o = bpy.data.objects.new(n, l); sc.collection.objects.link(o)
+        o.data.energy = e; o.data.angle = ang; o.rotation_euler = rot; o.hide_render = False
     co = bpy.data.objects.get("pcam")
     if not co:
         cam = bpy.data.cameras.new("pcam"); cam.type = "ORTHO"; cam.clip_end = 20000
@@ -63,5 +95,6 @@ def render_all(cid, poses=None, yaw=-18, frames=None):
             co.location = (0, -4000, z); co.rotation_euler = (R(90), 0, 0)
             p = rf"{ROOT}\public\characters\{cid}_{pose}_{fr}.png"
             sc.render.filepath = p; bpy.ops.render.render(write_still=True); out.append(p)
+            # WebP twins: `node scripts/characters-manifest.mjs` (runs in `pnpm build`) remakes any WebP older than its PNG
     E["tutor"].rotation_euler = (0, 0, 0)
     return out
