@@ -159,6 +159,11 @@ export default function SettingsPage() {
         </section>
 
         <div className="card overflow-hidden">
+          <Row href="/rewards">
+            <Ico d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8M10 17h4" c="#b45309" />
+            {t.tabs.rewards}
+            <ChevronIcon className="ml-auto text-mut" />
+          </Row>
           <Row href="/tutors">
             <Ico d="M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" c="#127a37" />
             {t.settings.changeTutor}

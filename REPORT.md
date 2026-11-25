@@ -915,3 +915,63 @@ Tagline: **"Har bir fan — bir shahar. Har bir topshiriq — bir bino."**
 - ⚠️ **Tutor greeting lines**: none of them said "To2", so no change. **Blokbek's hoodie print "[To2]"** is baked into
   the 144 Blender renders and the GLB textures; the voxel config (`characters.ts` `print: "To2"`) was left matching them.
   Team: re-render with the new print if wanted.
+
+## 🧭 P1 — bottom bar + tutor greeting (#5 To2-UI, branch `fix/ui-p1`, 25 Nov) — not deployed
+Fix ids from the 25 Nov problem report: **U1, U2 + C8, C1, C2, C3**. 0 VoiceLab credits spent (only `check=1` dry runs and 3
+cache-hit downloads).
+
+**C2: why "Ovozini eshit" was silent (root cause, found before building anything).**
+- Server side is fine. Production `/api/tts?…&emotion=happy&check=1` gives `cached:true` for Blokbek, Lola and Ziyo, and the
+  real request returns **200 audio/wav, `x-tts-cache: hit`, ~1 s, ~250 KB**. (Without `emotion=happy` the same lines are
+  uncached, but the picker always sends `happy`.)
+- Client side, reproduced in the browser pane on production with `play()`/`pause()` instrumented: the request returned 200, but
+  **the clip's `play()` was never called**. `unlockAudio()` (same tap) plays a zero-length silent WAV on the shared `<audio>`;
+  it ends at once, and its `ended` event hit the handler `speak()` had *just* attached → the greeting "finished" before its audio
+  arrived and the 200 response was thrown away (captions-only, but the picker showed no captions → silence). The lesson never
+  hit this because its unlock happens on an earlier tap.
+- A second race, found while testing: `unlockAudio()`'s `.finally(() => a.pause())` paused a clip that was already loaded
+  (prefetched greeting, quick second tap) → `AbortError` → captions-only.
+- **Fix** (`src/lib/audio/player.ts`, small): `speak()` ignores media events until its own clip is on the element (`mine`);
+  `unlockAudio()` unlocks once and only ever pauses its own silent clip. Lesson behaviour is unchanged (325 unit tests).
+
+**C1 + C2 (a)(b)(c), `TutorPicker.tsx`:**
+- Tapping a tutor card greets right away (inside the tap, so audio is allowed); a new tap stops the previous greeting.
+  `Ovozini eshit` uses the same path. Mute pref (`sound = 0`) → captions only.
+- The greeting text is shown in a **speech bubble** on the hero card while it is said, and it is the fallback when there is
+  no audio (captions-only, like the lesson): the tutor's words are always visible.
+- **Static files first:** `public/audio/greetings/<id>.wav` (listed in `src/config/greetingAudio.json`, so no 404 requests),
+  loaded ahead for the selected tutor; then `/api/tts`, only for Blokbek/Lola/Ziyo (cached). The 5 locked tutors
+  (Agent Shox 54, Sardor 44, Ravshan 60, Diyorbek 54, Shadow 30 = **242 credits**, uncached) are **captions-only**: the picker
+  never asks `/api/tts` for them, so it can't generate.
+- `scripts/export-greetings.mjs [baseUrl] [--dry-run] [ids…]`: downloads a greeting only if `check=1` says `cached:true`,
+  refuses uncached lines, warns if a download isn't a whole-line hit. Run for blokbek, lola, ziyo → 247 / 281 / 344 KB, all
+  `hit`, 0 credits. Re-run it after the 5 are approved and warmed.
+- Verified on the mock dev server (375×812): Ovozini eshit → plays; tap Lola mid-greeting → Blokbek stops, Lola plays;
+  quick tap back to Blokbek (prefetched) → plays; bubble disappears when the line ends; muted → bubble, 0 `play()` calls.
+
+**C3:** `scripts/warm-tts.mjs` (not run) and the export script read greetings from `src/config/characters.ts` (`hi`) via esbuild.
+
+**U1:** 5 tabs: Bosh sahifa · Darslar (→ /towns) · O'yinlar · Progress · Profil. Mukofotlar moved under Profil (a row on
+`/settings`; `/rewards` matches the Profil tab and its back button goes to `/settings`). Labels `whitespace-nowrap` 12 px.
+Measured with `scripts/ui-p1-shots.mjs`: no label wraps and no active pill is clipped at **375 and 360 px** (before: "Bosh sahifa"
+wrapped at 360).
+
+**U2 + C8:** one shared bottom padding. `AppShell` measures the tab bar (ResizeObserver, border box, so safe-area insets and
+Android text zoom count) into `--tabbar-h`; `main` uses `pb-tabbar` = bar + 16 px (was a fixed 96 px). Pages without a bar
+(`/onboarding`, `/qulaylik`) use `pb-safe` = 32 px + safe-area inset; toasts sit above the measured bar.
+- ⚠️ Finding: on `main` there were **no per-page padding hacks** to remove (Home tiles, `/tutors`, `/onboarding`, `/qulaylik`
+  had only the normal `pb-6/8`). In desktop Chromium nothing sat under the bar at 375/360. The report's overlap only happens
+  when the bar is taller than the old fixed 96 px allowed for (gesture-bar inset, text zoom). Checked by forcing the bar to
+  110 px: the padding followed (98 → 126 px) and the last content ended 32 px above the bar. Please re-check on the phone that
+  reported it.
+- `layout.tsx` still has no `viewport-fit=cover`, so browsers report a 0 inset (unchanged on purpose).
+
+**Checks:** `pnpm vitest run` 325/325 · `tsc --noEmit` clean · `pnpm build` ok · e2e on my own mock server (:5211, no
+`.dev.vars`): 24 passed, 2 failed:
+- `answers.spec` "bug 2: a formula answer … 'Davom et' brings the lesson back": it **also fails on `origin/main`** (same
+  server, same run), so it isn't caused by this branch (lesson board wipe timing, not mine).
+- `a11y-axe` quiz/off: `#3d83f6` contrast. It **passed twice on re-run** on this branch and on main; the colour is a blue caught
+  mid fade-in animation, so it's flaky.
+
+Screenshots `docs/screenshots/ui-p1/`: `after-<page>-<375|360>[-end].png` for /home /towns /games /progress /settings /tutors
+/onboarding /qulaylik, `after-{tutors,onboarding}-<w>-bubble.png` (greeting bubble), `before-*` for the 5 tab pages.

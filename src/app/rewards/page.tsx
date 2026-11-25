@@ -38,7 +38,7 @@ export default function RewardsPage() {
 
   return (
     <AppShell>
-      <ScreenTop title={t.tabs.rewards} back="/home" />
+      <ScreenTop title={t.tabs.rewards} back="/settings" />
       <div className="flex flex-col gap-4 px-[18px] pb-8 md:px-2">
         <div className="card flex items-center gap-4 p-4">
           <TrophyIcon size={52} />

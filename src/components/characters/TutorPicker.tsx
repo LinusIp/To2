@@ -1,9 +1,12 @@
 "use client";
 // "Qahramonlar" (prototype screen 4): big hero card for the selected tutor + 2-column grid.
-// Locked tutors are silhouettes with their unlock condition. "Ovozini eshit" plays the tutor's voice.
-import { useState } from "react";
+// Locked tutors are silhouettes with their unlock condition. Tapping a tutor (or "Ovozini eshit") plays its
+// greeting; the words are always shown in a speech bubble (captions-only when muted or without audio).
+import { useEffect, useRef, useState } from "react";
 import { CHARACTERS, getCharacter, isUnlocked, lockText, type CharacterId } from "@/config/characters";
-import { speak, unlockAudio } from "@/lib/audio/player";
+import { speak, unlockAudio, type Speech } from "@/lib/audio/player";
+import { greetingApiAllowed, greetingClip } from "@/lib/audio/greetings";
+import { readPref } from "@/lib/client/prefs";
 import { t } from "@/i18n/uz";
 import TutorPortrait from "./TutorPortrait";
 import { CheckIcon, LockIcon, SpeakerIcon } from "@/components/ui/icons";
@@ -12,15 +15,43 @@ import { Burst } from "@/components/ui/Celebrate";
 export default function TutorPicker({ value, onChange, xp, streak }: { value: CharacterId; onChange: (id: CharacterId) => void; xp: number; streak: number }) {
   const sel = getCharacter(value);
   const [shake, setShake] = useState<string | null>(null);
-  const [talking, setTalking] = useState(false);
   const [bump, setBump] = useState(0);
+  /** the greeting being said now (shown in the bubble until it ends) */
+  const [saying, setSaying] = useState<{ id: string; text: string } | null>(null);
+  const current = useRef<Speech | null>(null);
+  const turn = useRef(0);
 
-  const hear = () => {
+  // the selected tutor's greeting file loads ahead, so a tap plays at once
+  useEffect(() => {
+    void greetingClip(value);
+  }, [value]);
+  useEffect(() => () => current.current?.stop(), []);
+
+  /** Say tutor `id`'s greeting. Called from a tap, so audio is allowed; a newer tap stops the older one. */
+  const greet = (id: CharacterId) => {
+    const c = getCharacter(id);
     unlockAudio();
-    setTalking(true);
-    const s = speak(sel.hi, sel.id, { emotion: "happy" });
-    void s.ended.then(() => setTalking(false));
+    current.current?.stop();
+    current.current = null;
+    const my = ++turn.current;
+    setSaying({ id: c.id, text: c.hi });
+    const start = (s: Speech) => {
+      if (my !== turn.current) return s.stop();
+      current.current = s;
+      void s.ended.then(() => {
+        if (my === turn.current) setSaying(null);
+      });
+    };
+    if (readPref("sound", "1") === "0") return start(speak(c.hi, c.id, { muted: true }));
+    void greetingClip(c.id).then((clip) => {
+      if (my !== turn.current) return;
+      if (clip) start(speak(c.hi, c.id, { clip }));
+      else if (greetingApiAllowed(c.id)) start(speak(c.hi, c.id, { emotion: "happy" }));
+      else start(speak(c.hi, c.id, { muted: true })); // uncached voice: captions only, never generate here
+    });
   };
+  const talking = saying !== null;
+  const bubble = saying && saying.id === sel.id ? saying.text : null;
 
   return (
     <div>
@@ -34,9 +65,17 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
           <div className="t-h2">{sel.name}</div>
           <div className="t-small opacity-95">{sel.tag}</div>
         </div>
+        <div aria-live="polite" className="absolute inset-x-3 bottom-[76px] flex justify-center">
+          {bubble && (
+            <p key={bubble} className="bounce-in relative m-0 max-w-[300px] rounded-2xl bg-white px-4 py-2.5 text-center text-[15px] leading-snug font-extrabold text-ink shadow-[0_4px_0_rgba(0,0,0,.12),0_10px_22px_rgba(20,26,58,.22)]" data-testid="greeting-bubble">
+              <span aria-hidden className="absolute -top-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 rounded-[3px] bg-white" />
+              <span className="relative">{bubble}</span>
+            </p>
+          )}
+        </div>
         <button
           type="button"
-          onClick={hear}
+          onClick={() => greet(sel.id)}
           className="absolute top-3 right-3 flex h-12 items-center gap-2 rounded-full bg-white px-4 text-[14px] font-black text-blue-800 shadow-[0_4px_0_#b9c6ea] transition-transform duration-100 active:translate-y-[4px] active:shadow-none"
         >
           <SpeakerIcon size={16} /> {talking ? "…" : t.tutors.hear}
@@ -68,6 +107,7 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
                 }
                 onChange(c.id);
                 setBump((b) => b + 1);
+                greet(c.id);
               }}
               className={`card-press relative flex h-[190px] flex-col items-center justify-end overflow-hidden rounded-[24px] ${on ? "shadow-[0_0_0_3px_var(--color-blue),0_4px_0_3px_var(--color-blue-800),0_10px_22px_rgba(37,99,235,.25)]" : "shadow-[var(--shadow-1)]"}`}
               style={{ background: open || soon ? "linear-gradient(180deg,#e4ecff 0%,#fff 72%)" : "linear-gradient(180deg,#e7e9f2 0%,#fff 72%)", ...(shake === c.id ? { animation: "shake .35s" } : {}) }}
