@@ -17,6 +17,7 @@ DST = r"C:\Users\Progress service\Desktop\To2"   # ← set to your fix/3d-reexpo
 TOOLS = DST + r"\tools\blender"
 SCALE = 770.0            # metres → stage px (tripo_hinged.SCALE)
 TARGET = 30000           # M8
+NECK_PLUG_FOR = {"blokbek"}  # M3 was reported for Blokbek only
 RAW = {"blokbek": "blokbek_t", "lola": "lola_t", "ziyo": "ziyo_t"}   # T-pose sources in public/models/raw
 
 
@@ -182,7 +183,9 @@ def fix_glb(cid, target=TARGET, src=None):
         bm.transform(mw.inverted()); bm.to_mesh(ob.data); bm.free(); ob.data.update()
         return {"dropped": dropped, "nonmanifold": nm}
 
-    report = {o.name: clean(o, o.name == "head_mesh") for o in parts}
+    # M3 neck plug only where a closed collar hides it (Blokbek's hoodie). Lola's open jacket shows the neck:
+    # a plug there reads as a dark wedge under the chin.
+    report = {o.name: clean(o, o.name == "head_mesh" and cid in NECK_PLUG_FOR) for o in parts}
     tris = sum(len(p.vertices) - 2 for o in parts for p in o.data.polygons)
     if tris > target:                                                              # M8
         for o in parts: _apply_decimate(o, target / tris)
