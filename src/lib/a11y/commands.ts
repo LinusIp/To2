@@ -18,7 +18,9 @@ export type VoiceCommand =
   | { type: "nextBuilding" }
   | { type: "prevBuilding" }
   | { type: "open" }
-  | { type: "back" };
+  | { type: "back" }
+  /** Juftini top: "karta besh" / "karta 12" → card n */
+  | { type: "card"; n: number };
 
 /** How the letters are said / misheard in Uzbek: A "a", B "be", C "se/si/ce", D "de/di" */
 const LETTER_WORDS: Record<string, Letter> = {
@@ -39,6 +41,19 @@ const CARDINALS: Record<string, Letter> = { bir: "A", "1": "A", ikki: "B", "2": 
 const ANSWER_WORDS = ["javob", "variant", "tanlayman", "tanladim", "tanla", "belgila"];
 /** filler words allowed around a lone letter */
 const FILLER = new Set(["iltimos", "menimcha", "bu", "shu", "ni", "deb", "o", "ha", "ustoz", "mening", "men", "javobim"]);
+
+/** Uzbek number words 1–20 ("o'n ikki" → 12; apostrophes already dropped by words()) */
+const UNITS: Record<string, number> = { bir: 1, ikki: 2, uch: 3, tort: 4, besh: 5, olti: 6, yetti: 7, sakkiz: 8, toqqiz: 9 };
+export function parseSmallNumber(ws: string[]): number | null {
+  if (ws.length === 1 && /^\d{1,2}$/.test(ws[0])) return Number(ws[0]);
+  if (ws.length === 1 && ws[0] in UNITS) return UNITS[ws[0]];
+  if (ws[0] === "on") {
+    if (ws.length === 1) return 10;
+    if (ws.length === 2 && ws[1] in UNITS) return 10 + UNITS[ws[1]];
+  }
+  if (ws.length === 1 && ws[0] === "yigirma") return 20;
+  return null;
+}
 
 /** "ochish" (open) and friends: whole words only ("o'chir" = erase must not match) */
 const OPEN_WORDS = new Set(["ochish", "och", "oching", "ochib", "ochamiz", "kirish", "kir", "kiring", "kiramiz"]);
@@ -72,6 +87,11 @@ export function parseVoiceCommand(text: string): VoiceCommand | null {
   const has = (p: string) => ws.some((w) => w.startsWith(p));
   const phrase = ws.join(" ");
 
+  // Juftini top: "karta besh", "kartochka 12", "karta o'n ikki"
+  if (/^kart/.test(ws[0] ?? "") && ws.length >= 2) {
+    const n = parseSmallNumber(ws.slice(1));
+    if (n && n >= 1 && n <= 20) return { type: "card", n };
+  }
   // town / games (before "uyga" = home and "keyingi" = continue)
   if (/(^| )(keyingi|keyingisi|navbatdagi) (bino|uy)/.test(phrase)) return { type: "nextBuilding" };
   if (/(^| )(oldingi|oldingisi) (bino|uy)/.test(phrase)) return { type: "prevBuilding" };

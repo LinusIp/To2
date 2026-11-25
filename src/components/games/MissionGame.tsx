@@ -152,7 +152,7 @@ export default function MissionGame({ settings }: { settings?: GameSettings }) {
             {step.q}
           </div>
           <div className="mt-2.5">
-            <Choices choices={step.choices} onPick={pick} disabled={picked != null} picked={picked} correct={picked != null ? step.correct : null} />
+            <Choices question={`${step.story} ${step.q}`} choices={step.choices} onPick={pick} disabled={picked != null} picked={picked} correct={picked != null ? step.correct : null} />
           </div>
           {picked != null && (
             <div className={`mt-2.5 rounded-[14px] px-3.5 py-3 text-[14px] font-extrabold ${right ? "bg-[#e6f8ee] text-[#157a3c]" : "bg-[#fff4e8] text-[#c2410c]"}`}>

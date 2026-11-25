@@ -16,6 +16,10 @@ export interface A11ySettings {
   bigCaptions: boolean;
   /** vibration cue on each new step (navigator.vibrate) */
   vibrate: boolean;
+  /** motor: no timers anywhere (Tezkor hisob plays untimed) */
+  untimed: boolean;
+  /** dyslexia / low vision: the board's writing also as clear typed text */
+  typedBoard: boolean;
   /** motor: hands-free voice commands while the lesson waits */
   handsFree: boolean;
   /** tap targets ≥ 56 px */
@@ -36,6 +40,8 @@ export const DEFAULTS: A11ySettings = {
   voiceFirst: false,
   highContrast: false,
   textScale: 1,
+  untimed: false,
+  typedBoard: false,
   bigCaptions: false,
   vibrate: false,
   handsFree: false,
@@ -49,10 +55,10 @@ export const DEFAULTS: A11ySettings = {
 
 /** what each preset switches on */
 export const PRESETS: Record<PresetId, Partial<A11ySettings>> = {
-  vision: { voiceFirst: true, highContrast: true, textScale: 1.5, bigTargets: true },
+  vision: { voiceFirst: true, highContrast: true, textScale: 1.5, bigTargets: true, typedBoard: true },
   hearing: { bigCaptions: true, vibrate: true },
-  motor: { handsFree: true, bigTargets: true },
-  focus: { calm: true, dyslexiaFont: true, speechRate: 0.9 },
+  motor: { handsFree: true, bigTargets: true, untimed: true },
+  focus: { calm: true, dyslexiaFont: true, typedBoard: true, speechRate: 0.9 },
 };
 
 export const RATE_MIN = 0.75;
@@ -149,6 +155,8 @@ export function applyA11y(s: Store) {
   flag("big", s.bigTargets);
   flag("dyslexia", s.dyslexiaFont);
   flag("captions", s.bigCaptions);
+  flag("typedBoard", s.typedBoard);
+  flag("untimed", s.untimed);
   if (s.textScale !== 1) d.text = String(Math.round(s.textScale * 100));
   else delete d.text;
 }

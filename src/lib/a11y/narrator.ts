@@ -76,6 +76,35 @@ export function narrateBoard(els: Pick<BoardEl, "cmd" | "layer" | "id">[], opts:
   return parts.join(" ");
 }
 
+/** One board element as TYPED text, exactly as written (typed board): "1/2 + 1/3", "▭ 3/6". "" = a shape. */
+export function typedEl(el: Pick<BoardEl, "cmd">): string {
+  const c = el.cmd as unknown as Record<string, unknown> & { op: string };
+  if (c.op === "write") return String(c.text ?? "");
+  if (c.op === "latex") return String(c.tex ?? "").replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, "$1/$2").replace(/\\cdot|\\times/g, "·").replace(/[{}\\]/g, "");
+  if (c.op === "fractionbar") return `▭ ${c.filled}/${c.parts}`;
+  if (c.op === "plot") return `y = ${c.fn}`;
+  if (c.op === "numberline") return `${c.min} … ${c.max}`;
+  return "";
+}
+
+/** The board as typed lines in reading order (top → bottom, left → right; same row = one line). */
+export function boardLines(els: Pick<BoardEl, "cmd" | "layer" | "id">[]): { main: string[]; note: string[] } {
+  const rows = els
+    .map((e) => ({ e, y: num((e.cmd as unknown as { y?: number }).y), x: num((e.cmd as unknown as { x?: number }).x), text: typedEl(e) }))
+    .filter((r) => r.text)
+    .sort((a, b) => (Math.abs(a.y - b.y) < 30 ? a.x - b.x : a.y - b.y));
+  const join = (rs: typeof rows) => {
+    const out: { y: number; parts: string[] }[] = [];
+    for (const r of rs) {
+      const last = out[out.length - 1];
+      if (last && Math.abs(last.y - r.y) < 30) last.parts.push(r.text);
+      else out.push({ y: r.y, parts: [r.text] });
+    }
+    return out.map((l) => l.parts.join("   "));
+  };
+  return { main: join(rows.filter((r) => r.e.layer !== "note")), note: join(rows.filter((r) => r.e.layer === "note")) };
+}
+
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
 
 /** A quiz question with options, for voice-first mode: "… A javob: oltidan besh. B javob: …" */
@@ -84,4 +113,13 @@ export function narrateQuestion(q: string, choices?: string[]): string {
   if (!choices?.length) return `${head} Javobni ayting yoki yozing.`;
   const opts = choices.map((c, i) => `${"ABCD"[i] ?? i + 1} javob: ${narrateFormula(c)}.`).join(" ");
   return `${head} ${opts} Harfni ayting, masalan: «javob A».`;
+}
+
+const ORDINALS = ["Birinchi", "Ikkinchi", "Uchinchi", "To'rtinchi", "Beshinchi", "Oltinchi"];
+
+/** A game question (buttons numbered 1–4): "… Birinchi javob: oltidan besh. Ikkinchi javob: …" */
+export function narrateGameQuestion(q: string, choices: string[]): string {
+  const head = q.trim() ? narrateFormula(q) : "";
+  const opts = choices.map((c, i) => `${ORDINALS[i] ?? i + 1} javob: ${narrateFormula(c)}.`).join(" ");
+  return [head, opts, "Raqamini ayting, masalan: «javob bir»."].filter(Boolean).join(" ");
 }

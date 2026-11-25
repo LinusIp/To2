@@ -20,6 +20,9 @@ export function announce(text: string) {
 }
 
 let current: { stop(): void } | null = null;
+/** the app is speaking a narration until this time: recognisers ignore what they hear meanwhile */
+let quietUntil = 0;
+export const narrating = () => Date.now() < quietUntil;
 
 export function stopSaying() {
   current?.stop();
@@ -51,6 +54,15 @@ function saySynth(text: string, rate: number): Promise<void> {
 export async function sayAloud(text: string, voice?: string): Promise<void> {
   if (typeof window === "undefined" || !text.trim()) return;
   stopSaying();
+  quietUntil = Date.now() + 60_000;
+  try {
+    await sayInner(text, voice);
+  } finally {
+    quietUntil = Date.now() + 700; // the tail of our own voice is not a command
+  }
+}
+
+async function sayInner(text: string, voice?: string): Promise<void> {
   const rate = useA11y.getState().speechRate;
   if (voice) {
     try {

@@ -15,7 +15,9 @@ export const VOICE_EVENT = "to2:voice";
 
 export type VoiceDetail =
   | { command: "next" | "prev" | "open" | "back" | "continue" | "home" }
-  | { command: "answer"; n: 1 | 2 | 3 | 4 };
+  | { command: "answer"; n: 1 | 2 | 3 | 4 }
+  /** Juftini top: flip card n (1–20) */
+  | { command: "card"; n: number };
 
 /** Parsed command → the wire detail; null = not a command other screens know (it isn't sent). */
 export function toVoiceDetail(c: VoiceCommand): VoiceDetail | null {
@@ -29,6 +31,8 @@ export function toVoiceDetail(c: VoiceCommand): VoiceDetail | null {
     case "continue":
     case "home":
       return { command: c.type };
+    case "card":
+      return { command: "card", n: c.n };
     case "answer":
       return c.index >= 0 && c.index <= 3 ? { command: "answer", n: (c.index + 1) as 1 | 2 | 3 | 4 } : null;
     default:

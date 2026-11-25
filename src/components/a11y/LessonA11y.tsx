@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { t } from "@/i18n/uz";
 import { useA11y, isCalm } from "@/lib/a11y/settings";
 import { parseVoiceCommand, letterIndex, type VoiceCommand } from "@/lib/a11y/commands";
-import { narrateBoard, narrateQuestion } from "@/lib/a11y/narrator";
+import { boardLines, narrateBoard, narrateQuestion } from "@/lib/a11y/narrator";
 import { announce, cue, sayAloud, stopSaying } from "@/lib/a11y/speech";
 import { listenForCommands, recognitionSupported } from "@/lib/a11y/recognition";
 import { claimListening, dispatchVoice } from "@/lib/a11y/bus";
@@ -102,6 +102,31 @@ function Indicator() {
         <path d={icon} />
       </svg>
       {label}
+    </div>
+  );
+}
+
+/**
+ * Typed board (dyslexia / low vision / text 125–150 %): everything on the chalkboard as large, clear typed
+ * text under the stage. Interim until Board.tsx itself can draw typed text (<html data-typed-board>).
+ */
+function TypedBoard() {
+  const els = useLesson((s) => s.board.els);
+  const { main, note } = useMemo(() => boardLines(els), [els]);
+  if (!main.length && !note.length) return null;
+  return (
+    <div className="card px-4 py-3.5" data-testid="typed-board" aria-label={t.a11y.typedBoardTitle}>
+      <div className="mb-1.5 text-[13px] font-black text-mut">{t.a11y.typedBoardTitle}</div>
+      <div className="typed-board flex flex-col gap-1 text-[22px] leading-snug font-bold text-ink">
+        {main.map((l, i) => (
+          <div key={i}>{l}</div>
+        ))}
+        {note.map((l, i) => (
+          <div key={`n${i}`} className="text-[#b45309]">
+            {l}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -203,9 +228,9 @@ export default function LessonA11y({ voice }: { voice: string }) {
   // always-on listening while the lesson waits (never while the tutor talks: it would hear itself)
   // the lesson owns the mic while it is open: the app-wide listener must not hear the tutor
   useEffect(() => {
-    if (!a.handsFree) return;
+    if (!a.handsFree && !a.voiceFirst) return;
     return claimListening();
-  }, [a.handsFree]);
+  }, [a.handsFree, a.voiceFirst]);
   const canListen = (a.handsFree || a.voiceFirst) && recognitionSupported() && listenWanted && (WAITING.has(status) || pausedByVoice);
   useEffect(() => {
     if (!canListen) return;
@@ -246,13 +271,15 @@ export default function LessonA11y({ voice }: { voice: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, a.voiceFirst]);
 
-  const anyOn = a.bigCaptions || a.voiceFirst || a.handsFree || a.calm;
+  const typed = a.typedBoard || a.textScale > 1;
+  const anyOn = a.bigCaptions || a.voiceFirst || a.handsFree || a.calm || typed;
   if (!a.loaded || !anyOn || status === "idle") return null;
 
   return (
     <section aria-label={t.a11y.title} className="flex flex-col gap-2.5" data-testid="lesson-a11y">
       {(a.bigCaptions || a.handsFree || a.voiceFirst) && <Indicator />}
       {(a.bigCaptions || a.calm) && <LiveCaption calm={calm} />}
+      {typed && <TypedBoard />}
       {(a.voiceFirst || a.handsFree) && (
         <div className="flex flex-col gap-2">
           {a.voiceFirst && (

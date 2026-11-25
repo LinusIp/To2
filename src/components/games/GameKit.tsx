@@ -8,6 +8,7 @@ import { CloseIcon } from "@/components/ui/icons";
 import QuizThinker from "@/components/lesson/QuizThinker";
 import TutorPortrait from "@/components/characters/TutorPortrait";
 import Confetti from "@/components/characters/Confetti";
+import { GameVoice } from "@/components/a11y/GameVoice"; // a11y-hook: voice-first + hands-free answers
 
 export function GameFrame({ title, chip, calm, announce, children, testId }: { title: string; chip?: React.ReactNode; calm: boolean; announce: string; children: React.ReactNode; testId?: string }) {
   return (
@@ -78,7 +79,7 @@ export function EndCard({ title, line, best, record, xp, characterId, calm, onAg
 }
 
 /** Four big answer buttons; keys 1–4 also answer (keyboard play). */
-export function Choices({ choices, onPick, disabled, picked, correct }: { choices: string[]; onPick: (i: number) => void; disabled: boolean; picked: number | null; correct: number | null }) {
+export function Choices({ choices, onPick, disabled, picked, correct, question }: { choices: string[]; onPick: (i: number) => void; disabled: boolean; picked: number | null; correct: number | null; /** read aloud in voice-first mode */ question?: string }) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if (disabled || e.altKey || e.ctrlKey || e.metaKey) return;
@@ -94,6 +95,7 @@ export function Choices({ choices, onPick, disabled, picked, correct }: { choice
     return () => window.removeEventListener("keydown", k);
   }, [choices.length, disabled, onPick]);
   return (
+    <>
     <div className="grid grid-cols-2 gap-2.5" role="group" aria-label="Javoblar">
       {choices.map((c, i) => {
         const state = picked == null ? undefined : i === correct ? "right" : i === picked ? "wrong" : undefined;
@@ -104,5 +106,7 @@ export function Choices({ choices, onPick, disabled, picked, correct }: { choice
         );
       })}
     </div>
+    <GameVoice question={question} choices={choices} disabled={disabled} onPick={onPick} />
+    </>
   );
 }

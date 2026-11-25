@@ -989,3 +989,24 @@ Android text zoom count) into `--tabbar-h`; `main` uses `pb-tabbar` = bar + 16 p
 
 Screenshots `docs/screenshots/ui-p1/`: `after-<page>-<375|360>[-end].png` for /home /towns /games /progress /settings /tutors
 /onboarding /qulaylik, `after-{tutors,onboarding}-<w>-bubble.png` (greeting bubble), `before-*` for the 5 tab pages.
+
+## ♿ #11 To2-Access — inclusive-mode gaps closed (25 Nov, branch `feat/inclusive-2` from `fb02fb8`; NOT deployed)
+Details: `docs/INCLUSIVE.md` → "25 Nov update". 0 VoiceLab credits (game narration = device speech engine only; tests stub TTS).
+- ✅ **Real text scaling.**
+  - What changed: `body { zoom }` is gone. `scripts/postcss/text-scale.mjs` multiplies every font size (and px line-heights / `--text-*` tokens) by `--ts`. Fixed-height rows grow with their text, whole words wrap, and the tab labels are capped at 13.5 px using CSS only.
+  - Checks: no horizontal overflow at 360/375 px × 100/125/150 % on /home, /qulaylik, a lesson and a game. Screenshots are in `docs/screenshots/inclusive-2/`.
+  - An axe regression this exposed is fixed: at 150 % the home subject tile's "Beta" badge spilled out of its fixed `h-24` tile.
+- ✅ **Board text bigger.** A "Doskada yozilgan" typed transcript (33 px at 150 %) shows under the stage at 125–150 % text and with the typed-board option. Typed text *inside* Board.tsx (`<html data-typed-board>` → Lexend `<text>`) is designed and approved, and waits for #4's Board.tsx work and the orchestrator's "go".
+- ✅ **Games.** Voice-first reads the question and choices aloud (device voice). "javob bir…to'rt" / "javob A–D" answer via `to2:voice {command:"answer", n}` in the shared `GameKit <Choices>` (`src/components/a11y/GameVoice.tsx`). Juftini top: cards are read aloud, and "karta besh" → `{command:"card", n}`. No double submit (quiz page has its own submitter, and a shown answer ignores further ones). No mission scene or careers data was touched.
+- ✅ **Motor → untimed.** The motor profile sets `untimed` (`<html data-untimed>`), and `useGameSettings` returns it. Tezkor hisob then plays its untimed mode with the checkbox locked. A clear message is shown when speech recognition is unavailable.
+- ✅ **Lexend self-hosted.** It is in `public/fonts/lexend/` (latin + latin-ext woff2, `OFL.txt`, source README). The runtime Google Fonts call is removed.
+- ✅ **/qulaylik cards.** Switches instead of circles; "Yoqildi: …" under an enabled card; a "Namuna" test (hear a sample on the device voice, try one command); a "saved on this device only" line; new switches for typed board and untimed games.
+- Tests:
+  - vitest 332 (+ `src/lib/a11y/inclusive2.test.ts`: PostCSS scaling, game narration, card command, typed board, profiles); tsc clean; build green, and the built CSS has the `--ts` calc.
+  - e2e: `a11y.spec` (axe, 6 screens × off/on) and `inclusive2.spec` (14): 24/24.
+- Decisions:
+  - Text scaling is done at build level (PostCSS) instead of rewriting hundreds of `text-[Npx]` classes, so it covers every screen, including future ones.
+  - Inline `style={{fontSize}}` (5 places) is not scaled.
+  - Voice-first now also starts the app-wide listener (blind learners answer the games by voice). It ignores what it hears while the app is speaking (`narrating()`).
+- Untouched as agreed: AppShell.tsx, `src/lib/audio/player.ts`, Board.tsx, ClassroomStage.tsx, LessonPlayer.tsx, mission scenes.
+- ⚠️ Not verified on a real phone: speech recognition, the device's Uzbek voice, TalkBack.

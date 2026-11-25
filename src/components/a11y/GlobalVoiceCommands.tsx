@@ -10,11 +10,12 @@ import { useA11y } from "@/lib/a11y/settings";
 import { parseVoiceCommand } from "@/lib/a11y/commands";
 import { dispatchVoice, handlesBackItself, listeningClaimed, onClaimsChange } from "@/lib/a11y/bus";
 import { listenForCommands, recognitionSupported } from "@/lib/a11y/recognition";
-import { announce } from "@/lib/a11y/speech";
+import { announce, narrating } from "@/lib/a11y/speech";
 
 export default function GlobalVoiceCommands() {
   const router = useRouter();
-  const on = useA11y((s) => s.loaded && s.handsFree);
+  // hands-free, and voice-first too (blind learners answer the games by voice)
+  const on = useA11y((s) => s.loaded && (s.handsFree || s.voiceFirst));
   const [claimed, setClaimed] = useState(false);
   const [open, setOpen] = useState(false);
   const [heard, setHeard] = useState("");
@@ -24,6 +25,7 @@ export default function GlobalVoiceCommands() {
   useEffect(() => {
     if (!on || claimed || !recognitionSupported()) return;
     return listenForCommands((text) => {
+      if (narrating()) return; // our own narration, not the learner
       const c = parseVoiceCommand(text);
       setHeard(text);
       if (!c) return announce(t.a11y.notCommand);
