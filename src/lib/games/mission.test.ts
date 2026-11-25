@@ -1,22 +1,61 @@
 import { describe, expect, it, vi } from "vitest";
 import { seeded } from "@/data/problems";
 import { checkAnswer } from "@/lib/learning/checker";
-import { CAREERS, courseOf, pickMission, MISSION_STEPS } from "./mission";
+import mathSkills from "@/data/skills.uz.json";
+import fizSkills from "@/data/skills.fizika.uz.json";
+import enSkills from "@/config/courses/english/skills.json";
+import { JOBS, courseOf, jobBank, pickJob, pickMission, MISSION_STEPS, type Course } from "./mission";
+import { sceneValue, uzNum, uzText } from "./scenes";
 import { openQuest, questHref, ARENA_GAMES } from "./quest";
 import { gameAnswer, GAME_MAX_P } from "./answer";
 
+const idsOf = (x: unknown): string[] => {
+  const arr = Array.isArray(x) ? x : ((x as { skills?: unknown[] }).skills ?? Object.values(x as object));
+  return (arr as { id: string }[]).map((s) => s.id);
+};
+const SKILL_IDS: Record<Course, Set<string>> = { math: new Set(idsOf(mathSkills)), physics: new Set(idsOf(fizSkills)), english: new Set(idsOf(enSkills)) };
+const allItems = () => (Object.keys(JOBS) as Course[]).flatMap((c) => JOBS[c].flatMap((j) => j.items.map((it) => ({ c, j, it }))));
+
 describe("Kasb sinovi bank", () => {
-  it("10 hand-written items per course, answer among 3–4 unique choices", () => {
-    for (const c of Object.values(CAREERS)) {
-      expect(c.items).toHaveLength(10);
-      for (const it of c.items) {
-        expect(it.choices.length).toBeGreaterThanOrEqual(3);
-        expect(it.choices.length).toBeLessThanOrEqual(4);
-        expect(new Set(it.choices).size).toBe(it.choices.length);
-        expect(it.choices).toContain(it.answer);
-        for (const w of it.choices.filter((x) => x !== it.answer)) expect(checkAnswer({ kind: "choice", answer: it.answer }, w).correct, it.id).toBe(false);
+  it("every careers skillId is a real skill of its course", () => {
+    for (const { c, j, it } of allItems()) expect(SKILL_IDS[c].has(it.skillId), `${c}/${j.id}/${it.id}: ${it.skillId}`).toBe(true);
+    for (const { c, it } of allItems()) expect(courseOf(it.skillId), it.id).toBe(c);
+  });
+  it("at least 3 jobs per course, each with 5+ items, unique ids", () => {
+    for (const c of Object.keys(JOBS) as Course[]) {
+      expect(JOBS[c].length, c).toBeGreaterThanOrEqual(3);
+      for (const j of JOBS[c]) expect(j.items.length, j.id).toBeGreaterThanOrEqual(MISSION_STEPS);
+    }
+    const ids = allItems().map(({ it }) => it.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+  it("answer among 3–4 unique choices, no distractor accepted by the checker", () => {
+    for (const { it } of allItems()) {
+      expect(it.choices.length).toBeGreaterThanOrEqual(3);
+      expect(it.choices.length).toBeLessThanOrEqual(4);
+      expect(new Set(it.choices).size).toBe(it.choices.length);
+      expect(it.choices).toContain(it.answer);
+      for (const w of it.choices.filter((x) => x !== it.answer)) expect(checkAnswer({ kind: "choice", answer: it.answer }, w).correct, it.id).toBe(false);
+    }
+  });
+  it("every item has a scene, and the solved scene shows exactly the answer", () => {
+    for (const { it } of allItems()) {
+      expect(it.scene, it.id).toBeTruthy();
+      const v = sceneValue(it.scene);
+      if (v === null) {
+        expect(it.scene.kind).toBe("sign");
+        expect(it.scene.kind === "sign" && it.scene.text.includes("___"), it.id).toBe(true);
+      } else {
+        expect(checkAnswer({ kind: "number", answer: v }, it.answer).correct, `${it.id}: scene ${v} vs answer ${it.answer}`).toBe(true);
       }
     }
+  });
+  it("Uzbek decimal comma in every question, hint and choice", () => {
+    for (const { it } of allItems()) for (const s of [it.q, it.hint, ...it.choices]) expect(/\d\.\d/.test(s), `${it.id}: ${s}`).toBe(false);
+    expect(uzNum(4.5)).toBe("4,5");
+    expect(uzNum(0.25)).toBe("0,25");
+    expect(uzNum(36000)).toBe("36 000");
+    expect(uzText("1.5 kg")).toBe("1,5 kg");
   });
   it("course from skill id", () => {
     expect(courseOf("frac-add-unlike")).toBe("math");
@@ -27,23 +66,33 @@ describe("Kasb sinovi bank", () => {
 });
 
 describe("pickMission", () => {
-  it("5 steps, no repeats, the chosen skill first, right answer present", () => {
-    const m = pickMission({ skillId: "fiz-tezlik", rng: seeded(3) });
+  it("5 steps, no repeats, the chosen skill first, right answer present, scene attached", () => {
+    const m = pickMission({ skillId: "fiz-tezlik", jobId: "muhandis", rng: seeded(3) });
     expect(m.course).toBe("physics");
     expect(m.steps).toHaveLength(MISSION_STEPS);
     expect(new Set(m.steps.map((s) => s.q)).size).toBe(MISSION_STEPS);
-    // fiz-tezlik has 3 items → the first three steps are on that skill
-    expect(m.steps.slice(0, 3).every((s) => s.skillId === "fiz-tezlik")).toBe(true);
+    expect(m.steps[0].skillId).toBe("fiz-tezlik");
     for (const s of m.steps) {
       expect(s.story).not.toBe("");
+      expect(s.scene).toBeTruthy();
       expect(checkAnswer(s.expect, s.choices[s.correct]).correct).toBe(true);
     }
   });
-  it("a math skill without career items still gets a builder mission", () => {
-    const m = pickMission({ skillId: "lcm", rng: seeded(1) });
-    expect(m.course).toBe("math");
-    expect(m.career.job).toBe("quruvchi");
-    expect(m.steps).toHaveLength(5);
+  it("every job can fill a 5-step mission", () => {
+    for (const c of Object.keys(JOBS) as Course[])
+      for (const j of JOBS[c]) {
+        const m = pickMission({ course: c, jobId: j.id, rng: seeded(9) });
+        expect(m.steps, j.id).toHaveLength(5);
+        expect(Object.keys(jobBank(j)).length).toBeGreaterThan(0);
+      }
+  });
+  it("a replay picks a different job than last time", () => {
+    for (const c of Object.keys(JOBS) as Course[])
+      for (const last of JOBS[c])
+        for (let s = 0; s < 20; s++) expect(pickJob(JOBS[c], { lastJobId: last.id, rng: seeded(s) }).id).not.toBe(last.id);
+    // and the chosen skill still steers which job (among the fresh ones)
+    expect(pickJob(JOBS.math, { skillId: "nat-order-ops", lastJobId: "quruvchi", rng: seeded(2) }).id).toBe("sotuvchi");
+    expect(pickMission({ skillId: "geo-perimeter", lastJobId: "oshpaz", rng: seeded(4) }).job.id).toBe("quruvchi");
   });
 });
 
@@ -62,7 +111,7 @@ describe("openQuest launcher", () => {
 describe("mission answers use the same mastery path + cap", () => {
   it("right answer → recordAnswer with maxP", async () => {
     const rec = vi.fn(async (_o: unknown) => ({ p: 0.4, before: 0.3, xp: 5, streak: 1 }));
-    const it0 = CAREERS.math.items[1];
+    const it0 = JOBS.math[0].items[1];
     const r = await gameAnswer("u", { game: "mission", kind: "q", skillId: it0.skillId, expect: { kind: "choice", answer: it0.answer, choices: it0.choices }, given: it0.answer }, { skillExists: () => true, recordAnswer: rec });
     expect(r).toMatchObject({ ok: true, correct: true, recorded: true });
     expect(rec.mock.calls[0][0]).toMatchObject({ skillId: "geo-area-rect", maxP: GAME_MAX_P });

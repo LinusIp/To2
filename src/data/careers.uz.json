@@ -1,56 +1,141 @@
 {
   "math": {
-    "job": "quruvchi",
-    "title": "Quruvchi",
-    "intro": "Bugun siz quruvchisiz! Maktab yonida yangi sport zali quriladi.",
-    "done": "Siz bugun quruvchi bo'ldingiz!",
-    "items": [
-      { "id": "m1", "skillId": "dec-mul-div", "story": "Devor qurilmoqda.", "q": "Devor uzunligi 4,5 m, bitta g'isht 0,25 m. Bir qatorga nechta g'isht kerak?", "choices": ["18", "16", "20", "45"], "answer": "18", "hint": "4,5 ni 0,25 ga bo'ling: 0,25 m to'rtta = 1 m." },
-      { "id": "m2", "skillId": "geo-area-rect", "story": "Pol uchun kafel kerak.", "q": "Xona 6 m ga 4 m. Polning yuzi necha m²?", "choices": ["24", "20", "10", "48"], "answer": "24", "hint": "To'g'ri to'rtburchak yuzi: S = a · b." },
-      { "id": "m3", "skillId": "geo-perimeter", "story": "Hovli atrofiga panjara o'rnatamiz.", "q": "Hovli 12 m ga 8 m. Panjara uzunligi necha metr?", "choices": ["40", "20", "96", "32"], "answer": "40", "hint": "Perimetr: P = 2(a + b)." },
-      { "id": "m4", "skillId": "pct-of-number", "story": "Sement buyurtma qilamiz.", "q": "200 qop sementning 15% i zaxira uchun. Zaxira necha qop?", "choices": ["30", "15", "20", "35"], "answer": "30", "hint": "200 ning 1% i = 2 qop, 15% i = 15 · 2." },
-      { "id": "m5", "skillId": "ratio", "story": "Beton aralashtiramiz.", "q": "Sement va qum 1 : 3 nisbatda. 2 qop sementga necha qop qum kerak?", "choices": ["6", "3", "5", "8"], "answer": "6", "hint": "Sement 2 marta ko'p bo'lsa, qum ham 2 marta ko'p: 3 · 2." },
-      { "id": "m6", "skillId": "nat-mul", "story": "Derazalar o'rnatiladi.", "q": "Binoda 4 qavat, har qavatda 12 ta deraza. Jami nechta deraza?", "choices": ["48", "16", "36", "52"], "answer": "48", "hint": "Teng guruhlar — ko'paytiramiz: 4 · 12." },
-      { "id": "m7", "skillId": "frac-intro", "story": "Ish rejasi tuzildi.", "q": "Devorning 3/4 qismi qurildi. Qancha qismi qoldi?", "choices": ["1/4", "3/4", "1/3", "2/4"], "answer": "1/4", "hint": "Butun devor = 4/4. 4/4 − 3/4 = ?" },
-      { "id": "m8", "skillId": "geo-area-triangle", "story": "Tom uchburchak shaklida.", "q": "Tom uchburchagining asosi 8 m, balandligi 3 m. Yuzi necha m²?", "choices": ["12", "24", "11", "22"], "answer": "12", "hint": "Uchburchak yuzi: S = a · h : 2." },
-      { "id": "m9", "skillId": "geo-pythagoras", "story": "Narvon devorga suyandi.", "q": "Narvon pastki uchi devordan 3 m, yuqori uchi 4 m balandlikda. Narvon uzunligi necha metr?", "choices": ["5", "7", "6", "12"], "answer": "5", "hint": "Pifagor: c² = 3² + 4²." },
-      { "id": "m10", "skillId": "eq-one-step", "story": "Yuk mashinasi keldi.", "q": "Mashina 3 marta qatnab 2400 ta g'isht olib keldi. Bir qatnovda nechta g'isht?", "choices": ["800", "600", "1200", "7200"], "answer": "800", "hint": "3x = 2400 → x = 2400 : 3." }
+    "jobs": [
+      {
+        "id": "quruvchi", "title": "Quruvchi", "finale": { "kind": "hall", "sign": "SPORT ZALI" },
+        "intro": "Bugun siz quruvchisiz! Maktab yonida yangi sport zali quriladi.",
+        "done": "Siz bugun quruvchi bo'ldingiz!",
+        "items": [
+          { "id": "m1", "skillId": "dec-mul-div", "story": "Devor qurilmoqda.", "q": "Devor uzunligi 4,5 m, bitta g'isht 0,25 m. Bir qatorga nechta g'isht kerak?", "choices": ["18", "16", "20", "45"], "answer": "18", "hint": "4,5 ni 0,25 ga bo'ling: 0,25 m to'rtta = 1 m.", "scene": { "kind": "row", "total": 4.5, "unit": 0.25, "u": "m", "icon": "brick" } },
+          { "id": "m2", "skillId": "geo-area-rect", "story": "Pol uchun kafel kerak.", "q": "Zal 6 m ga 4 m. Polning yuzi necha m²? (bitta kafel 1 m²)", "choices": ["24", "20", "10", "48"], "answer": "24", "hint": "To'g'ri to'rtburchak yuzi: S = a · b.", "scene": { "kind": "grid", "cols": 6, "rows": 4, "colsLabel": "6 m", "rowsLabel": "4 m", "icon": "tile" } },
+          { "id": "m3", "skillId": "geo-perimeter", "story": "Hovli atrofiga panjara o'rnatamiz.", "q": "Hovli 12 m ga 8 m. Panjara uzunligi necha metr?", "choices": ["40", "20", "96", "32"], "answer": "40", "hint": "Perimetr: P = 2(a + b).", "scene": { "kind": "fence", "w": 12, "h": 8, "u": "m" } },
+          { "id": "m4", "skillId": "pct-of-number", "story": "Sement buyurtma qilamiz.", "q": "200 qop sementning 15% i zaxira uchun. Zaxira necha qop?", "choices": ["30", "15", "20", "35"], "answer": "30", "hint": "200 ning 1% i = 2 qop, 15% i = 15 · 2.", "scene": { "kind": "percent", "total": 200, "pct": 15, "find": "part", "unit": "qop", "icon": "bag" } },
+          { "id": "m5", "skillId": "ratio", "story": "Beton aralashtiramiz.", "q": "Sement va qum 1 : 3 nisbatda. 2 qop sementga necha qop qum kerak?", "choices": ["6", "3", "5", "8"], "answer": "6", "hint": "Sement 2 marta ko'p bo'lsa, qum ham 2 marta ko'p: 3 · 2.", "scene": { "kind": "ratio", "a": 1, "b": 3, "target": 2, "nameA": "sement", "nameB": "qum", "iconA": "bag", "iconB": "sand" } },
+          { "id": "m6", "skillId": "nat-mul", "story": "Derazalar o'rnatiladi.", "q": "Binoda 4 qavat, har qavatda 12 ta deraza. Jami nechta deraza?", "choices": ["48", "16", "36", "52"], "answer": "48", "hint": "Teng guruhlar — ko'paytiramiz: 4 · 12.", "scene": { "kind": "grid", "cols": 12, "rows": 4, "colsLabel": "12 ta", "rowsLabel": "4 qavat", "icon": "window" } },
+          { "id": "m7", "skillId": "frac-intro", "story": "Ish rejasi tuzildi.", "q": "Devorning 3/4 qismi qurildi. Qancha qismi qoldi?", "choices": ["1/4", "3/4", "1/3", "2/3"], "answer": "1/4", "hint": "Butun devor = 4/4. 4/4 − 3/4 = ?", "scene": { "kind": "fraction", "parts": 4, "have": 3, "mode": "rest", "label": "devor" } },
+          { "id": "m8", "skillId": "geo-area-triangle", "story": "Tom uchburchak shaklida.", "q": "Tom uchburchagining asosi 8 m, balandligi 3 m. Yuzi necha m²?", "choices": ["12", "24", "11", "22"], "answer": "12", "hint": "Uchburchak yuzi: S = a · h : 2.", "scene": { "kind": "triangle", "base": 8, "h": 3, "u": "m" } },
+          { "id": "m9", "skillId": "geo-pythagoras", "story": "Narvon devorga suyandi.", "q": "Narvonning pastki uchi devordan 3 m, yuqori uchi 4 m balandlikda. Narvon uzunligi necha metr?", "choices": ["5", "7", "6", "12"], "answer": "5", "hint": "Pifagor: c² = 3² + 4².", "scene": { "kind": "hyp", "a": 3, "b": 4, "u": "m" } },
+          { "id": "m10", "skillId": "nat-div", "story": "Yuk mashinasi keldi.", "q": "Mashina 3 marta qatnab 2400 ta g'isht olib keldi. Bir qatnovda nechta g'isht?", "choices": ["800", "600", "1200", "7200"], "answer": "800", "hint": "2400 ni 3 ga bo'ling.", "scene": { "kind": "groups", "groups": 3, "each": 800, "find": "each", "groupLabel": "qatnov", "icon": "brick" } }
+        ]
+      },
+      {
+        "id": "oshpaz", "title": "Oshpaz", "finale": { "kind": "dome", "sign": "OSHXONA" },
+        "intro": "Bugun siz oshpazsiz! Maktab bayrami uchun dasturxon tayyorlaymiz.",
+        "done": "Siz bugun oshpaz bo'ldingiz!",
+        "items": [
+          { "id": "o1", "skillId": "ratio", "story": "Palov damlanadi.", "q": "1 kg guruchga 2 litr suv quyiladi. 3 kg guruchga necha litr suv kerak?", "choices": ["6", "5", "3", "9"], "answer": "6", "hint": "Guruch 3 marta ko'p — suv ham 3 marta ko'p: 2 · 3.", "scene": { "kind": "ratio", "a": 1, "b": 2, "target": 3, "nameA": "kg guruch", "nameB": "l suv", "iconA": "rice", "iconB": "water" } },
+          { "id": "o2", "skillId": "frac-add-like", "story": "Salat tayyorlaymiz.", "q": "Salatga 1/4 kg sabzi va 2/4 kg bodring solindi. Jami necha kg?", "choices": ["3/4", "3/8", "1/4", "2/3"], "answer": "3/4", "hint": "Maxrajlar bir xil: suratlarni qo'shing, 1 + 2.", "scene": { "kind": "fraction", "parts": 4, "have": 1, "add": 2, "mode": "sum", "label": "kg" } },
+          { "id": "o3", "skillId": "nat-mul", "story": "Somsa pishmoqda.", "q": "Patnisda 5 qator, har qatorda 6 ta somsa. Patnisda nechta somsa?", "choices": ["30", "11", "25", "36"], "answer": "30", "hint": "5 qator · 6 ta.", "scene": { "kind": "grid", "cols": 6, "rows": 5, "colsLabel": "6 ta", "rowsLabel": "5 qator", "icon": "somsa" } },
+          { "id": "o4", "skillId": "nat-div", "story": "Non tarqatamiz.", "q": "36 ta non 4 ta savatga teng bo'lindi. Har savatda nechta non?", "choices": ["9", "8", "32", "40"], "answer": "9", "hint": "36 : 4.", "scene": { "kind": "groups", "groups": 4, "each": 9, "find": "each", "groupLabel": "savat", "icon": "bread" } },
+          { "id": "o5", "skillId": "dec-add-sub", "story": "Qozonga masalliq solamiz.", "q": "Qozonga 1,5 kg go'sht va 0,75 kg sabzi solindi. Jami necha kg?", "choices": ["2,25", "1,75", "2,5", "0,9"], "answer": "2,25", "hint": "Vergulni vergul ostiga yozib qo'shing: 1,50 + 0,75.", "scene": { "kind": "scale", "values": [1.5, 0.75], "labels": ["go'sht", "sabzi"], "op": "sum", "u": "kg" } },
+          { "id": "o6", "skillId": "ratio", "story": "Mehmonlar ko'paydi.", "q": "4 kishilik palovga 2 ta piyoz kerak. 12 kishiga nechta piyoz kerak?", "choices": ["6", "8", "24", "4"], "answer": "6", "hint": "12 kishi — 4 kishidan 3 marta ko'p: 2 · 3.", "scene": { "kind": "ratio", "a": 4, "b": 2, "target": 12, "nameA": "kishi", "nameB": "piyoz", "iconA": "person", "iconB": "onion" } },
+          { "id": "o7", "skillId": "pct-of-number", "story": "Shirinlik pishiramiz.", "q": "500 g unning 20% i pechenye uchun ajratildi. Necha gramm un?", "choices": ["100", "20", "50", "250"], "answer": "100", "hint": "500 ning 10% i = 50, 20% i = 2 · 50.", "scene": { "kind": "percent", "total": 500, "pct": 20, "find": "part", "unit": "g", "icon": "bag" } }
+        ]
+      },
+      {
+        "id": "sotuvchi", "title": "Do'kon sotuvchisi", "finale": { "kind": "shop", "sign": "DO'KON" },
+        "intro": "Bugun siz do'kon sotuvchisisiz! Bozor kuni — xaridorlar ko'p.",
+        "done": "Siz bugun sotuvchi bo'ldingiz!",
+        "items": [
+          { "id": "s1", "skillId": "pct-of-number", "story": "Chegirma kuni.", "q": "Ko'ylak 80 ming so'm, chegirma 25%. Chegirma necha ming so'm?", "choices": ["20", "25", "55", "60"], "answer": "20", "hint": "25% — bu to'rtdan bir: 80 : 4.", "scene": { "kind": "percent", "total": 80, "pct": 25, "find": "part", "unit": "ming so'm", "icon": "shirt" } },
+          { "id": "s2", "skillId": "nat-order-ops", "story": "Xaridor qaytim kutmoqda.", "q": "Xaridor 3 ta daftar oldi, har biri 4 ming so'm. 20 ming so'm berdi. Qaytim necha ming so'm?", "choices": ["8", "12", "16", "4"], "answer": "8", "hint": "Avval narx: 3 · 4 = 12, keyin 20 − 12.", "scene": { "kind": "money", "items": 3, "price": 4, "paid": 20, "u": "ming", "icon": "box" } },
+          { "id": "s3", "skillId": "dec-add-sub", "story": "Meva savati.", "q": "Olma 12,5 ming so'm, nok 7,5 ming so'm. Jami necha ming so'm?", "choices": ["20", "19", "20,5", "5"], "answer": "20", "hint": "12,5 + 7,5: o'ndan birlar 5 + 5 = 10.", "scene": { "kind": "scale", "values": [12.5, 7.5], "labels": ["olma", "nok"], "op": "sum", "u": "ming so'm" } },
+          { "id": "s4", "skillId": "nat-mul", "story": "Omborga yuk keldi.", "q": "Do'konga 6 quti tuxum keldi, har qutida 24 ta. Jami nechta tuxum?", "choices": ["144", "30", "124", "164"], "answer": "144", "hint": "6 · 24 = 6 · 20 + 6 · 4.", "scene": { "kind": "groups", "groups": 6, "each": 24, "find": "total", "groupLabel": "quti", "icon": "egg" } },
+          { "id": "s5", "skillId": "pct-find-whole", "story": "Oylik reja.", "q": "Sotuvchi rejaning 25% ini bajardi: 50 ta ko'ylak sotdi. Reja necha ta ko'ylak?", "choices": ["200", "75", "125", "100"], "answer": "200", "hint": "25% = 50 ta, demak 100% = 4 · 50.", "scene": { "kind": "percent", "total": 200, "pct": 25, "find": "whole", "unit": "ta", "icon": "shirt" } },
+          { "id": "s6", "skillId": "dec-mul-div", "story": "Shakar tortamiz.", "q": "1 kg shakar 14 ming so'm. 0,5 kg shakar necha ming so'm?", "choices": ["7", "28", "14,5", "6"], "answer": "7", "hint": "0,5 kg — yarim kilogramm: 14 ning yarmi.", "scene": { "kind": "scale", "values": [0.5, 14], "labels": ["kg shakar", "ming / kg"], "op": "mul", "u": "ming so'm" } }
+        ]
+      }
     ]
   },
   "physics": {
-    "job": "muhandis",
-    "title": "Muhandis",
-    "intro": "Bugun siz muhandissiz! Shahar uchun yangi ko'prik loyihalaymiz.",
-    "done": "Siz bugun muhandis bo'ldingiz!",
-    "items": [
-      { "id": "p1", "skillId": "fiz-tezlik", "story": "Poyezd ko'prikdan o'tadi.", "q": "Poyezd 2 soatda 120 km yurdi. Tezligi necha km/soat?", "choices": ["60", "240", "122", "30"], "answer": "60", "hint": "v = s : t." },
-      { "id": "p2", "skillId": "fiz-tezlik", "story": "Avtobus jadvali.", "q": "Avtobus 40 km/soat tezlikda 3 soat yurdi. Necha km yo'l bosdi?", "choices": ["120", "43", "80", "160"], "answer": "120", "hint": "s = v · t." },
-      { "id": "p3", "skillId": "fiz-zichlik", "story": "Ko'prik ustuni uchun material.", "q": "Jism massasi 600 kg, hajmi 0,2 m³. Zichligi necha kg/m³?", "choices": ["3000", "120", "300", "1200"], "answer": "3000", "hint": "ρ = m : V." },
-      { "id": "p4", "skillId": "fiz-kuch", "story": "Kran yuk ko'taradi.", "q": "Massasi 50 kg yukning og'irligi necha N? (g = 10 N/kg)", "choices": ["500", "50", "5", "60"], "answer": "500", "hint": "P = m · g." },
-      { "id": "p5", "skillId": "fiz-bosim", "story": "Ustun yerga bosim beradi.", "q": "1000 N kuch 2 m² yuzaga ta'sir qiladi. Bosim necha Pa?", "choices": ["500", "2000", "1002", "250"], "answer": "500", "hint": "p = F : S." },
-      { "id": "p6", "skillId": "fiz-ish", "story": "Yuk tepaga ko'tarildi.", "q": "200 N kuch bilan yuk 5 m ga ko'tarildi. Bajarilgan ish necha J?", "choices": ["1000", "40", "205", "100"], "answer": "1000", "hint": "A = F · s." },
-      { "id": "p7", "skillId": "fiz-quvvat", "story": "Motor tanlaymiz.", "q": "Motor 10 soniyada 2000 J ish bajardi. Quvvati necha W?", "choices": ["200", "20000", "2010", "20"], "answer": "200", "hint": "N = A : t." },
-      { "id": "p8", "skillId": "fiz-kuch", "story": "Richag bilan tosh ko'taramiz.", "q": "Richagning bir yelkasi 2 m, ikkinchisi 0,5 m. Kuchdan necha marta yutamiz?", "choices": ["4", "2", "1", "10"], "answer": "4", "hint": "Yelkalar nisbati: 2 : 0,5." },
-      { "id": "p9", "skillId": "fiz-quvvat", "story": "Ko'prik chiroqlari.", "q": "Kuchlanish 12 V, qarshilik 4 Ω. Tok kuchi necha A?", "choices": ["3", "48", "16", "8"], "answer": "3", "hint": "Om qonuni: I = U : R." },
-      { "id": "p10", "skillId": "fiz-tezlik", "story": "Velosipedchi ko'prikda.", "q": "Velosipedchi 5 m/s tezlikda 60 s yurdi. Necha metr yo'l bosdi?", "choices": ["300", "12", "65", "600"], "answer": "300", "hint": "s = v · t." }
+    "jobs": [
+      {
+        "id": "muhandis", "title": "Muhandis", "finale": { "kind": "bridge", "sign": "KO'PRIK" },
+        "intro": "Bugun siz muhandissiz! Shahar uchun yangi ko'prik loyihalaymiz.",
+        "done": "Siz bugun muhandis bo'ldingiz!",
+        "items": [
+          { "id": "p1", "skillId": "fiz-tezlik", "story": "Poyezd ko'prikdan o'tadi.", "q": "Poyezd 2 soatda 120 km yurdi. Tezligi necha km/soat?", "choices": ["60", "240", "122", "30"], "answer": "60", "hint": "v = s : t.", "scene": { "kind": "motion", "v": 60, "t": 2, "find": "v", "vu": "km/soat", "tu": "soat", "su": "km", "vehicle": "train" } },
+          { "id": "p2", "skillId": "fiz-masofa-vaqt", "story": "Avtobus jadvali.", "q": "Avtobus 40 km/soat tezlikda 3 soat yurdi. Necha km yo'l bosdi?", "choices": ["120", "43", "80", "160"], "answer": "120", "hint": "s = v · t.", "scene": { "kind": "motion", "v": 40, "t": 3, "find": "s", "vu": "km/soat", "tu": "soat", "su": "km", "vehicle": "bus" } },
+          { "id": "p3", "skillId": "fiz-zichlik", "story": "Ko'prik ustuni uchun material.", "q": "Jism massasi 600 kg, hajmi 0,2 m³. Zichligi necha kg/m³?", "choices": ["3000", "120", "300", "1200"], "answer": "3000", "hint": "ρ = m : V.", "scene": { "kind": "density", "m": 600, "V": 0.2 } },
+          { "id": "p4", "skillId": "fiz-kuch", "story": "Kran yuk ko'taradi.", "q": "Massasi 50 kg yukning og'irligi necha N? (g = 10 N/kg)", "choices": ["500", "50", "5", "60"], "answer": "500", "hint": "P = m · g.", "scene": { "kind": "weight", "m": 50, "g": 10 } },
+          { "id": "p5", "skillId": "fiz-bosim", "story": "Ustun yerga bosim beradi.", "q": "1000 N kuch 2 m² yuzaga ta'sir qiladi. Bosim necha Pa?", "choices": ["500", "2000", "1002", "250"], "answer": "500", "hint": "p = F : S.", "scene": { "kind": "pressure", "F": 1000, "S": 2 } },
+          { "id": "p6", "skillId": "fiz-ish", "story": "Yuk tepaga ko'tarildi.", "q": "200 N kuch bilan yuk 5 m ga ko'tarildi. Bajarilgan ish necha J?", "choices": ["1000", "40", "205", "100"], "answer": "1000", "hint": "A = F · s.", "scene": { "kind": "work", "F": 200, "s": 5 } },
+          { "id": "p7", "skillId": "fiz-quvvat", "story": "Motor tanlaymiz.", "q": "Motor 10 soniyada 2000 J ish bajardi. Quvvati necha W?", "choices": ["200", "20000", "2010", "20"], "answer": "200", "hint": "N = A : t.", "scene": { "kind": "power", "A": 2000, "t": 10 } },
+          { "id": "p8", "skillId": "fiz-masofa-vaqt", "story": "Velosipedchi ko'prikda.", "q": "Velosipedchi 5 m/s tezlikda 60 s yurdi. Necha metr yo'l bosdi?", "choices": ["300", "12", "65", "600"], "answer": "300", "hint": "s = v · t.", "scene": { "kind": "motion", "v": 5, "t": 60, "find": "s", "vu": "m/s", "tu": "s", "su": "m", "vehicle": "bike" } }
+        ]
+      },
+      {
+        "id": "mashinist", "title": "Mashinist", "finale": { "kind": "train", "sign": "TEZYURAR" },
+        "intro": "Bugun siz mashinistsiz! Toshkentdan Samarqandga tezyurar poyezd haydaymiz.",
+        "done": "Siz bugun mashinist bo'ldingiz!",
+        "items": [
+          { "id": "t1", "skillId": "fiz-masofa-vaqt", "story": "Yo'l rejasi.", "q": "Poyezd 240 km yo'lni 80 km/soat tezlikda bosib o'tadi. Necha soat ketadi?", "choices": ["3", "4", "320", "160"], "answer": "3", "hint": "t = s : v.", "scene": { "kind": "motion", "v": 80, "t": 3, "find": "t", "vu": "km/soat", "tu": "soat", "su": "km", "vehicle": "train" } },
+          { "id": "t2", "skillId": "fiz-ortacha-tezlik", "story": "Bekatlar bilan yurdik.", "q": "Poyezd bekatlarda to'xtab, 300 km ni 4 soatda bosib o'tdi. O'rtacha tezligi necha km/soat?", "choices": ["75", "1200", "80", "70"], "answer": "75", "hint": "O'rtacha tezlik = butun yo'l : butun vaqt.", "scene": { "kind": "motion", "v": 75, "t": 4, "find": "v", "vu": "km/soat", "tu": "soat", "su": "km", "vehicle": "train" } },
+          { "id": "t3", "skillId": "fiz-massa", "story": "Yuk vagoni.", "q": "Vagonda 20 ta yashik, har biri 50 kg. Yukning massasi necha kg?", "choices": ["1000", "70", "500", "2000"], "answer": "1000", "hint": "20 · 50.", "scene": { "kind": "groups", "groups": 20, "each": 50, "find": "total", "groupLabel": "yashik", "icon": "box" } },
+          { "id": "t4", "skillId": "fiz-kuch", "story": "Vagon og'irligi.", "q": "Massasi 2000 kg vagonning og'irligi necha N? (g = 10 N/kg)", "choices": ["20000", "2000", "200", "2010"], "answer": "20000", "hint": "P = m · g.", "scene": { "kind": "weight", "m": 2000, "g": 10 } },
+          { "id": "t5", "skillId": "fiz-quvvat", "story": "Lokomotiv motori.", "q": "Motor 5 soniyada 15000 J ish bajardi. Quvvati necha W?", "choices": ["3000", "75000", "15005", "300"], "answer": "3000", "hint": "N = A : t.", "scene": { "kind": "power", "A": 15000, "t": 5 } },
+          { "id": "t6", "skillId": "fiz-bosim", "story": "Yo'lovchi chamadoni.", "q": "Chamadonning og'irligi 400 N, tagining yuzi 0,1 m². Polga bosimi necha Pa?", "choices": ["4000", "40", "400", "40000"], "answer": "4000", "hint": "p = F : S, 400 : 0,1.", "scene": { "kind": "pressure", "F": 400, "S": 0.1 } }
+        ]
+      },
+      {
+        "id": "kranchi", "title": "Kran operatori", "finale": { "kind": "tower", "sign": "YANGI UY" },
+        "intro": "Bugun siz kran operatorisiz! 9 qavatli yangi uy qurilmoqda.",
+        "done": "Siz bugun kran operatori bo'ldingiz!",
+        "items": [
+          { "id": "k1", "skillId": "fiz-zichlik", "story": "Beton blok keldi.", "q": "Beton blokning massasi 4800 kg, hajmi 2 m³. Betonning zichligi necha kg/m³?", "choices": ["2400", "9600", "4802", "240"], "answer": "2400", "hint": "ρ = m : V.", "scene": { "kind": "density", "m": 4800, "V": 2 } },
+          { "id": "k2", "skillId": "fiz-kuch", "story": "Kran yukni iladi.", "q": "Kran 300 kg yukni ilib oldi. Yukning og'irligi necha N? (g = 10 N/kg)", "choices": ["3000", "300", "30", "310"], "answer": "3000", "hint": "P = m · g.", "scene": { "kind": "weight", "m": 300, "g": 10 } },
+          { "id": "k3", "skillId": "fiz-ish", "story": "Yuk 4-qavatga ko'tariladi.", "q": "Kran 3000 N og'irlikdagi yukni 12 m balandlikka ko'tardi. Bajarilgan ish necha J?", "choices": ["36000", "250", "3012", "3600"], "answer": "36000", "hint": "A = F · s.", "scene": { "kind": "work", "F": 3000, "s": 12 } },
+          { "id": "k4", "skillId": "fiz-quvvat", "story": "Kran qanchalik kuchli?", "q": "Kran 36000 J ishni 60 soniyada bajardi. Quvvati necha W?", "choices": ["600", "6000", "60", "36060"], "answer": "600", "hint": "N = A : t.", "scene": { "kind": "power", "A": 36000, "t": 60 } },
+          { "id": "k5", "skillId": "fiz-bosim", "story": "Kran oyoqlari.", "q": "Kran oyoqlari yerga 12000 N kuch bilan 3 m² yuzada bosadi. Bosim necha Pa?", "choices": ["4000", "36000", "12003", "400"], "answer": "4000", "hint": "p = F : S.", "scene": { "kind": "pressure", "F": 12000, "S": 3 } },
+          { "id": "k6", "skillId": "fiz-massa", "story": "G'isht paketlari.", "q": "Kran 8 ta g'isht paketini ko'tardi, har biri 250 kg. Jami massa necha kg?", "choices": ["2000", "258", "1000", "2500"], "answer": "2000", "hint": "8 · 250.", "scene": { "kind": "groups", "groups": 8, "each": 250, "find": "total", "groupLabel": "paket", "icon": "brick" } }
+        ]
+      }
     ]
   },
   "english": {
-    "job": "gid",
-    "title": "Tur gid",
-    "intro": "Bugun siz Samarqanddagi tur gidsiz! Mehmonlarga shaharni ko'rsatamiz.",
-    "done": "Siz bugun tur gid bo'ldingiz!",
-    "items": [
-      { "id": "e1", "skillId": "en-pronouns", "story": "Mehmonlar keldi.", "q": "Mehmonlarni kutib olish: \"___ to Samarkand!\"", "choices": ["Welcome", "Goodbye", "Sorry", "Thanks"], "answer": "Welcome", "hint": "Welcome — xush kelibsiz." },
-      { "id": "e2", "skillId": "en-plurals", "story": "Registon haqida.", "q": "\"Registon\" maydonida nechta madrasa bor? \"There are ___ madrasahs.\"", "choices": ["three", "two", "five", "ten"], "answer": "three", "hint": "Ulug'bek, Sherdor va Tillakori — uchta." },
-      { "id": "e3", "skillId": "en-present-simple", "story": "Mehmon yo'l so'radi.", "q": "\"O'ngga buriling\" inglizchada qanday?", "choices": ["Turn right", "Turn left", "Go back", "Stop here"], "answer": "Turn right", "hint": "right — o'ng, left — chap." },
-      { "id": "e4", "skillId": "en-present-simple", "story": "Ekskursiya vaqti.", "q": "\"Tour starts at ___ o'clock\" — soat 9 da.", "choices": ["nine", "night", "nice", "ninety"], "answer": "nine", "hint": "9 = nine." },
-      { "id": "e5", "skillId": "en-articles", "story": "Tushlik vaqti.", "q": "\"Palov\" mehmonlar uchun: \"Plov is a traditional ___.\"", "choices": ["dish", "dress", "desk", "dog"], "answer": "dish", "hint": "dish — taom." },
-      { "id": "e6", "skillId": "en-past-simple", "story": "Tarix haqida.", "q": "\"Ulug'bek ___ an observatory.\" (qurdi)", "choices": ["built", "build", "builds", "building"], "answer": "built", "hint": "build → built (o'tgan zamon)." },
-      { "id": "e7", "skillId": "en-to-be", "story": "Minora juda baland.", "q": "\"This minaret is very ___.\" (baland)", "choices": ["tall", "small", "short", "slow"], "answer": "tall", "hint": "tall — baland." },
-      { "id": "e8", "skillId": "en-present-simple", "story": "Mehmon savol berdi.", "q": "\"___ old is this building?\"", "choices": ["How", "What", "Who", "Where"], "answer": "How", "hint": "How old — necha yoshda/qancha eski." },
-      { "id": "e9", "skillId": "en-plurals", "story": "Chipta narxi.", "q": "\"The ticket costs ___ dollars\" — 15 dollar.", "choices": ["fifteen", "fifty", "five", "fourteen"], "answer": "fifteen", "hint": "15 = fifteen, 50 = fifty." },
-      { "id": "e10", "skillId": "en-pronouns", "story": "Ekskursiya tugadi.", "q": "Xayrlashuv: \"Thank you, have a nice ___!\"", "choices": ["day", "dog", "door", "dark"], "answer": "day", "hint": "Have a nice day — kuningiz yaxshi o'tsin." }
+    "jobs": [
+      {
+        "id": "gid", "title": "Tur gid", "finale": { "kind": "dome", "sign": "REGISTON" },
+        "intro": "Bugun siz Samarqanddagi tur gidsiz! Mehmonlarga shaharni ko'rsatamiz.",
+        "done": "Siz bugun tur gid bo'ldingiz!",
+        "items": [
+          { "id": "e1", "skillId": "en-pronouns", "story": "Mehmonlar keldi.", "q": "Mehmon: \"Are you our guide?\" Siz: \"Yes, ___ am.\"", "choices": ["I", "he", "she", "they"], "answer": "I", "hint": "O'zingiz haqingizda: I am.", "scene": { "kind": "sign", "text": "Yes, ___ am your guide!", "icon": "wave" } },
+          { "id": "e2", "skillId": "en-plurals", "story": "Registon maydoni.", "q": "\"There are three ___ on Registan.\" (madrasa)", "choices": ["madrasahs", "madrasah", "madrasahes"], "answer": "madrasahs", "hint": "Ko'plik: oxiriga -s qo'shiladi.", "scene": { "kind": "sign", "text": "three ___", "icon": "madrasa" } },
+          { "id": "e3", "skillId": "en-to-be", "story": "Minora juda baland.", "q": "\"This minaret ___ very tall.\"", "choices": ["is", "are", "am", "be"], "answer": "is", "hint": "Bitta narsa (it) — is.", "scene": { "kind": "sign", "text": "This minaret ___ tall.", "icon": "tower" } },
+          { "id": "e4", "skillId": "en-articles", "story": "Eski madrasa.", "q": "\"This is ___ old madrasah.\"", "choices": ["an", "a", "are"], "answer": "an", "hint": "Unli tovush (o-ld) oldidan — an.", "scene": { "kind": "sign", "text": "___ old madrasah", "icon": "madrasa" } },
+          { "id": "e5", "skillId": "en-past-simple", "story": "Tarix haqida.", "q": "\"Ulugh Beg ___ an observatory in 1420.\" (qurdi)", "choices": ["built", "build", "builds", "building"], "answer": "built", "hint": "build → built (o'tgan zamon).", "scene": { "kind": "sign", "text": "He ___ it in 1420.", "icon": "observatory" } },
+          { "id": "e6", "skillId": "en-present-simple", "story": "Ekskursiya vaqti.", "q": "\"Every day the tour ___ at nine o'clock.\"", "choices": ["starts", "start", "starting", "to start"], "answer": "starts", "hint": "He/she/it bilan fe'lga -s qo'shiladi.", "scene": { "kind": "sign", "text": "The tour ___ at 9:00.", "icon": "clock" } },
+          { "id": "e7", "skillId": "en-plurals", "story": "Chipta narxi.", "q": "\"The ticket costs fifteen ___.\" (dollar)", "choices": ["dollars", "dollar", "dollares"], "answer": "dollars", "hint": "15 ta — ko'plik: -s.", "scene": { "kind": "sign", "text": "15 ___", "icon": "ticket" } }
+        ]
+      },
+      {
+        "id": "ofitsiant", "title": "Kafe ofitsianti", "finale": { "kind": "shop", "sign": "KAFE" },
+        "intro": "Bugun siz kafe ofitsiantisiz! Chet ellik mehmonlar buyurtma bermoqda.",
+        "done": "Siz bugun ofitsiant bo'ldingiz!",
+        "items": [
+          { "id": "c1", "skillId": "en-articles", "story": "Ichimlik buyurtmasi.", "q": "\"Can I have ___ apple juice?\"", "choices": ["an", "a", "are"], "answer": "an", "hint": "apple unli harf bilan boshlanadi — an.", "scene": { "kind": "sign", "text": "___ apple juice", "icon": "cup" } },
+          { "id": "c2", "skillId": "en-plurals", "story": "Choy keltiramiz.", "q": "\"Two ___ of tea, please.\" (cup)", "choices": ["cups", "cup", "cupes"], "answer": "cups", "hint": "Ikkita — ko'plik: -s.", "scene": { "kind": "sign", "text": "two ___ of tea", "icon": "tea" } },
+          { "id": "c3", "skillId": "en-to-be", "story": "Sho'rva tayyor.", "q": "\"The soup ___ hot.\"", "choices": ["is", "are", "am"], "answer": "is", "hint": "Bitta narsa — is.", "scene": { "kind": "sign", "text": "The soup ___ hot!", "icon": "bowl" } },
+          { "id": "c4", "skillId": "en-present-continuous", "story": "Palovni olib kelyapsiz.", "q": "\"I ___ bringing your plov now.\"", "choices": ["am", "is", "are", "be"], "answer": "am", "hint": "I bilan — am + -ing.", "scene": { "kind": "sign", "text": "I ___ bringing it!", "icon": "plate" } },
+          { "id": "c5", "skillId": "en-pronouns", "story": "Salat kimga?", "q": "\"This salad is for my sister. ___ likes tomatoes.\"", "choices": ["She", "He", "It", "They"], "answer": "She", "hint": "sister — qiz kishi: she.", "scene": { "kind": "sign", "text": "___ likes tomatoes.", "icon": "plate" } },
+          { "id": "c6", "skillId": "en-present-simple", "story": "Doimiy mijoz.", "q": "\"My friend ___ green tea every morning.\"", "choices": ["drinks", "drink", "drinking", "to drink"], "answer": "drinks", "hint": "He/she bilan — fe'lga -s.", "scene": { "kind": "sign", "text": "He ___ green tea.", "icon": "tea" } },
+          { "id": "c7", "skillId": "en-have-got", "story": "Stol band qilingan.", "q": "\"We ___ got a table for four.\"", "choices": ["have", "has", "is", "are"], "answer": "have", "hint": "We bilan — have got.", "scene": { "kind": "sign", "text": "We ___ got a table.", "icon": "menu" } }
+        ]
+      },
+      {
+        "id": "mehmonxona", "title": "Mehmonxona administratori", "finale": { "kind": "tower", "sign": "HOTEL" },
+        "intro": "Bugun siz mehmonxona administratorisiz! Buxorodagi mehmonxonaga sayyohlar keldi.",
+        "done": "Siz bugun administrator bo'ldingiz!",
+        "items": [
+          { "id": "h1", "skillId": "en-have-got", "story": "Bron tekshiriladi.", "q": "\"She ___ got a room booking.\"", "choices": ["has", "have", "is", "are"], "answer": "has", "hint": "She bilan — has got.", "scene": { "kind": "sign", "text": "She ___ got a booking.", "icon": "key" } },
+          { "id": "h2", "skillId": "en-to-be", "story": "Xonalar qayerda?", "q": "\"Your rooms ___ on the third floor.\"", "choices": ["are", "is", "am", "be"], "answer": "are", "hint": "Ko'p narsa (rooms) — are.", "scene": { "kind": "sign", "text": "Rooms ___ on floor 3.", "icon": "bed" } },
+          { "id": "h3", "skillId": "en-past-simple", "story": "Mehmonlar yo'ldan keldi.", "q": "\"We ___ in Tashkent yesterday.\" (keldik)", "choices": ["arrived", "arrive", "arrives", "arriving"], "answer": "arrived", "hint": "yesterday — o'tgan zamon: -ed.", "scene": { "kind": "sign", "text": "We ___ yesterday.", "icon": "suitcase" } },
+          { "id": "h4", "skillId": "en-present-continuous", "story": "Ekskursiya avtobusi.", "q": "\"The bus ___ waiting for you now.\"", "choices": ["is", "are", "am", "be"], "answer": "is", "hint": "Bitta avtobus — is + -ing.", "scene": { "kind": "sign", "text": "The bus ___ waiting.", "icon": "bus" } },
+          { "id": "h5", "skillId": "en-alphabet", "story": "Ismni yozamiz.", "q": "Mehmon ismini harflab aytdi: K-A-M-O-L. Ikkinchi harf qaysi?", "choices": ["A", "K", "M", "O"], "answer": "A", "hint": "K — birinchi, keyingisi…", "scene": { "kind": "sign", "text": "K - ___ - M - O - L", "icon": "map" } },
+          { "id": "h6", "skillId": "en-plurals", "story": "Bolalar uchun joy.", "q": "\"We need two ___ for the children.\" (bed)", "choices": ["beds", "bed", "bedes"], "answer": "beds", "hint": "Ikkita — ko'plik: -s.", "scene": { "kind": "sign", "text": "two ___", "icon": "bed" } },
+          { "id": "h7", "skillId": "en-articles", "story": "Kalit beramiz.", "q": "\"It is ___ old key, but it works.\"", "choices": ["an", "a", "are"], "answer": "an", "hint": "old — unli tovush: an.", "scene": { "kind": "sign", "text": "___ old key", "icon": "key" } }
+        ]
+      }
     ]
   }
 }
