@@ -361,6 +361,11 @@ export const t = {
       step: (i: number, n: number) => `Qadam ${i}/${n}`,
       start: "Ishni boshlash",
       result: (c: number, n: number) => `${n} ta vazifadan ${c} tasi to'g'ri bajarildi`,
+      goal: (sign: string) => `5 ta vazifa — har bir javob rasmni to'ldiradi, oxirida "${sign}" tayyor bo'ladi.`,
+      built: (sign: string) => `5 ta rasm birlashdi: "${sign}" tayyor!`,
+      sceneDone: "Rasm to'ldi.",
+      sceneAnswer: "Javob:",
+      finish: "Natijani ko'rish",
     },
     memory: {
       name: "Juftini top",
