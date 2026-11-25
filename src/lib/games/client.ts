@@ -8,6 +8,8 @@ import type { GameQuestion } from "./questions";
 export interface GameSettings {
   /** no shaking, falling, confetti */
   calm?: boolean;
+  /** no timers (inclusive-mode motor profile → <html data-untimed>) */
+  untimed?: boolean;
 }
 
 /**
@@ -18,20 +20,24 @@ export interface GameSettings {
  */
 export function useGameSettings(override?: GameSettings): Required<GameSettings> {
   const [calm, setCalm] = useState(false);
+  const [untimed, setUntimed] = useState(false);
   useEffect(() => {
     const html = document.documentElement;
     const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-    const sync = () => setCalm(html.hasAttribute("data-calm") || !!mq?.matches);
+    const sync = () => {
+      setCalm(html.hasAttribute("data-calm") || !!mq?.matches);
+      setUntimed(html.hasAttribute("data-untimed")); // a11y-hook: motor profile = no time limits
+    };
     sync();
     mq?.addEventListener?.("change", sync);
     const mo = new MutationObserver(sync);
-    mo.observe(html, { attributes: true, attributeFilter: ["data-calm"] });
+    mo.observe(html, { attributes: true, attributeFilter: ["data-calm", "data-untimed"] });
     return () => {
       mq?.removeEventListener?.("change", sync);
       mo.disconnect();
     };
   }, []);
-  return { calm: override?.calm ?? calm };
+  return { calm: override?.calm ?? calm, untimed: override?.untimed ?? untimed };
 }
 
 /** Report an answer: server re-checks and updates mastery + XP like a lesson. Fire-and-forget. */

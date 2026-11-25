@@ -11,7 +11,7 @@ import type { GameQuestion } from "@/lib/games/questions";
 import { readPref, writePref } from "@/lib/client/prefs";
 
 export default function SpeedGame({ settings }: { settings?: GameSettings }) {
-  const { calm } = useGameSettings(settings); // a11y-hook
+  const { calm, untimed: a11yUntimed } = useGameSettings(settings); // a11y-hook
   const { skills, characterId } = useRound();
   const [phase, setPhase] = useState<"ready" | "play" | "end">("ready");
   const [untimed, setUntimed] = useState(false);
@@ -34,6 +34,10 @@ export default function SpeedGame({ settings }: { settings?: GameSettings }) {
     setUntimed(readPref("games-untimed", "0") === "1");
     void loadBest().then((b) => setBest(b.speed ?? 0));
   }, []);
+  // a11y-hook: the motor profile ("vaqt cheklovi yo'q") always plays without the timer
+  useEffect(() => {
+    if (a11yUntimed) setUntimed(true);
+  }, [a11yUntimed]);
 
   const finish = useCallback(() => {
     setPhase("end");
@@ -126,10 +130,10 @@ export default function SpeedGame({ settings }: { settings?: GameSettings }) {
         <div className="card mt-2 flex flex-col gap-3 p-5">
           <div className="text-[16px] font-extrabold">{t.games.speed.desc}</div>
           <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl bg-soft px-3.5 py-2.5 font-extrabold">
-            <input type="checkbox" className="h-5 w-5 accent-[#2f6bff]" checked={untimed} onChange={toggleUntimed} data-testid="speed-untimed" />
+            <input type="checkbox" className="h-5 w-5 accent-[#2f6bff]" checked={untimed} onChange={toggleUntimed} disabled={a11yUntimed} data-testid="speed-untimed" />
             <span>
               {t.games.speed.untimed}
-              <span className="block text-[12px] text-mut">{t.games.speed.untimedHint}</span>
+              <span className="block text-[12px] text-mut">{a11yUntimed ? t.a11y.untimedByProfile : t.games.speed.untimedHint}</span>
             </span>
           </label>
           <div className="text-[14px] font-extrabold text-mut">{t.games.best(best)}</div>
@@ -162,7 +166,7 @@ export default function SpeedGame({ settings }: { settings?: GameSettings }) {
             </div>
           </div>
           <div className="mt-3">
-            <Choices choices={q.choices} onPick={pick} disabled={picked != null} picked={picked} correct={picked != null ? q.correct : null} />
+            <Choices question={q.q} choices={q.choices} onPick={pick} disabled={picked != null} picked={picked} correct={picked != null ? q.correct : null} />
           </div>
           <div className="mt-auto pt-2">
             <TutorReaction characterId={characterId} mood={picked == null ? "think" : picked === q.correct ? "cheer" : "hint"} />

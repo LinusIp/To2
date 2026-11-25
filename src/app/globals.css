@@ -649,11 +649,19 @@
 }
 
 /* ── Inklyuziv rejim (src/lib/a11y, docs/INCLUSIVE.md) — set on <html data-*> by A11yRoot ── */
-/* text size: the app uses px sizes, so the whole UI is zoomed; the lesson stage keeps its own scale */
-html[data-text="125"] body { zoom: 1.25; }
-html[data-text="150"] body { zoom: 1.5; }
-html[data-text="125"] [data-a11y-stage] { zoom: 0.8; }
-html[data-text="150"] [data-a11y-stage] { zoom: 0.6667; }
+/* text size = real text scaling: every font size is calc(size * var(--ts)) (scripts/postcss/text-scale.mjs).
+   Layout is not zoomed, so a 360 px phone keeps 360 px of layout; text wraps instead of overflowing. */
+:root { --ts: 1; }
+html[data-text="125"] { --ts: 1.25; }
+html[data-text="150"] { --ts: 1.5; }
+/* bigger text must wrap, never push the page sideways */
+html[data-text] body { overflow-wrap: anywhere; }
+html[data-text] .btn,
+html[data-text] .opt,
+html[data-text] .game-choice { height: auto; white-space: normal; text-align: center; line-height: 1.2; padding-top: 8px; padding-bottom: 8px; }
+html[data-text] h1,
+html[data-text] h2,
+html[data-text] .truncate { white-space: normal; overflow: visible; text-overflow: clip; }
 
 /* high contrast (also automatic with prefers-contrast: more) */
 html[data-contrast] {
@@ -689,6 +697,21 @@ html[data-calm] *::after {
 }
 
 /* dyslexia-friendly reading: Lexend (loaded only when on) + wider spacing, no all-caps, left aligned */
+/* Lexend is self-hosted (public/fonts/lexend, SIL OFL 1.1) — loaded only when this mode is on */
+@font-face {
+  font-family: Lexend;
+  src: url("/fonts/lexend/lexend-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: Lexend;
+  src: url("/fonts/lexend/lexend-latin-ext-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+2C60-2C7F, U+A720-A7FF;
+}
 html[data-dyslexia] body,
 html[data-dyslexia] .btn,
 html[data-dyslexia] input,

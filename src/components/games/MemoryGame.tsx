@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { t } from "@/i18n/uz";
 import { GameFrame, Chip, EndCard, TutorReaction } from "@/components/games/GameKit";
+import { CardVoiceHint, useCardVoice } from "@/components/a11y/GameVoice"; // a11y-hook
 import { useRound } from "@/components/games/useRound";
 import { reportAnswer, saveBest, useGameSettings, type GameSettings } from "@/lib/games/client";
 import { deal, flip, memoryDone, memoryStart, PAIR_BY_ID, type Card, type Face, type MemoryState } from "@/lib/games/memory";
@@ -70,6 +71,9 @@ export default function MemoryGame({ settings }: { settings?: GameSettings }) {
     }
   };
 
+  // a11y-hook: voice-first reads each turned card; "karta besh" flips card 5
+  const voiceOn = useCardVoice(announce, cards.length, (i) => cards[i] && onFlip(cards[i].uid));
+
   // a mismatched pair closes by itself after a moment (or with the next flip)
   useEffect(() => {
     if (s.open.length !== 2) return;
@@ -109,6 +113,7 @@ export default function MemoryGame({ settings }: { settings?: GameSettings }) {
               );
             })}
           </div>
+          {voiceOn && <CardVoiceHint />}
           <div className="mt-auto pt-3">
             <TutorReaction characterId={characterId} mood={mood} bubble={mood === "cheer" ? t.games.right : undefined} />
           </div>

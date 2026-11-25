@@ -85,3 +85,12 @@ export function narrateQuestion(q: string, choices?: string[]): string {
   const opts = choices.map((c, i) => `${"ABCD"[i] ?? i + 1} javob: ${narrateFormula(c)}.`).join(" ");
   return `${head} ${opts} Harfni ayting, masalan: «javob A».`;
 }
+
+const ORDINALS = ["Birinchi", "Ikkinchi", "Uchinchi", "To'rtinchi", "Beshinchi", "Oltinchi"];
+
+/** A game question (buttons numbered 1–4): "… Birinchi javob: oltidan besh. Ikkinchi javob: …" */
+export function narrateGameQuestion(q: string, choices: string[]): string {
+  const head = q.trim() ? narrateFormula(q) : "";
+  const opts = choices.map((c, i) => `${ORDINALS[i] ?? i + 1} javob: ${narrateFormula(c)}.`).join(" ");
+  return [head, opts, "Raqamini ayting, masalan: «javob bir»."].filter(Boolean).join(" ");
+}

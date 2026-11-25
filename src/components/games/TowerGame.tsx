@@ -149,7 +149,7 @@ export default function TowerGame({ settings }: { settings?: GameSettings }) {
           </div>
           {q && (
             <div className="mt-3">
-              <Choices choices={q.choices} onPick={pick} disabled={picked != null} picked={picked} correct={picked != null ? q.correct : null} />
+              <Choices question={q.q} choices={q.choices} onPick={pick} disabled={picked != null} picked={picked} correct={picked != null ? q.correct : null} />
             </div>
           )}
           {hint && q && (

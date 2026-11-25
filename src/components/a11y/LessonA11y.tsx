@@ -203,9 +203,9 @@ export default function LessonA11y({ voice }: { voice: string }) {
   // always-on listening while the lesson waits (never while the tutor talks: it would hear itself)
   // the lesson owns the mic while it is open: the app-wide listener must not hear the tutor
   useEffect(() => {
-    if (!a.handsFree) return;
+    if (!a.handsFree && !a.voiceFirst) return;
     return claimListening();
-  }, [a.handsFree]);
+  }, [a.handsFree, a.voiceFirst]);
   const canListen = (a.handsFree || a.voiceFirst) && recognitionSupported() && listenWanted && (WAITING.has(status) || pausedByVoice);
   useEffect(() => {
     if (!canListen) return;

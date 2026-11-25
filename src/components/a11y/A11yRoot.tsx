@@ -6,8 +6,6 @@ import { useEffect } from "react";
 import { applyA11y, useA11y } from "@/lib/a11y/settings";
 import GlobalVoiceCommands from "./GlobalVoiceCommands";
 
-const FONT_ID = "a11y-dyslexia-font";
-
 export default function A11yRoot() {
   const s = useA11y();
   useEffect(() => {
@@ -26,14 +24,7 @@ export default function A11yRoot() {
 
   useEffect(() => {
     if (!s.loaded) return;
-    applyA11y(s);
-    if (s.dyslexiaFont && !document.getElementById(FONT_ID)) {
-      const l = document.createElement("link");
-      l.id = FONT_ID;
-      l.rel = "stylesheet";
-      l.href = "https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&display=swap";
-      document.head.appendChild(l);
-    }
+    applyA11y(s); // Lexend is self-hosted (globals.css @font-face): loaded only when the dyslexia mode uses it
   }, [s]);
 
   return (
