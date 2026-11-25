@@ -57,7 +57,11 @@ Node and file names are unchanged: `tutor › body › body_mesh, legL, legR, he
    ```
    The console prints a dict per tutor: `bytes`, `tris`, `nonmanifold`, and per part `islands`.
 
-## 1. Rebuild each tutor — Route A (preferred, ~3–6 min per tutor)
+> **Update 25 Nov:** use **Route B** (below) for Blokbek, Lola and Ziyo. Route A rebuilds from `*_t.glb`, which has a
+> different face texture than the shipping models (Lola loses her smile), and the 30k bake gives black specks.
+> Route A stays for brand-new models. See REPORT.md › 3D tutor re-export.
+
+## 1. Rebuild each tutor — Route A (new models only)
 
 In the same Python console, one tutor at a time:
 
@@ -80,10 +84,10 @@ If you want to check before rendering 50 portraits, call `rebuild("lola", portra
 **If it stops with "parts still open"**, the message names the part and edge count. Fix it by hand (M2 below), then
 in the console run `hg = _ns("tripo_hinged.py"); _paths(hg); hg["export"]("lola", bpy.data.objects["tutor"])`.
 
-### Route B (fallback if the raw files are missing or the bake misbehaves)
+### Route B (used for the 3 shipping tutors)
 
 ```python
-r = fix_glb("lola"); r
+r = fix_glb("lola", src=r"<path to the ORIGINAL lola.glb>"); r   # e.g. git show 8061293:public/models/tripo/lola.glb > old_lola.glb
 ```
 
 It cleans the **shipping** GLB in place: weld, slivers, close holes, neck plug, decimate to 30k, Auto Smooth,
