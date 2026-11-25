@@ -70,10 +70,20 @@ def load_raw(cid):
     return raw
 
 
-def make_low(raw, ratio=0.025):
+TARGET_TRIS = 30000   # M8: ~30k triangles per tutor (was ~235k → ~7 fps in the lesson; 30k → ~18 fps+)
+
+
+def make_low(raw, ratio=None, target_tris=TARGET_TRIS):
     low = raw.copy(); low.data = raw.data.copy(); low.name = "low"
     bpy.context.scene.collection.objects.link(low)
-    m = low.modifiers.new("dec", "DECIMATE"); m.ratio = ratio
+    # Weld first: the glTF importer splits verts at Tripo's UV seams → decimation would keep those as holes (M2)
+    bm = bmesh.new(); bm.from_mesh(low.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=0.0001)
+    bm.to_mesh(low.data); bm.free()
+    if ratio is None:
+        tris = sum(len(p.vertices) - 2 for p in low.data.polygons)
+        ratio = min(1.0, target_tris / max(1, tris))
+    m = low.modifiers.new("dec", "DECIMATE"); m.ratio = ratio; m.use_collapse_triangulate = True
     bpy.context.view_layer.objects.active = low
     for o in bpy.context.view_layer.objects: o.select_set(False)
     low.select_set(True)
@@ -82,7 +92,8 @@ def make_low(raw, ratio=0.025):
     while low.data.uv_layers: low.data.uv_layers.remove(low.data.uv_layers[0])
     low.data.uv_layers.new(name="UV")
     bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.006)
+    # island_margin 0.012 ≈ 25 px at 2048: room for the 24 px bake margin below (M4)
+    bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.012)
     bpy.ops.object.mode_set(mode="OBJECT")
     return low
 
@@ -107,7 +118,13 @@ def bake_colour(raw, low, cid):
     bk = sc.render.bake
     bk.use_selected_to_active = True; bk.cage_extrusion = 0.012; bk.max_ray_distance = 0.04
     bk.use_pass_direct = False; bk.use_pass_indirect = False; bk.use_pass_color = True
-    bk.margin = 10
+    # M4: a wide "Extend" margin so mipmaps / JPEG never sample the empty (black or white) space between
+    # UV islands → no white streaks along the sleeve seams on the dark hoodie
+    bk.margin = 24
+    try:
+        bk.margin_type = "EXTEND"
+    except Exception:
+        pass
     bpy.ops.object.bake(type="DIFFUSE")
     os.makedirs(OUT, exist_ok=True)
     img.filepath_raw = f"{OUT}\\{cid}_tex.jpg"; img.file_format = "JPEG"; img.save()

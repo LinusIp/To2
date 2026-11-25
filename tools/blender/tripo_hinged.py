@@ -109,19 +109,30 @@ def _on_plane(co, planes, tol=0.0015):
     return False
 
 
-def _cap(bm, px, planes=()):
-    """Close every opening with a lid in the part's own dark colour (solid block ends, no hollow tubes)."""
+def _best_uv(bm, px):
+    """UV of a dark but real colour of this part (used to paint lids / plugs)."""
     uvl = bm.loops.layers.uv.active
     H, W = px.shape[:2]
-    best = None; lums = []
+    lums = []
     for f in bm.faces:
         u = sum(l[uvl].uv.x for l in f.loops) / len(f.loops); v = sum(l[uvl].uv.y for l in f.loops) / len(f.loops)
         c = px[min(H - 1, max(0, int(v * H))), min(W - 1, max(0, int(u * W))), :3]
         if c.max() > 0.02: lums.append((float(c.mean()), (u, v)))
-    if lums:
-        lums.sort(key=lambda t: t[0]); best = lums[len(lums) // 8][1]  # a dark but real colour of this part
-    bnd = [e for e in bm.edges if e.is_boundary and _on_plane(e.verts[0].co, planes) and _on_plane(e.verts[1].co, planes)]
-    if not bnd: return
+    if not lums: return None
+    lums.sort(key=lambda t: t[0])
+    return lums[len(lums) // 8][1]
+
+
+def _cap(bm, px, planes=(), all_open=False):
+    """Close openings with a lid in the part's own dark colour (solid block ends, no hollow tubes).
+    all_open=False: only loops lying on the cut planes. all_open=True (M2): EVERY remaining boundary loop."""
+    uvl = bm.loops.layers.uv.active
+    best = _best_uv(bm, px)
+    if all_open:
+        bnd = [e for e in bm.edges if e.is_boundary]
+    else:
+        bnd = [e for e in bm.edges if e.is_boundary and _on_plane(e.verts[0].co, planes) and _on_plane(e.verts[1].co, planes)]
+    if not bnd: return 0
     res = bmesh.ops.holes_fill(bm, edges=bnd, sides=0)
     new = res.get("faces", [])
     if new:
@@ -130,9 +141,105 @@ def _cap(bm, px, planes=()):
         if best:
             for f in new:
                 for l in f.loops: l[uvl].uv = best
+    return len(new)
 
 
-def split_parts(low, lab):
+# ---- 25 Nov fixes (M1, M2, M3): see docs/3d/reexport-steps.md -------------------------------------------
+ISLAND_MIN = 0.03     # M1: drop loose islands whose bounding-box diagonal is under 3 cm (≈ 23 stage px)
+WELD = 0.0001         # weld vertices closer than 0.1 mm (Tripo/glTF splits verts at old UV seams → fake holes)
+NECK_PLUG = 0.015     # M3: head block reaches 1.5 cm down into the body, so turning never opens the collar
+NECK_SHRINK = 0.94    #     …and is 6 % narrower than the neck cut, so it stays hidden inside the collar
+
+
+def weld(bm, dist=WELD):
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=dist)
+    bmesh.ops.dissolve_degenerate(bm, dist=dist * 0.1, edges=bm.edges[:])
+    wire = [e for e in bm.edges if e.is_wire]
+    if wire: bmesh.ops.delete(bm, geom=wire, context="EDGES")
+    loose = [v for v in bm.verts if not v.link_faces]
+    if loose: bmesh.ops.delete(bm, geom=loose, context="VERTS")
+
+
+def islands(bm):
+    seen = set(); out = []
+    for f in bm.faces:
+        if f in seen: continue
+        seen.add(f); stack = [f]; isl = []
+        while stack:
+            g = stack.pop(); isl.append(g)
+            for e in g.edges:
+                for h in e.link_faces:
+                    if h not in seen: seen.add(h); stack.append(h)
+        out.append(isl)
+    return out
+
+
+def drop_small_islands(bm, min_diag=ISLAND_MIN):
+    """M1: delete floating slivers (select linked → delete), always keeping the biggest piece."""
+    isl = islands(bm)
+    if len(isl) < 2: return 0
+    def diag(fs):
+        vs = {v for f in fs for v in f.verts}
+        lo = V((min(v.co.x for v in vs), min(v.co.y for v in vs), min(v.co.z for v in vs)))
+        hi = V((max(v.co.x for v in vs), max(v.co.y for v in vs), max(v.co.z for v in vs)))
+        return (hi - lo).length
+    big = max(isl, key=len)
+    kill = [f for fs in isl if fs is not big and diag(fs) < min_diag for f in fs]
+    if kill: bmesh.ops.delete(bm, geom=kill, context="FACES")
+    weld(bm)  # removes the verts the deleted faces leave behind
+    return len(kill)
+
+
+def nonmanifold(bm):
+    """Edges that are not exactly 2-face (open boundary, wire, or >2 faces). Must be 0 before export (M2)."""
+    return sum(1 for e in bm.edges if not e.is_manifold)
+
+
+def neck_plug(bm, neck, depth=NECK_PLUG, shrink=NECK_SHRINK, band=0.07, halfw=0.13):
+    """M3: extrude the head's bottom lid down into the body (hidden inside the collar)."""
+    bm.normal_update()
+    lid = []
+    for f in bm.faces:
+        c = f.calc_center_median()
+        if f.normal.z < -0.7 and neck - 0.005 < c.z < neck + band and abs(c.x) < halfw: lid.append(f)
+    if not lid: return 0
+    ret = bmesh.ops.extrude_face_region(bm, geom=lid)
+    vs = [g for g in ret["geom"] if isinstance(g, bmesh.types.BMVert)]
+    cx = sum(v.co.x for v in vs) / len(vs); cy = sum(v.co.y for v in vs) / len(vs)
+    for v in vs:
+        v.co.x = cx + (v.co.x - cx) * shrink; v.co.y = cy + (v.co.y - cy) * shrink; v.co.z -= depth
+    bmesh.ops.delete(bm, geom=lid, context="FACES")
+    return len(lid)
+
+
+def clean_part(bm, px, name, p=None):
+    """Weld → drop slivers → cap the cut planes → close everything else → (head) neck plug → outward normals."""
+    weld(bm)
+    dropped = drop_small_islands(bm)
+    _cap(bm, px, PLANES)
+    for _ in range(3):  # holes_fill can leave a loop it couldn't triangulate in one go
+        if not _cap(bm, px, all_open=True): break
+        weld(bm)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    plug = neck_plug(bm, p["neck"]) if (name == "head" and p and NECK_PLUG) else 0
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    return {"dropped": dropped, "plug": plug, "nonmanifold": nonmanifold(bm)}
+
+
+def harden(obs, angle=30.0):
+    """M5: smooth inside a block, hard on edges sharper than `angle` (= Shade Auto Smooth, but baked into
+    the mesh data so the glTF exporter writes split normals without needing a modifier)."""
+    for ob in obs:
+        me = ob.data
+        me.shade_smooth()
+        me.set_sharp_from_angle(angle=math.radians(angle))
+        me.update()
+
+
+CLEAN = {}
+
+
+def split_parts(low, lab, p=None):
     img = low.data.materials[0].node_tree.nodes["Image Texture"].image
     px = _px_of(img)
     parts = {}
@@ -141,7 +248,7 @@ def split_parts(low, lab):
         bpy.context.scene.collection.objects.link(ob)
         bm = bmesh.new(); bm.from_mesh(ob.data); bm.faces.ensure_lookup_table()
         bmesh.ops.delete(bm, geom=[f for f in bm.faces if lab[f.index] != name], context="FACES")
-        _cap(bm, px, PLANES)
+        CLEAN[name] = clean_part(bm, px, name, p)
         bm.to_mesh(ob.data); bm.free()
         parts[name] = ob
     bpy.data.objects.remove(low, do_unlink=True)
@@ -358,12 +465,17 @@ def build_hinged(cid, p=None):
     src.hide_render = True; src.hide_viewport = True; src.name = "low_src"
     bisect(low, p)
     lab, xe = classify(low, p)
-    parts = split_parts(low, lab)
+    parts = split_parts(low, lab, p)
     hinges = hang_arms(parts, p, xe)
     faces = face_parts(parts["head"], p)
     root, E = assemble(parts, hinges, p, faces)
+    harden(parts.values())  # M5 (face quads stay flat)
+    bad = {k: v["nonmanifold"] for k, v in CLEAN.items() if v["nonmanifold"]}
+    if bad:
+        raise RuntimeError(f"{cid}: parts still open (non-manifold edges) — fix by hand before export: {bad}")
     out = export(cid, root)
-    return {"glb": out, "bytes": os.path.getsize(out), "parts": {k: len(v.data.polygons) for k, v in parts.items()}}
+    tris = {k: sum(len(pl.vertices) - 2 for pl in v.data.polygons) for k, v in parts.items()}
+    return {"glb": out, "bytes": os.path.getsize(out), "tris": sum(tris.values()), "parts": tris, "clean": dict(CLEAN)}
 
 
 

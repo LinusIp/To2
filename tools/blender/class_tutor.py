@@ -17,7 +17,7 @@ def finish(cid):
     sw, (alo, ahi), crotch, neck = p["sw"], p["arm"], p["crotch"], p["neck"]; xe = d["xe"]; pad = p.get("arm_pad", 0.025)
     hs["PLANES"][:] = [((sw, 0, 0), (1, 0, 0)), ((-sw, 0, 0), (1, 0, 0)), ((xe, 0, 0), (1, 0, 0)), ((-xe, 0, 0), (1, 0, 0)),
                        ((0, 0, neck), (0, 0, 1)), ((0, 0, crotch), (0, 0, 1)), ((0, 0, alo - pad), (0, 0, 1)), ((0, 0, ahi + pad), (0, 0, 1)), ((0, 0, 0), (1, 0, 0))]
-    parts = hs["split_parts"](low, d["lab"]); hinges = hs["hang_arms"](parts, p, xe); root, E = hs["assemble"](parts, hinges, p, [])
+    parts = hs["split_parts"](low, d["lab"], p); hs["harden"](parts.values()); hinges = hs["hang_arms"](parts, p, xe); root, E = hs["assemble"](parts, hinges, p, [])
     for o in [root] + list(root.children_recursive): o.rotation_mode = "XYZ"
     # 1) lesson still: stand left of the board, point at it
     sc = bpy.context.scene; sc.camera = bpy.data.objects["roomcam"]
@@ -35,6 +35,6 @@ def finish(cid):
     pt = {}; exec(open(TOOLS + r"\tripo_portraits.py", encoding="utf-8").read(), pt)
     for n in ("key", "rim"):
         if n in bpy.data.objects and bpy.data.objects[n].type == "LIGHT": bpy.data.objects[n].name = n + "_room"
-    sc.view_settings.view_transform = "Standard"; sc.view_settings.look = "None"; sc.view_settings.exposure = 0
+    # M7: same colour management as tripo_portraits.setup() (AgX + soft key), so think poses match the rest
     out = pt["render_all"](cid, THINK, frames=("half",))
     return out
