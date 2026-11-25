@@ -63,6 +63,7 @@ At this snapshot **no session is running** except the current orchestrator, and 
 | 11 | Inklyuziv rejim: To2 accessibility → **To2-Access · inclusive mode** | `local_c07e1fd4…` | `feat/inclusive` · `worktrees/to2-inclusive-accessibility-bc99f9` | done |
 | 12 | Ilmobod pitch update → **To2-Pitch · story & docs** | `local_ccdd7d76…` | `docs/pitch-numbers` · `worktrees/ilmobod-pitch-update-fecf04` (local branch `pitch-ilmobod`) | done |
 | 13 | Restore chats from folder → **To2-Ops · chat restore** | `local_99ee1f0f…` | `claude/restore-chats-folder-8b734a` (no code changes) | done |
+| 14 | *(new 25 Nov)* → **To2-3D · tutor re-export** | `local_c0055ed5…` | `fix/3d-reexport` · own worktree | active |
 
 ### 1 · Orchestrator · integration & release *(current)*
 - **Responsible for:** merging the feature branches, the cross-feature wiring, the single release, production checks, and this file.
@@ -198,6 +199,28 @@ At this snapshot **no session is running** except the current orchestrator, and 
 - **Owns:** no repo files. It wrote only to `AppData\Local\Claude-Data\…\claude-code-sessions\`.
 
 ---
+
+## 🛠️ Dispatch — 25 Nov problem report (checked at `d287dfe`)
+Every agent works on a **new branch from `main` (`8061293`)** in its own worktree. Only the orchestrator merges and releases.
+
+| Session | Fix ids | Branch | Priority / status |
+|---|---|---|---|
+| #14 To2-3D · tutor re-export | M1–M5, M8, then M7 (portrait re-light) — Blender job; writes `docs/3d/reexport-steps.md` if Blender isn't reachable | `fix/3d-reexport` | P1 — started 25 Nov |
+| #5 To2-UI · design system & brand | U1 (5 tabs, Mukofotlar → Profil), U2 + C8 (shared bottom padding), C1 (greet on tap), C2 (bubble fallback + static greeting files, **no generation**), C3 (warm/export scripts read `characters.ts`) | `fix/ui-p1` | P1 — started 25 Nov |
+| #5 (second batch) | C6, U3, U4, U6, G5/U7 (decimal comma outside games), C5 + C7 (page side) | `fix/ui-p3` | P3 — after P1 merges |
+| #4 To2-Tutor · animation | M6 (lighting / tone mapping), lesson smoothness (memo stage, stroke cache, isolated chalk filter, adaptive pixel ratio), C4 (3D tutor driver for the picker) | `fix/tutor-render` (needs a worktree — it used the main checkout before) | P2 — after #14's models land |
+| #10 To2-Games · arena & careers | Kasb sinovi scenes + ≥ 2 more jobs per subject (P2); G1–G4, G6, G7, G5 inside games (P3) | `feat/games-scenes` | P2 |
+| #11 To2-Access · inclusive mode | real text scaling, voice-first + hands-free in games, motor → untimed, typed board, self-hosted Lexend, profile-card UI | `feat/inclusive-2` | P2 |
+
+**Ownership rules for this round:**
+- `AppShell.tsx` belongs to #5 only.
+- `LessonPlayer.tsx` / `ClassroomStage.tsx`: #4 goes first (smoothness); #11 asks the orchestrator before editing them.
+- `TutorCanvas.tsx` belongs to #4; #5 only places it on the picker page.
+
+**Facts checked by the orchestrator:**
+- The Kasb sinovi skill ids are already the real ones on `main` (`fiz-*`, `en-*`; fixed 18 Nov). The report is wrong there. Only scenes and more jobs remain.
+- C2: the 3 selectable tutors' greetings ARE cached in production (`lison-v2`, 0 credits).
+- The 5 locked tutors' greetings are uncached: ≈ 242 credits on `lison`. **Waiting for the user's credit number. Nothing else in this round may spend VoiceLab credits.**
 
 ## Overlaps and conflicts
 
