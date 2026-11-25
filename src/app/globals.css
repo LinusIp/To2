@@ -703,3 +703,8 @@ html[data-dyslexia] [data-a11y-caption] { line-height: 1.7; }
 
 /* live captions: the word being spoken */
 .a11y-word-now { background: #ffc42e; color: #141a3a; border-radius: 6px; box-shadow: 0 0 0 2px #ffc42e; }
+
+/* ── shared bottom padding (25 Nov U2/C8): AppShell measures the tab bar into --tabbar-h ── */
+@utility pb-tabbar { padding-bottom: calc(var(--tabbar-h, 84px) + 16px); }
+/* pages without a tab bar: clear the home indicator / gesture bar too */
+@utility pb-safe { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }

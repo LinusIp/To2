@@ -25,7 +25,7 @@ export default function QulaylikPage() {
     router.push(next);
   };
   return (
-    <main className="mx-auto flex min-h-dvh max-w-[720px] flex-col gap-4 bg-ph px-[18px] pt-6 pb-8">
+    <main className="mx-auto flex min-h-dvh max-w-[720px] flex-col gap-4 bg-ph px-[18px] pt-6 pb-safe">
       <div>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-blue px-3 py-1 text-[13px] font-black text-white">{t.a11y.badge}</span>
         <h1 className="mt-3 mb-1 text-[28px] leading-tight font-black">{t.a11y.ask}</h1>

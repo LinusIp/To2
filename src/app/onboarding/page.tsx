@@ -57,7 +57,7 @@ export default function Onboarding() {
   };
 
   return (
-    <main className="page-in mx-auto flex min-h-dvh max-w-[640px] flex-col gap-6 bg-ph px-[18px] pt-4 pb-8">
+    <main className="page-in mx-auto flex min-h-dvh max-w-[640px] flex-col gap-6 bg-ph px-[18px] pt-4 pb-safe">
       <div className="flex h-[52px] items-center justify-between">
         <Link href="/" aria-label={t.nav.back} className="icon-btn">
           <BackIcon />

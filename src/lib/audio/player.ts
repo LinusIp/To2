@@ -17,16 +17,22 @@ function audioEl(): HTMLAudioElement {
   return el;
 }
 
-/** Call from a user gesture (Start button) to unlock audio on mobile. */
+const SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=";
+let unlocked = false;
+
+/** Call from a user gesture (Start button, a tutor tap) to unlock audio on mobile. Safe to call often. */
 export function unlockAudio() {
   const a = audioEl();
   attachAnalyser(a);
   resumeAudioContext();
+  if (unlocked) return; // the element is unlocked for good: never touch a clip that may be playing
+  unlocked = true;
   // play a tiny silent buffer to unlock iOS
   a.muted = true;
-  a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=";
+  a.src = SILENT;
   void a.play().catch(() => {}).finally(() => {
-    a.pause();
+    // a speak() in the same tap may already have put its own clip in: only pause our silent one
+    if (a.src === SILENT) a.pause();
     a.muted = false;
   });
 }
@@ -129,6 +135,13 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
    * play() froze the tutor for good.
    */
   let playing = false;
+  /**
+   * The shared element is playing THIS line's clip. Until then its events belong to whatever it held
+   * before — e.g. unlockAudio()'s zero-length silent WAV, which ends at once: when unlockAudio() and
+   * speak() run in the same tap (the tutor picker), that `ended` used to finish this line before its
+   * audio arrived, so the greeting stayed silent although /api/tts answered 200 (25 Nov, C2).
+   */
+  let mine = false;
   /** lip-sync envelope of exactly this audio (x-tts-env header), null → live analyser */
   let envelope: Uint8Array | null = null;
   const ctrl = new AbortController();
@@ -137,8 +150,11 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
   const ended = new Promise<void>((r) => (resolveEnded = r));
   const started = new Promise<number>((r) => (resolveStarted = r));
 
-  const onError = () => startFallback();
+  const onError = () => {
+    if (mine) startFallback();
+  };
   const onPlaying = () => {
+    if (!mine) return;
     if (done || fallback) {
       a.pause(); // a late play() of a line that already went captions-only
       return;
@@ -148,7 +164,9 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
     const d = Number.isFinite(a.duration) ? a.duration * 1000 : estimateMs(text);
     resolveStarted(d);
   };
-  const onEnded = () => finish();
+  const onEnded = () => {
+    if (mine) finish();
+  };
 
   const finish = () => {
     if (done) return;
@@ -205,6 +223,7 @@ export function speak(text: string, voice: string, opts: { rate?: number; fromMs
         if (objUrl) URL.revokeObjectURL(objUrl);
         objUrl = URL.createObjectURL(blob);
         a.onloadedmetadata = seek;
+        mine = true;
         a.src = objUrl;
         await a.play();
       } catch {

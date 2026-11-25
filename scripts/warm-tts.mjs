@@ -16,7 +16,8 @@ await build({
     contents: `export { DEMO_LESSONS, mockInterrupt } from "@/lib/ai/mock/lessons";
       export { nextSkill, DIAG_LENGTH } from "@/lib/learning/diagnostic";
       export { generateProblem, seeded } from "@/data/problems";
-      export { speakMath } from "@/lib/ai/speakMath";`,
+      export { speakMath } from "@/lib/ai/speakMath";
+      export { CHARACTERS } from "@/config/characters";`,
     resolveDir: path.resolve("."),
     loader: "ts",
   },
@@ -27,7 +28,7 @@ await build({
   alias: { "@": path.resolve("src") },
   logLevel: "silent",
 });
-const { DEMO_LESSONS, mockInterrupt, nextSkill, DIAG_LENGTH, generateProblem, seeded, speakMath } = await import("file://" + out);
+const { DEMO_LESSONS, mockInterrupt, nextSkill, DIAG_LENGTH, generateProblem, seeded, speakMath, CHARACTERS } = await import("file://" + out);
 
 /**
  * Every diagnostic question a learner of `grade` can reach: the server picks the next skill from the
@@ -101,12 +102,8 @@ async function get(u, init) {
 }
 // wait=long: wait for the expressive (lison-v2) version, not the quick v1 stand-in; src=warm labels the spend
 const ttsUrl = (v, p) => `${base}/api/tts?voice=${encodeURIComponent(v)}&text=${encodeURIComponent(p.text)}${p.emotion !== "neutral" ? "&emotion=" + p.emotion : ""}${p.lead ? "&lead=1" : ""}&wait=long&src=warm`;
-// each tutor's own greeting ("Ovozini eshit" on the choose-tutor screen, spoken "happy")
-const GREETINGS = {
-  blokbek: "Salom! Men Blokbek. Matematikani blokma-blok quramiz!",
-  lola: "Salom, men Lola. Xato qilsang ham qo'rqma — birga tushunamiz.",
-  ziyo: "Men Ziyo! Doim so'rayman: nega? Keling, birga bilib olamiz!",
-};
+// each tutor's own greeting ("Ovozini eshit" / tapping a tutor, spoken "happy") — from src/config/characters.ts
+const GREETINGS = Object.fromEntries(CHARACTERS.filter((c) => c.hi).map((c) => [c.id, c.hi]));
 const fracs = DEMO_LESSONS["frac-add-unlike"].segments.map((s) => ({ text: s.say, emotion: s.emotion, lead: false }));
 const common = COMMON.map(([text, emotion]) => ({ text, emotion, lead: false }));
 

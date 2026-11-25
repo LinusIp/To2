@@ -42,7 +42,7 @@ export function Toaster() {
     () => items,
   );
   return (
-    <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-[104px] z-50 flex flex-col-reverse items-center gap-2 px-4 md:bottom-8">
+    <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--tabbar-h,84px)+20px)] z-50 flex flex-col-reverse items-center gap-2 px-4 md:bottom-8">
       {list.map((i) => (
         <div
           key={i.id}
