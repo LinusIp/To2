@@ -205,17 +205,20 @@ Every agent works on a **new branch from `main` (`8061293`)** in its own worktre
 
 | Session | Fix ids | Branch | Priority / status |
 |---|---|---|---|
-| #14 To2-3D · tutor re-export | M1–M5, M8, then M7 (portrait re-light) — Blender job; writes `docs/3d/reexport-steps.md` if Blender isn't reachable | `fix/3d-reexport` | P1 — started 25 Nov |
-| #5 To2-UI · design system & brand | U1 (5 tabs, Mukofotlar → Profil), U2 + C8 (shared bottom padding), C1 (greet on tap), C2 (bubble fallback + static greeting files, **no generation**), C3 (warm/export scripts read `characters.ts`) | `fix/ui-p1` | P1 — started 25 Nov |
-| #5 (second batch) | C6, U3, U4, U6, G5/U7 (decimal comma outside games), C5 + C7 (page side) | `fix/ui-p3` | P3 — after P1 merges |
-| #4 To2-Tutor · animation | M6 (lighting / tone mapping), lesson smoothness (memo stage, stroke cache, isolated chalk filter, adaptive pixel ratio), C4 (3D tutor driver for the picker) | `fix/tutor-render` (needs a worktree — it used the main checkout before) | P2 — after #14's models land |
-| #10 To2-Games · arena & careers | Kasb sinovi scenes + ≥ 2 more jobs per subject (P2); G1–G4, G6, G7, G5 inside games (P3) | `feat/games-scenes` | P2 |
-| #11 To2-Access · inclusive mode | real text scaling, voice-first + hands-free in games, motor → untimed, typed board, self-hosted Lexend, profile-card UI | `feat/inclusive-2` | P2 |
+| #14 To2-3D · tutor re-export | M1–M5, M8, then M7 (portrait re-light) — Blender job; writes `docs/3d/reexport-steps.md` if Blender isn't reachable | `fix/3d-reexport` | P1 — steps doc pushed (`d3f9b3b`); Blender now running, rebuild in progress |
+| #5 To2-UI · design system & brand | U1 (5 tabs, Mukofotlar → Profil), U2 + C8 (shared bottom padding), C1 (greet on tap), C2 (bubble fallback + static greeting files, **no generation**), C3 (warm/export scripts read `characters.ts`) | `fix/ui-p1` | P1 — ✅ merged to main `fb02fb8` (not deployed yet; ships with the 3D re-export) |
+| #5 (second batch) | C6, U3, U4, U6, G5/U7 (decimal comma outside games), C5 + C7 (page side) | `fix/ui-p3` | P3 — on hold until the orchestrator sends the go |
+| #4 To2-Tutor · animation | M6 (lighting / tone mapping), lesson smoothness (memo stage, stroke cache, isolated chalk filter, adaptive pixel ratio), C4 (3D tutor driver for the picker) | `fix/tutor-render` (needs a worktree — it used the main checkout before) | P2 — smoothness started 25 Nov; M6 waits for #14's models |
+| #10 To2-Games · arena & careers | Kasb sinovi scenes + ≥ 2 more jobs per subject (P2); G1–G4, G6, G7, G5 inside games (P3) | `feat/games-scenes` | P2 — started 25 Nov (scenes + ≥ 2 jobs per subject; G1–G7 stay P3) |
+| #11 To2-Access · inclusive mode | real text scaling, voice-first + hands-free in games, motor → untimed, typed board, self-hosted Lexend, profile-card UI | `feat/inclusive-2` | P2 — started 25 Nov (narration via the device engine, 0 credits; typed board last, after #4) |
 
 **Ownership rules for this round:**
 - `AppShell.tsx` belongs to #5 only.
 - `LessonPlayer.tsx` / `ClassroomStage.tsx`: #4 goes first (smoothness); #11 asks the orchestrator before editing them.
 - `TutorCanvas.tsx` belongs to #4; #5 only places it on the picker page.
+- `Board.tsx` belongs to #4 this round (stroke cache, filter groups). #11's typed-board option comes after, sequenced by the orchestrator.
+- `GameKit.tsx` / Choices (game input) belongs to #11 for voice answers; #10 stays in the mission and scene components and data.
+- `src/lib/audio/player.ts`: #5 fixed the greeting race (C2) there; nobody else edits it this round.
 
 **Facts checked by the orchestrator:**
 - The Kasb sinovi skill ids are already the real ones on `main` (`fiz-*`, `en-*`; fixed 18 Nov). The report is wrong there. Only scenes and more jobs remain.
