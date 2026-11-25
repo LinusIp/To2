@@ -918,49 +918,47 @@ Tagline: **"Har bir fan — bir shahar. Har bir topshiriq — bir bino."**
 
 ## 🧊 3D tutor re-export (branch `fix/3d-reexport`, 25 Nov) — M1–M5, M8, M7 · not deployed
 
-Fixes from the 25 Nov 3D problem report. Done in Blender 5.2.3 over the MCP; the session dropped before Ziyo was done.
+All fixes from the 25 Nov 3D problem report, done in Blender 5.2.3 over the MCP. All 3 tutors are finished.
 
-**Approach: Route B (`tools/blender/tripo_fix.py` → `fix_glb`).** The shipping GLB is cleaned in place.
-Rebuilding from the raw T-pose (`rebuild`, Route A) worked technically, but `lola_t.glb` has a *different face*
-(open block mouth instead of the smile) and a 30k-triangle bake left black specks on her jacket. So the shipping
-GLBs are kept as the source, and their texture and face frames stay identical. Route A remains in the script for future models.
+**Approach: Route B (`tools/blender/tripo_fix.py` → `fix_glb`)** cleans the shipping GLBs in place.
+Rebuilding from the raw T-pose (Route A, `rebuild`) worked technically, but `lola_t.glb` has a *different face*
+(open block mouth instead of her smile) and a 30k-triangle bake left black specks on her jacket. So the shipping
+GLBs stay the source, and their texture and face frames are kept exactly. Route A stays in the script for new models.
 
-| Tutor | Triangles | Bytes | Non-manifold edges | Loose sliver faces removed | Lesson fps (dev pane) |
+| Tutor | Triangles | Bytes | Non-manifold edges | Sliver faces removed | Lesson fps (dev pane) |
 |---|---|---|---|---|---|
-| Lola | 250,313 → **29,242** | 1,322,412 → **365,496** | 16,098 → **0** | 82 | 15 → **30** |
-| Blokbek | 233,925 → **29,512** | 1,188,048 → **304,796** | 13,912 → **0** | (see stats) | 15 → **30** |
-| Ziyo | 238,514 (unchanged) | 1,189,768 | 9,765 | — | — |
+| Lola | 250,313 → **29,940** | 1,322,412 → **355,248** | 16,098 → **0** | 50 | 15 → **30** |
+| Blokbek | 233,925 → **29,512** | 1,188,048 → **304,812** | 13,912 → **0** | 50 | 15 → **30** |
+| Ziyo | 238,514 → **29,974** | 1,189,768 → **309,616** | 9,765 → **0** | 16 | (pane in background) |
 
-(Non-manifold "before" = edges that are not exactly 2-face after welding the glTF seam splits, via `stats()`.
-fps = rAF count over 3 s in the Claude browser pane at 375×812, same machine before/after: a relative number, not a phone.)
+Non-manifold "before" = edges not exactly 2-face after welding glTF seam splits (`stats()`). fps = rAF count over
+3 s in the Claude browser pane at 375×812, same machine before/after: a relative number, not a phone.
 
 What each fix is, in the code:
-- **M1** `drop_small_islands`: welds, then deletes islands with a bbox under 3 cm (kept: the biggest piece).
+- **M1** `drop_small_islands`: welds, then deletes islands with a bbox under 3 cm (the biggest piece is kept).
 - **M2** `repair_manifold`: dedupes faces, cuts fins (edges with >2 faces) and bow-tie verts, `holes_fill`, then a
   **fan fill** for twisted loops (Lola's hair cuts) → 0 non-manifold edges in every part. Export refuses otherwise.
-- **M3** `neck_plug`: the head's bottom lid is extruded 1.5 cm into the body, 6 % narrower. **Blokbek only**
-  (`NECK_PLUG_FOR`): on Lola's open collar it showed as a dark wedge under the chin.
-- **M4** texture dilation (shave 1 px, grow island edges 24 px) on the existing texture; the bake path (Route A) also
-  has a 24 px Extend margin.
-- **M5** `harden`: smooth shading + sharp edges from 30° (`set_sharp_from_angle`), written into the mesh data.
+- **M3** `neck_plug`: Blokbek's head is extruded 1.5 cm into the hoodie, 6 % narrower. Checked with the head
+  turned 40°: no gap. **Blokbek only** (`NECK_PLUG_FOR`): on Lola's open collar it showed as a dark wedge under the
+  chin, which a re-run fixed.
+- **M4** texture dilation (shave 1 px, grow island edges 24 px). No white seam streaks on Blokbek's sleeves
+  (checked from both sides). Route A also has a 24 px Extend bake margin.
+- **M5** `harden`: smooth + sharp edges from 30° (`set_sharp_from_angle`), written into the mesh data.
 - **M8** decimate to ~30k (collapse), plus a **1024 px web texture** at export (`TEX_EXPORT`; 2048 stays for renders).
-  The texture was 654 KB of a 922 KB GLB.
-- **M7** `tripo_portraits.setup`: AgX, exposure +0.35, soft key (2.6 W, 30° sun angle) + fill + rim. Skin is no
-  longer orange.
+- **M7** portraits: **AgX + "Medium High Contrast" look**, exposure 0.2, soft key (2.6 W, 30° sun angle) + fill + rim.
+  Tested against plain AgX / Punchy / Base Contrast: plain AgX washed the black hoodie to grey. Skin is no longer
+  orange. All 54 portraits re-rendered (3 tutors × idle/wave/thumbs/cheer/point × full/half/face + board_full,
+  think1/2_half). Also fixed a bug where `view_transform` was a dynamic enum, so the AgX check silently fell back to Filmic.
 - Pipeline robustness: `run_async` (long jobs on a Blender timer; the MCP times out at ~60 s), context overrides
-  for edit-mode ops, eyelids found per face half (one build lost `lid_R`), and a guard that fails the build when
-  any `glbTutor.ts` REQUIRED node is missing.
+  for edit-mode ops, eyelids found per face half (one build lost `lid_R`), and a guard that fails the build when any
+  `glbTutor.ts` REQUIRED node is missing.
 
-Checks: `pnpm vitest run` 325/325 ✅ · `pnpm build` ✅ · new GLBs load in the lesson with no console errors (no makeChar
-fallback). Screenshots: `docs/screenshots/3d/` (`before-*`, `after-*`, Blender 4-view of Lola, old-vs-new portraits).
+Checks: `pnpm vitest run` 325/325 ✅ (one flaky failure on the first run, then green twice) · `pnpm build` ✅ (54 new
+WebP) · all 3 GLBs load in the lesson with no console errors (no makeChar fallback).
+Screenshots in `docs/screenshots/3d/`: `before-*` / `after-*` (lesson per tutor, /home, /tutors), Blender check sheets
+per tutor (front, back, head turned 40°, side, face, sleeves), `portraits-old-top-new-bottom.png`.
 
-⚠️ **Left over (needs Blender with the MCP running again; ~10 min):**
-1. **Lola: re-run `fix_glb("lola", src=<old lola.glb>)`** with the neck plug off (the code is already fixed), then
-   `render_portraits("lola")`. The committed Lola GLB and portraits still have the dark wedge under the chin. It is
-   small in the lesson and visible in the `/home` half portrait.
-2. **Blokbek: visual check** (head turned 40° for the collar, sleeves) + `render_portraits("blokbek")`. The GLB is in;
-   its portraits are still the old Standard-lit ones.
-3. **Ziyo:** `fix_glb("ziyo", src=<old ziyo.glb>)` + `render_portraits("ziyo")`.
-   The old GLBs to clean are `git show 8061293:public/models/tripo/<id>.glb`.
-4. `/tutors` uses the 2D "sig" cut-outs, which are not 3D renders, so it's unchanged by design.
-5. M6 (in-app tone mapping, Tutor · animation session): retune after this lands; the new sharp normals light differently.
+Notes:
+- `/tutors` uses the 2D "sig" cut-outs (not 3D renders), so it's unchanged by design.
+- M6 (in-app tone mapping, Tutor · animation session): retune after this lands; the sharp normals light differently.
+- The GLB cache-buster is `?v=<commit>`, so a release with these files fetches the new models.

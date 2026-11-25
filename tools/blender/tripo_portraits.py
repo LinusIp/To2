@@ -23,7 +23,9 @@ THINK = {  # same as class_tutor.THINK (quiz "thinking" poses, half frame only)
 # M7 (25 Nov): Standard view + a hard 3.6 W key crushed the skin into orange/brown. AgX keeps skin tones,
 # a soft (wide-angle) key + a front fill lift the shadow side. Tune EXPOSURE if a whole set looks dim.
 VIEW = "AgX"          # Blender 4.0+; falls back to Filmic on older builds
-EXPOSURE = 0.35
+LOOK = "Medium High Contrast"   # plain AgX washes the black hoodie out to grey (tested 25 Nov: None/Punchy/Base/MHC)
+EXPOSURE = 0.2
+WORLD = 0.6
 LIGHTS = (  # name, energy, rotation, sun angle (softness)
     ("key", 2.6, (R(50), 0, R(-35)), R(30)),
     ("fill", 0.9, (R(75), 0, R(25)), R(60)),
@@ -35,13 +37,22 @@ def setup():
     sc = bpy.context.scene
     ids = [e.identifier for e in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items]
     sc.render.engine = "BLENDER_EEVEE" if "BLENDER_EEVEE" in ids else "BLENDER_EEVEE_NEXT"
-    vts = [e.identifier for e in sc.view_settings.bl_rna.properties["view_transform"].enum_items]
-    sc.view_settings.view_transform = VIEW if VIEW in vts else "Filmic"
-    sc.view_settings.look = "None"; sc.view_settings.exposure = EXPOSURE
+    # view_transform / look are dynamic enums (bl_rna lists don't show them): just try, newest first
+    try:
+        sc.view_settings.view_transform = VIEW
+    except TypeError:
+        sc.view_settings.view_transform = "Filmic"
+    sc.view_settings.look = "None"
+    for n in (f"{VIEW} - {LOOK}", LOOK):
+        try:
+            sc.view_settings.look = n; break
+        except TypeError:
+            pass
+    sc.view_settings.exposure = EXPOSURE
     sc.render.film_transparent = True
     sc.render.image_settings.file_format = "PNG"; sc.render.image_settings.color_mode = "RGBA"
     w = bpy.data.worlds.get("pw") or bpy.data.worlds.new("pw"); sc.world = w; w.use_nodes = True
-    bg = w.node_tree.nodes["Background"]; bg.inputs[1].default_value = 0.7; bg.inputs[0].default_value = (0.9, 0.92, 1.0, 1)
+    bg = w.node_tree.nodes["Background"]; bg.inputs[1].default_value = WORLD; bg.inputs[0].default_value = (0.9, 0.92, 1.0, 1)
     for n, e, rot, ang in LIGHTS:
         o = bpy.data.objects.get(n)
         if not o or o.type != "LIGHT":
