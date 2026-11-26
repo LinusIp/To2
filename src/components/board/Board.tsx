@@ -59,7 +59,44 @@ function usePlotFns(els: BoardEl[]) {
   return (fn: string) => plotCache.get(fn) ?? null;
 }
 
-const Strokes = memo(function Strokes({ strokes, drawn }: { strokes: Stroke[]; drawn: number[] | null }) {
+/**
+ * Strokes + their SVG path strings, computed once per element (not per frame). Keyed by the command
+ * object (board commands are immutable: a changed element gets a new cmd), then by element key
+ * (it seeds the handwriting jitter) and the plot function (null until mathjs has compiled it).
+ */
+interface Ink {
+  strokes: Stroke[];
+  ds: string[];
+  plotFn: PlotFn;
+  /** bounds of the strokes (board coords), for the live element's own filter region */
+  box: { x: number; y: number; w: number; h: number };
+}
+function boundsOf(strokes: Stroke[]) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const s of strokes)
+    for (const [x, y] of s.pts) {
+      if (x < x0) x0 = x;
+      if (y < y0) y0 = y;
+      if (x > x1) x1 = x;
+      if (y > y1) y1 = y;
+    }
+  return Number.isFinite(x0) ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : { x: 0, y: 0, w: 0, h: 0 };
+}
+const inkCache = new WeakMap<object, Map<string, Ink>>();
+function inkFor(el: BoardEl, plotFn: PlotFn): Ink {
+  let byKey = inkCache.get(el.cmd);
+  if (!byKey) inkCache.set(el.cmd, (byKey = new Map()));
+  const hit = byKey.get(el.key);
+  if (hit && hit.plotFn === plotFn) return hit;
+  const strokes = strokesFor(el.cmd, rngFrom(SESSION_SEED ^ hash(el.key + JSON.stringify(el.cmd))), plotFn);
+  const ink = { strokes, ds: strokes.map((s) => pathD(s.pts)), plotFn, box: boundsOf(strokes) };
+  byKey.set(el.key, ink);
+  return ink;
+}
+const plotOf = (el: BoardEl, plot: (fn: string) => PlotFn): PlotFn => (el.cmd.op === "plot" ? plot(el.cmd.fn) : null);
+
+const Strokes = memo(function Strokes({ ink, drawn }: { ink: Ink; drawn: number[] | null }) {
+  const { strokes, ds } = ink;
   return (
     <>
       {strokes.map((s, i) => {
@@ -69,7 +106,7 @@ const Strokes = memo(function Strokes({ strokes, drawn }: { strokes: Stroke[]; d
         return (
           <path
             key={i}
-            d={pathD(s.pts)}
+            d={ds[i]}
             fill="none"
             stroke={CHALK[s.color] ?? CHALK.ink}
             strokeWidth={s.width * 1.15}
@@ -84,21 +121,17 @@ const Strokes = memo(function Strokes({ strokes, drawn }: { strokes: Stroke[]; d
   );
 });
 
-function Element({ el, p, plot }: { el: BoardEl; p: number; plot: (fn: string) => PlotFn }) {
-  const plotFn = el.cmd.op === "plot" ? plot(el.cmd.fn) : null;
-  const strokes = useMemo(
-    () => strokesFor(el.cmd, rngFrom(SESSION_SEED ^ hash(el.key + JSON.stringify(el.cmd))), plotFn),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [el.key, JSON.stringify(el.cmd), plotFn],
-  );
-  const prog = p >= 1 ? null : progressOf(strokes, p);
+/** One board element. Memoized: finished elements (p = 1, same el, same plotFn) never re-render. */
+const Element = memo(function Element({ el, p, plotFn }: { el: BoardEl; p: number; plotFn: PlotFn }) {
+  const ink = inkFor(el, plotFn);
+  const prog = p >= 1 ? null : progressOf(ink.strokes, p);
   return (
     <g data-id={el.id} data-layer={el.layer}>
-      <Strokes strokes={strokes} drawn={prog ? prog.drawn : null} />
+      <Strokes ink={ink} drawn={prog ? prog.drawn : null} />
       {el.highlight && <Highlight el={el} />}
     </g>
   );
-}
+});
 
 /** Chalk circle drawn around an element (animates in once). */
 function Highlight({ el }: { el: BoardEl }) {
@@ -127,7 +160,8 @@ function Highlight({ el }: { el: BoardEl }) {
 }
 
 /** "Savolingiz" in chalk at the top of the side board (written once, same strokes every time). */
-const SIDE_LABEL = strokesFor({ op: "write", id: "_side", x: SIDE_BOARD.x + SIDE_PAD_X, y: SIDE_BOARD.y + 8, text: "Savolingiz", size: "s", color: "yellow" }, rngFrom(77));
+const SIDE_STROKES = strokesFor({ op: "write", id: "_side", x: SIDE_BOARD.x + SIDE_PAD_X, y: SIDE_BOARD.y + 8, text: "Savolingiz", size: "s", color: "yellow" }, rngFrom(77));
+const SIDE_LABEL: Ink = { strokes: SIDE_STROKES, ds: SIDE_STROKES.map((s) => pathD(s.pts)), plotFn: null, box: boundsOf(SIDE_STROKES) };
 
 /**
  * The side board for interruption answers: a small slate hanging over the main board's corner on
@@ -156,7 +190,7 @@ function SideBoard({ show, filter, at }: { show: boolean; filter: string; at?: {
       <rect x={x} y={y} width={w} height={h} rx={5} fill="#1a2b25" />
       <rect x={x} y={y} width={w} height={h} rx={5} fill="url(#side-sheen)" />
       <g filter={filter}>
-        <Strokes strokes={SIDE_LABEL} drawn={null} />
+        <Strokes ink={SIDE_LABEL} drawn={null} />
       </g>
       <line x1={x + SIDE_PAD_X} y1={y + 40} x2={x + w - SIDE_PAD_X} y2={y + 41} stroke={CHALK.yellow} strokeOpacity={0.35} strokeWidth={2} strokeLinecap="round" />
     </g>
@@ -168,18 +202,57 @@ export interface BoardInkProps {
   active?: { key: string; p: number } | null;
   /** report the chalk tip to the 3D tutor */
   reportTip?: boolean;
+  /**
+   * Which ink to draw (the lesson stage stacks them as separate layers so the finished writing is
+   * not re-filtered while one element is being written):
+   * - "all"  (default): everything, as one board (standalone <Board>)
+   * - "done": every element except the one being written (+ side board, wipes, eraser smudges)
+   * - "live": only the element being written + the chalk piece, with a filter sized to it
+   */
+  part?: "all" | "done" | "live";
+  /** with part "done": the key of the element being written (drawn by the "live" layer instead) */
+  exclude?: string | null;
 }
 
-export function BoardInk({ state, active, reportTip = false }: BoardInkProps) {
+/** The chalk look: rough edges, small gaps, a faint glow. Shared by every chalk filter. */
+function ChalkPrims() {
+  return (
+    <>
+      <feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="2" seed="3" result="n" />
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G" result="d" />
+      <feTurbulence type="fractalNoise" baseFrequency="2.6" numOctaves="1" seed="9" result="n2" />
+      <feColorMatrix in="n2" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -1.6 1.25" result="holes" />
+      <feComposite in="d" in2="holes" operator="in" result="chalk" />
+      {/* a subtle glow around the chalk (mockup v2) */}
+      <feGaussianBlur in="chalk" stdDeviation="1.8" result="blur" />
+      <feComponentTransfer in="blur" result="glow">
+        <feFuncA type="linear" slope="0.5" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode in="glow" />
+        <feMergeNode in="chalk" />
+      </feMerge>
+    </>
+  );
+}
+
+export function BoardInk({ state, active, reportTip = false, part = "all", exclude = null }: BoardInkProps) {
   const uid = useId().replace(/:/g, "");
   const plot = usePlotFns(state.els);
+  const showDone = part !== "live";
+  const showLive = part !== "done";
 
   // erased elements wipe out instead of vanishing
   const prev = useRef<Map<string, BoardEl>>(new Map());
   const [wiping, setWiping] = useState<BoardEl[]>([]);
   // erased main-board writing leaves a faint eraser smudge, like a real board (last 12 kept)
   const [smudges, setSmudges] = useState<{ k: string; x: number; y: number; w: number; h: number }[]>([]);
+  // wipe-out timers live until they fire: the board often changes again within the 520 ms (the
+  // lesson coming back after "Davom et"), and cancelling them then left erased writing on the board
+  const wipeTimers = useRef<number[]>([]);
+  useEffect(() => () => wipeTimers.current.forEach((t) => clearTimeout(t)), []);
   useEffect(() => {
+    if (!showDone) return;
     const now = new Map(state.els.map((e) => [e.key, e]));
     const gone = [...prev.current.values()].filter((e) => !now.has(e.key));
     prev.current = now;
@@ -188,20 +261,22 @@ export function BoardInk({ state, active, reportTip = false }: BoardInkProps) {
       setSmudges((sm) => [...sm, ...rubbed.map((e) => ({ k: `${e.key}-${sm.length}`, ...bbox(e.cmd) }))].slice(-12));
     if (gone.length) {
       setWiping((w) => [...w, ...gone]);
-      const t = setTimeout(() => setWiping((w) => w.filter((x) => !gone.includes(x))), 520);
-      return () => clearTimeout(t);
+      const t = window.setTimeout(() => {
+        wipeTimers.current = wipeTimers.current.filter((x) => x !== t);
+        setWiping((w) => w.filter((x) => !gone.includes(x)));
+      }, 520);
+      wipeTimers.current.push(t);
     }
-  }, [state.els]);
+  }, [state.els, showDone]);
 
-  // chalk tip of the element being written
-  const activeEl = active ? state.els.find((e) => e.key === active.key) : undefined;
+  // the element being written and its chalk tip
+  const activeEl = showLive && active && active.p < 1 ? state.els.find((e) => e.key === active.key) : undefined;
+  const activeInk = activeEl ? inkFor(activeEl, plotOf(activeEl, plot)) : null;
   const tip = useMemo(() => {
-    if (!activeEl || !active || active.p >= 1) return null;
-    const plotFn = activeEl.cmd.op === "plot" ? plot(activeEl.cmd.fn) : null;
-    const strokes = strokesFor(activeEl.cmd, rngFrom(SESSION_SEED ^ hash(activeEl.key + JSON.stringify(activeEl.cmd))), plotFn);
-    return progressOf(strokes, active.p).tip;
+    if (!activeInk || !active) return null;
+    return progressOf(activeInk.strokes, active.p).tip;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeEl?.key, activeEl?.cmd, active?.p]);
+  }, [activeInk, active?.p]);
 
   useEffect(() => {
     if (!reportTip) return;
@@ -220,63 +295,78 @@ export function BoardInk({ state, active, reportTip = false }: BoardInkProps) {
     [reportTip],
   );
 
-  const main = state.els.filter((e) => e.layer === "main");
-  const notes = state.els.filter((e) => e.layer === "note");
-  const hasNoteText = notes.some((e) => e.cmd.op === "write" || e.cmd.op === "latex");
+  // "all" draws the active element in place (as before); "done" leaves it to the live layer
+  const skip = part === "done" ? exclude : null;
+  const main = state.els.filter((e) => e.layer === "main" && e.key !== skip);
+  const notes = state.els.filter((e) => e.layer === "note" && e.key !== skip);
+  const hasNoteText = state.els.some((e) => e.layer === "note" && (e.cmd.op === "write" || e.cmd.op === "latex"));
+  const pOf = (el: BoardEl) => (part === "all" && active?.key === el.key ? active.p : 1);
+
+  // the live element gets its own filter, its region sized to its strokes (in user space, so the
+  // chalk noise is exactly the same as on the finished writing): re-filtering stays tiny per frame
+  const lb = activeInk?.box;
+  const live = part === "live" && activeEl && activeInk && lb && (
+    <g filter={`url(#chalk-live-${uid})`} opacity={activeEl.layer === "note" && state.noteDim ? 0 : 1}>
+      <Element el={activeEl} p={active!.p} plotFn={activeInk.plotFn} />
+    </g>
+  );
 
   return (
     <g>
       <defs>
-        <filter id={`chalk-${uid}`} x="-5%" y="-5%" width="110%" height="110%">
-          <feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="2" seed="3" result="n" />
-          <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G" result="d" />
-          <feTurbulence type="fractalNoise" baseFrequency="2.6" numOctaves="1" seed="9" result="n2" />
-          <feColorMatrix in="n2" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -1.6 1.25" result="holes" />
-          <feComposite in="d" in2="holes" operator="in" result="chalk" />
-          {/* a subtle glow around the chalk (mockup v2) */}
-          <feGaussianBlur in="chalk" stdDeviation="1.8" result="blur" />
-          <feComponentTransfer in="blur" result="glow">
-            <feFuncA type="linear" slope="0.5" />
-          </feComponentTransfer>
-          <feMerge>
-            <feMergeNode in="glow" />
-            <feMergeNode in="chalk" />
-          </feMerge>
-        </filter>
-        <radialGradient id="smudge-g" cx=".5" cy=".5" r=".5">
-          <stop offset="0" stopColor="#fff" stopOpacity=".07" />
-          <stop offset="1" stopColor="#fff" stopOpacity="0" />
-        </radialGradient>
-        <linearGradient id="side-sheen" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#fff" stopOpacity=".05" />
-          <stop offset=".5" stopColor="#fff" stopOpacity="0" />
-        </linearGradient>
+        {showDone && (
+          <filter id={`chalk-${uid}`} x="-5%" y="-5%" width="110%" height="110%">
+            <ChalkPrims />
+          </filter>
+        )}
+        {lb && part === "live" && (
+          <filter id={`chalk-live-${uid}`} filterUnits="userSpaceOnUse" x={lb.x - 24} y={lb.y - 24} width={lb.w + 48} height={lb.h + 48}>
+            <ChalkPrims />
+          </filter>
+        )}
+        {showDone && (
+          <>
+            <radialGradient id={`smudge-g-${uid}`} cx=".5" cy=".5" r=".5">
+              <stop offset="0" stopColor="#fff" stopOpacity=".07" />
+              <stop offset="1" stopColor="#fff" stopOpacity="0" />
+            </radialGradient>
+            <linearGradient id="side-sheen" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#fff" stopOpacity=".05" />
+              <stop offset=".5" stopColor="#fff" stopOpacity="0" />
+            </linearGradient>
+          </>
+        )}
       </defs>
-      {smudges.map((m) => (
-        <ellipse key={m.k} cx={m.x + m.w / 2} cy={m.y + m.h / 2} rx={m.w / 2 + 30} ry={m.h / 2 + 14} fill="url(#smudge-g)" />
-      ))}
-      <g filter={`url(#chalk-${uid})`}>
-        {main.map((el) => (
-          <Element key={el.key} el={el} p={active?.key === el.key ? active.p : 1} plot={plot} />
-        ))}
-      </g>
-      {/* the side board hangs OVER the main board; "Davom et" fades it and its notes away */}
-      <g opacity={state.noteDim ? 0 : 1} style={{ transition: "opacity 450ms" }}>
-        <SideBoard show={hasNoteText} filter={`url(#chalk-${uid})`} at={state.side} />
-        <g filter={`url(#chalk-${uid})`}>
-          {notes.map((el) => (
-            <Element key={el.key} el={el} p={active?.key === el.key ? active.p : 1} plot={plot} />
+      {showDone && (
+        <>
+          {smudges.map((m) => (
+            <ellipse key={m.k} cx={m.x + m.w / 2} cy={m.y + m.h / 2} rx={m.w / 2 + 30} ry={m.h / 2 + 14} fill={`url(#smudge-g-${uid})`} />
           ))}
-        </g>
-      </g>
-      <g filter={`url(#chalk-${uid})`}>
-        {wiping.map((el) => (
-          <g key={`w-${el.key}`} className="wipe-out">
-            <Element el={el} p={1} plot={plot} />
+          <g filter={`url(#chalk-${uid})`}>
+            {main.map((el) => (
+              <Element key={el.key} el={el} p={pOf(el)} plotFn={plotOf(el, plot)} />
+            ))}
           </g>
-        ))}
-      </g>
-      {tip && (
+          {/* the side board hangs OVER the main board; "Davom et" fades it and its notes away */}
+          <g opacity={state.noteDim ? 0 : 1} style={{ transition: "opacity 450ms" }}>
+            <SideBoard show={hasNoteText} filter={`url(#chalk-${uid})`} at={state.side} />
+            <g filter={`url(#chalk-${uid})`}>
+              {notes.map((el) => (
+                <Element key={el.key} el={el} p={pOf(el)} plotFn={plotOf(el, plot)} />
+              ))}
+            </g>
+          </g>
+          <g filter={`url(#chalk-${uid})`}>
+            {wiping.map((el) => (
+              <g key={`w-${el.key}`} className="wipe-out">
+                <Element el={el} p={1} plotFn={plotOf(el, plot)} />
+              </g>
+            ))}
+          </g>
+        </>
+      )}
+      {live}
+      {showLive && tip && (
         <g transform={`translate(${tip[0].toFixed(1)},${tip[1].toFixed(1)}) rotate(-35)`} aria-hidden>
           <rect x={-3} y={-22} width={9} height={26} rx={2} fill="#f4f1e8" opacity={0.95} />
           <circle cx={1} cy={2} r={3} fill="#fff" opacity={0.6} />
@@ -285,6 +375,7 @@ export function BoardInk({ state, active, reportTip = false }: BoardInkProps) {
     </g>
   );
 }
+
 
 /** Standalone chalkboard (its own <svg>). */
 export default function Board({ state, active, label, className }: BoardInkProps & { label?: string; className?: string; theme?: BoardTheme }) {

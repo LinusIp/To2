@@ -1056,3 +1056,46 @@ Notes:
 - `/tutors` uses the 2D "sig" cut-outs (not 3D renders), so it's unchanged by design.
 - M6 (in-app tone mapping, Tutor · animation session): retune after this lands; the sharp normals light differently.
 - The GLB cache-buster is `?v=<commit>`, so a release with these files fetches the new models.
+## ⚡ Lesson smoothness — stage render cost (#4 To2-Tutor · 2026-11-25, branch `fix/tutor-render`)
+From the 25 Nov problem report: the tutor's own logic costs little; the cost was in what gets redrawn every frame.
+- **Memo the static stage** (`ClassroomStage.tsx`): `Room`, the board background, the ledge and the light overlays are
+  memoized; `TutorCanvas` is `memo`. Board `Element` is `memo` and gets its resolved plot function, so finished elements
+  never re-render while one element is being written.
+- **Stroke cache** (`Board.tsx`): strokes + SVG path strings are computed once per element (WeakMap on the immutable cmd,
+  keyed by element key + plot fn). The chalk tip reuses it (it used to run `strokesFor()` again every frame).
+- **Isolated chalk filter** (`Board.tsx` `part="done" | "live"`): the stage is now stacked `<svg>` layers with the same
+  viewBox and board transform — back (room + board) · **done** (finished writing, side board, wipes, smudges) · **live** (the
+  element being written + chalk piece, with its own chalk filter whose region is just that element's strokes) · front
+  (ledge, vignette) · light (soft-light / screen blends on the `<svg>` elements). A browser repaints and re-filters a whole
+  `<svg>` when anything in it changes, so the finished writing is no longer re-filtered every frame. `<Board>` (standalone)
+  keeps `part="all"`.
+- **Adaptive pixel ratio** (`TutorCanvas.tsx` + `src/lib/anim/pixelRatio.ts`, unit-tested): canvas capped at 1.5× (was 2×);
+  steps down 0.25 when the smoothed rate stays under 50 fps for 1.5 s (floor 0.75), back up only after 4 s above 57 fps,
+  2.5 s cooldown after each change → no flicker; reset after the tab was hidden.
+- **Same look:** with a seeded `Math.random` the finished board screenshot was **byte-identical** after the stroke cache;
+  after the layer split 0.28 % of pixels differ by > 2/255 (soft-light gradient banding and the edges of the blurred
+  top-right buttons; no chalk stroke differs). Reduced motion is unchanged (it only drives the animator).
+- **Measure** (`node scripts/perf-lesson.mjs <base> [runs] [seconds]`): `/lesson/frac-add-unlike`, 390×844 phone, DPR 3,
+  headless Chromium with software GL (SwiftShader), CPU throttle 4×, TTS stubbed (0 credits, mock server), rAF frames over
+  12 s after "Darsni boshlash"; "no tutor" removes WebGL (TutorCanvas's no-WebGL path).
+  The machine was shared with other sessions' browsers, so single numbers swung ±30 %. The table is a **paired A/B** on the
+  same server (baseline `adeebb3` vs this branch, alternating, 4 pairs, median); the new version won **every** pair:
+
+  | fps (median of 4 pairs) | baseline | this branch |
+  |---|---|---|
+  | no tutor | 33.6 | **58.3** (+73 %) |
+  | with tutor | 10.1 | **12.0** (+19 %) |
+
+  First quiet-machine baseline: 6.4 fps with tutor / 27.7 without (≈ the report's 7 fps).
+- ⚠️ **What still limits the tutor:** its JS work is ~2 ms/frame (animator + render submit) and the pixel ratio already sits
+  at its 0.75 floor; the rest is the GPU process rasterizing the models in software. **Each tutor GLB has 234k–250k
+  triangles** (blokbek 233,925 · lola 250,313 · ziyo 238,514). A voxel character looks the same at ~5–20k (flat faces
+  decimate almost losslessly). 🔑 For To2-3D's re-export (#14): planar-decimate to ≤ 20k triangles per tutor. On a real
+  phone GPU this matters less than in SwiftShader, but it is the next big win.
+- 🐞 **Fixed on the way — erased writing could stay on the board ("ghost"):** the 520 ms wipe-out timer was cancelled
+  whenever the board changed again within those 520 ms (e.g. the lesson coming back after "Davom et"), so the erased
+  answer was never removed. Timers now live until they fire (cleared only on unmount). This was the e2e "bug 2" flake
+  (`answers.spec.ts` "'Davom et' brings the lesson back": 1 of 2 on the baseline files, 4 of 4 after the fix).
+- **Checks:** `pnpm vitest run` 333/333 (+8 pixel-ratio tests) · `tsc --noEmit` clean · `pnpm build` ok · e2e on my own
+  mock server (:5199, no `.dev.vars`, 0 credits): **26/26 passed** (the a11y "presets" test failed once in the first run
+  and passed on re-run: flaky, unrelated).
