@@ -333,6 +333,8 @@ export const t = {
     loading: "Savollar tayyorlanmoqda…",
     noQuestions: "Bu mavzu uchun savollar topilmadi.",
     question: (i: number, n: number) => `Savol ${i}/${n}`,
+    soundOn: "Ovozni yoqish",
+    soundOff: "Ovozni o'chirish",
     right: "To'g'ri!",
     wrong: (ans: string) => `Javob: ${ans}`,
     combo: (m: number) => `Kombo ×${m}`,
@@ -342,6 +344,8 @@ export const t = {
       height: (n: number) => `Minora: ${n} blok`,
       done: (n: number) => `Minorangiz ${n} blok balandlikda!`,
       fell: "Blok tushib ketdi — maslahatni o'qing.",
+      goal: (n: number) => `Maqsad: ${n} blok`,
+      goalReached: "Maqsadga yetdingiz!",
       placed: (m: number) => (m > 1 ? `Blok qo'yildi, kombo ×${m}!` : "Blok qo'yildi!"),
     },
     speed: {
