@@ -79,6 +79,36 @@ describe("question picking", () => {
   });
 });
 
+describe("G5: Uzbek decimal comma in the games", () => {
+  const DOT = /\d\.\d/;
+  it("pickQuestions shows 2,5 — never 2.5 — and the right choice is still accepted", () => {
+    const decimalSkills = ["dec-intro", "dec-add-sub", "dec-mul-div", "frac-to-dec", "pct-of-number"];
+    let decimals = 0;
+    for (let seed = 1; seed <= 25; seed++) {
+      for (const q of pickQuestions({ skillIds: decimalSkills, n: 10, rng: seeded(seed) })) {
+        for (const text of [q.q, q.hint, ...q.choices]) expect(DOT.test(text), `${q.skillId}: ${text}`).toBe(false);
+        if (q.choices.some((c) => /\d,\d/.test(c))) decimals++;
+        expect(checkAnswer(q.expect, q.choices[q.correct]).correct, q.q).toBe(true);
+        q.choices.forEach((c, i) => i !== q.correct && expect(checkAnswer(q.expect, c).correct, `${q.q} ${c}`).toBe(false));
+      }
+    }
+    expect(decimals).toBeGreaterThan(0); // the test really saw decimal answers
+  });
+  it("a dot decimal from a bank is turned into a comma", () => {
+    const q = toChoiceQuestion({ skillId: "dec-add-sub", q: "1.5 + 0.75 = ?", hint: "1.50 + 0.75", expect: { kind: "number", answer: "2.25" } }, seeded(2), "x")!;
+    expect(q.q).toBe("1,5 + 0,75 = ?");
+    expect(q.hint).toBe("1,50 + 0,75");
+    expect(q.choices[q.correct]).toBe("2,25");
+    for (const c of q.choices) expect(DOT.test(c), c).toBe(false);
+  });
+  it("memory faces use the comma", () => {
+    for (let seed = 1; seed <= 30; seed++)
+      for (const c of deal({ rng: seeded(seed) })) if (c.face.kind === "text") expect(DOT.test(c.face.text), c.face.text).toBe(false);
+    const bank = [{ id: "d", skillId: "frac-to-dec", label: "1/2 — 0.5", a: { kind: "text" as const, text: "1/2" }, b: { kind: "text" as const, text: "0.5" } }];
+    expect(deal({ bank, cards: 2, rng: seeded(1) }).map((c) => (c.face.kind === "text" ? c.face.text : "")).sort()).toEqual(["0,5", "1/2"]);
+  });
+});
+
 describe("memory match", () => {
   it("deals 12 cards = 6 pairs, prefers the requested skill", () => {
     const cards = deal({ skillIds: ["frac-intro"], rng: seeded(5) });

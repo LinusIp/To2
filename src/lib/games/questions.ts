@@ -7,6 +7,7 @@
 import { GENERATORS, type Problem, type Rng } from "@/data/problems";
 import { checkAnswer } from "@/lib/learning/checker";
 import type { Expect } from "@/lib/ai/schema";
+import { uzText } from "./scenes";
 
 export interface GameQuestion {
   id: string;
@@ -90,10 +91,10 @@ export function toChoiceQuestion(p: Omit<Problem, "key"> & { key?: string }, r: 
     right = ex.answer;
     wrong = distractorCandidates(ex.answer, r);
   }
-  const seen = new Set([right.replace(/\s+/g, "")]);
+  const seen = new Set([uzText(right).replace(/\s+/g, "")]);
   const picked: string[] = [];
   for (const w of wrong) {
-    const k = w.replace(/\s+/g, "");
+    const k = uzText(w).replace(/\s+/g, "");
     if (seen.has(k)) continue;
     if (checkAnswer(ex, w).correct) continue; // e.g. 2/4 vs 1/2 — would be "right" too
     seen.add(k);
@@ -101,8 +102,10 @@ export function toChoiceQuestion(p: Omit<Problem, "key"> & { key?: string }, r: 
     if (picked.length === 3) break;
   }
   if (picked.length < 1) return null; // some bank questions are 2-way ("which is bigger?")
-  const choices = shuffle(r, [right, ...picked]);
-  return { id, skillId: p.skillId, q: p.q, hint: p.hint, choices, correct: choices.indexOf(right), expect: ex };
+  // G5: what the learner sees uses the Uzbek decimal comma (2,5). The server checker accepts both, and
+  // `expect` stays as the bank wrote it, so the right choice is still re-checked correctly.
+  const choices = shuffle(r, [right, ...picked]).map(uzText);
+  return { id, skillId: p.skillId, q: uzText(p.q), hint: uzText(p.hint), choices, correct: choices.indexOf(uzText(right)), expect: ex };
 }
 
 /**

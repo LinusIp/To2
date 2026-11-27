@@ -3,6 +3,7 @@
 // Language course hook: when feat/languages lands, add pairs with kind "word" (word ↔ translation) here
 // or pass them in via `deal({ bank })`.
 import type { Rng } from "@/data/problems";
+import { uzText } from "./scenes";
 import { EN_PAIRS } from "@/config/courses/english/practice";
 
 export type Face =
@@ -101,9 +102,11 @@ export function deal(opts: { skillIds?: string[]; rng?: Rng; bank?: Pair[]; card
     faces.add(key(p.b));
     chosen.push(p);
   }
+  // G5: faces are shown with the Uzbek decimal comma ("0,5"), whatever the bank wrote
+  const uz = (f: Face): Face => (f.kind === "text" ? { kind: "text", text: uzText(f.text) } : f);
   const cards = chosen.flatMap((p) => [
-    { uid: `${p.id}:a`, pairId: p.id, face: p.a },
-    { uid: `${p.id}:b`, pairId: p.id, face: p.b },
+    { uid: `${p.id}:a`, pairId: p.id, face: uz(p.a) },
+    { uid: `${p.id}:b`, pairId: p.id, face: uz(p.b) },
   ]);
   return shuffle(cards);
 }
