@@ -207,12 +207,18 @@ Every agent works on a **new branch from `main` (`8061293`)** in its own worktre
 |---|---|---|---|
 | #14 To2-3D · tutor re-export | M1–M5, M8, then M7 (portrait re-light) — Blender job; writes `docs/3d/reexport-steps.md` if Blender isn't reachable | `fix/3d-reexport` | P1 — ✅ released in `2cfde8f` (3 tutors ~30k tris, 0 non-manifold, 54 AgX portraits) |
 | #5 To2-UI · design system & brand | U1 (5 tabs, Mukofotlar → Profil), U2 + C8 (shared bottom padding), C1 (greet on tap), C2 (bubble fallback + static greeting files, **no generation**), C3 (warm/export scripts read `characters.ts`) | `fix/ui-p1` | P1 — ✅ released in `2cfde8f` |
-| #5 (second batch) | C6, U3, U4, U6, G5/U7 (decimal comma outside games), C5 + C7 (page side) | `fix/ui-p3` | P3 — on hold until the orchestrator sends the go |
-| #4 To2-Tutor · animation | M6 (lighting / tone mapping), lesson smoothness (memo stage, stroke cache, isolated chalk filter, adaptive pixel ratio), C4 (3D tutor driver for the picker) | `fix/tutor-render` (needs a worktree — it used the main checkout before) | P2 — ✅ smoothness (`2cfde8f`) and M6 lighting (`4d3f272`) released; C4 (P3) waits for the go |
-| #10 To2-Games · arena & careers | Kasb sinovi scenes + ≥ 2 more jobs per subject (P2); G1–G4, G6, G7, G5 inside games (P3) | `feat/games-scenes` | P2 — ✅ released in `2cfde8f`; G1–G7 (P3) on hold |
+| #5 (second batch) | C6, U3, U4, U6, G5/U7 (decimal comma outside games), C5 + C7 (page side) | `fix/ui-p3` | P3 — started 27 Nov (C5–C7 with a portrait hero, then swap in #4's TutorHero; U3, U4, U6, comma outside games) |
+| #4 To2-Tutor · animation | M6 (lighting / tone mapping), lesson smoothness (memo stage, stroke cache, isolated chalk filter, adaptive pixel ratio), C4 (3D tutor driver for the picker) | `fix/tutor-render` (needs a worktree — it used the main checkout before) | P2 ✅ (`2cfde8f`, `4d3f272`) · P3 started 27 Nov on `feat/tutor-hero`: C4 TutorHero component + back button over the tutor's head |
+| #10 To2-Games · arena & careers | Kasb sinovi scenes + ≥ 2 more jobs per subject (P2); G1–G4, G6, G7, G5 inside games (P3) | `feat/games-scenes` | P2 ✅ (`2cfde8f`) · P3 started 27 Nov on `feat/games-p3`: G1–G4, G6, G7, G5 in games |
 | #11 To2-Access · inclusive mode | real text scaling, voice-first + hands-free in games, motor → untimed, typed board, self-hosted Lexend, profile-card UI | `feat/inclusive-2` | P2 — ✅ released (`2cfde8f`), typed board released in `4d3f272` |
 
-**Ownership rules for this round:**
+**Ownership rules for P3 (27 Nov):**
+- #4 builds `TutorHero` (live 3D tutor) and never edits the picker pages; #5 places it in TutorPicker after it's merged.
+- #10 may change `GameKit.tsx` / Choices for G3, but must keep #11's hooks (`GameVoice`, `to2:voice` answers, memory "karta N", untimed mode, calm mode) and a11y/inclusive2 e2e green.
+- Decimal comma: #10 inside `src/components/games` + `src/lib/games`; #5 everywhere else.
+- Games use full-body renders, not the live 3D tutor.
+
+**Ownership rules for this round (P1/P2):**
 - `AppShell.tsx` belongs to #5 only.
 - `LessonPlayer.tsx` / `ClassroomStage.tsx`: #4 goes first (smoothness); #11 asks the orchestrator before editing them.
 - `TutorCanvas.tsx` belongs to #4; #5 only places it on the picker page.
