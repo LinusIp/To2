@@ -45,6 +45,8 @@ export interface AnimInput {
   focusY: number;
   /** bump to play the praise move */
   praiseCount: number;
+  /** bump to wave hello (any tutor; the picker hero waves when a tutor is selected). Optional. */
+  waveCount?: number;
   /**
    * stage x to stand at while NOT writing (talking, idle, listening): chosen so the tutor covers no
    * writing (src/lib/board/tutorSpot.ts). NaN → the view's default frontX.
@@ -135,8 +137,11 @@ export class TutorAnimator {
   tip3 = { x: 0, y: 0 };
 
   // layers / timers
+  /** the move being played now: the tutor's own praise move, or "wave" for a hello */
   private praiseStyle: PraiseStyle;
+  private ownPraise: PraiseStyle;
   private praiseSeen: number;
+  private waveSeen = 0;
   private praiseReqAt = -1e9;
   private praiseT0 = -1e9;
   private focusSeen: number;
@@ -162,7 +167,7 @@ export class TutorAnimator {
   constructor(ch: VoxelChar, id: string, view: AnimView, opts?: { rand?: () => number }) {
     this.ch = ch;
     this.rnd = opts?.rand ?? Math.random;
-    this.praiseStyle = PRAISE[id] ?? "jump";
+    this.praiseStyle = this.ownPraise = PRAISE[id] ?? "jump";
     this.headPitchMax = (id === "lola" ? 8 : 12) * DEG;
     this.x = this.walkTarget = view.frontX;
     // stride (px of travel per radian of walk phase) from leg length: one cycle = two steps of
@@ -181,6 +186,7 @@ export class TutorAnimator {
   /** Sync the event counters without triggering (call once after the first input fill). */
   prime(inp: AnimInput) {
     this.praiseSeen = inp.praiseCount;
+    this.waveSeen = inp.waveCount ?? 0;
     this.focusSeen = inp.focusCount;
   }
 
@@ -213,6 +219,14 @@ export class TutorAnimator {
     if (inp.praiseCount !== this.praiseSeen) {
       this.praiseSeen = inp.praiseCount;
       this.praiseReqAt = t;
+      this.praiseStyle = this.ownPraise;
+    }
+    // a hello wave plays through the praise slot (same crossfade, arm wave layer, timing)
+    if ((inp.waveCount ?? 0) !== this.waveSeen) {
+      this.waveSeen = inp.waveCount ?? 0;
+      this.praiseReqAt = t;
+      this.praiseT0 = -1e9; // restart even if a move is playing
+      this.praiseStyle = "wave";
     }
     if (inp.focusCount !== this.focusSeen) {
       this.focusSeen = inp.focusCount;

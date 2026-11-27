@@ -1216,3 +1216,67 @@ every preset shows the same pose. `node scripts/tutor-sheet.mjs` builds the shee
 - **Seen, not fixed:** before a lesson starts, the back button sits over the tutor's head on phones (all 3 tutors). Candidate for P3.
 - **Problem-report status:** P1 and P2 done. P3 is waiting for the user's go: #5 (C5–C7, U3, U4, U6, comma outside games),
   #10 (G1–G4, G6, G7, G5 in games), #4 (C4: 3D tutor on the picker).
+
+## 🧍 C4 TutorHero + lesson back button (#4 To2-Tutor · 2026-11-28, branch `feat/tutor-hero`)
+**TutorHero** (`src/components/characters/TutorHero.tsx`): the selected tutor, large and live in 3D (CLAUDE.md §6: "idle
+animation, waves on select"), for #5 to place on the picker / onboarding. I did not touch `TutorPicker.tsx`, onboarding or
+`/tutors`.
+
+```tsx
+import TutorHero from "@/components/characters/TutorHero";
+import { speak, type Speech } from "@/lib/audio/player";
+
+const [wave, setWave] = useState(0);              // +1 whenever the learner selects a tutor
+const [speech, setSpeech] = useState<Speech | null>(null);
+// greeting: setSpeech(speak(ch.hi, ch.id, { … same options as now … }))
+<TutorHero id={characterId} speaking={speech} wave={wave} className="w-[240px]" />
+```
+
+| prop | type | what it does |
+|---|---|---|
+| `id` | `string` | Tutor id. Non-playable ids fall back like everywhere else (`getCharacter`). Changing it loads that model. |
+| `speaking` | `Speech \| null` | The `Speech` that plays this tutor's greeting. While it plays, the mouth follows the real audio (the shared lip-sync amplitude, or the caption envelope for muted / captions-only lines). It returns to idle by itself when the speech ends. |
+| `wave` | `number` | Change it (for example +1 on select) to wave hello. It doesn't wave on mount. Calm mode and `prefers-reduced-motion` → no wave, no bounce (idle only). |
+| `className`, `style` | | Size it like an image. The frame is 3:4, transparent, with the feet on a floor line with a soft shadow, the whole body in frame and room for the raised arm. Give it a width; the height follows. |
+
+- **One canvas.** It reuses the lesson's `TutorCanvas`: same animator, springs, lights (Neutral, M6), adaptive pixel ratio
+  ≤ 1.5, paused when the tab is hidden. Mounted only while on screen (IntersectionObserver, 120 px margin), unmounted when it
+  scrolls away.
+- **Fallback:** the static portrait (`<id>_idle_full`) shows until the 3D model has drawn its first frames, then
+  cross-fades (300 ms). It stays if WebGL is missing or the GLB fails.
+- **Animator:** a new optional input, `waveCount`, plays the wave for any tutor through the praise slot (same crossfade, the
+  3 Hz elbow wave layer).
+- **Demo** (dev only, 404 in production): `/dev/hero`. Tutor buttons (select = wave), "Qo'l silkit" (wave), "Gapir" (the
+  greeting, *muted*: the mouth follows the caption text, so 0 credits), and a calm toggle.
+- **Checked with `scripts/hero-shots.mjs`** at 360 and 375 for all 3 tutors, reading the rig state, not just pixels:
+  - the 3D model replaced the portrait (`data-ready=1`);
+  - the animator is `idle` at rest, `praise` (the wave) after the wave button, and `talk` with an open mouth frame while
+    talking;
+  - in calm mode the wave button leaves it `idle`.
+
+  Screenshots are in `docs/screenshots/tutor-hero/`: `hero-<w>-<id>-{idle,wave,talk}.png` and `lesson-start-<w>-<id>.png`.
+
+**Back button over the tutor's head (phones, before a lesson starts) — fixed on the stage side** (`TutorCanvas.tsx`;
+`LessonPlayer.tsx` untouched):
+- The canvas measures the links and buttons drawn over the stage (once a second and on resize, lesson only, never
+  hard-coded), in stage coordinates.
+- The tutor's rest spot then moves just far enough that his head (hair included: a ±125 × 500–790 rig-px box) clears them,
+  and still covers no writing. He starts at that spot (no walk-in).
+- Measured at 360 and 375 for all 3 tutors: x moves from 384 to 584–592. The head's left edge is at 68 css px; the back
+  button's right edge is at 60.
+- Desktop and tablet have no overlay, so nothing changes there.
+- **Checks:** `pnpm vitest run` 347/347 · `tsc --noEmit` clean · `pnpm build` ok · e2e on my own mock server (:5199, no
+  `.dev.vars`, 0 credits): **39/39 passed** in one run.
+
+
+## 🚀 Release 8c87d18 (orchestrator, 27 Nov) — P3 part 1: TutorHero + back button
+**LIVE: `8c87d18`.** Merged `feat/tutor-hero` (#4): `TutorHero` (a live 3D tutor for the picker: idle, wave, lip-sync, portrait fallback;
+demo at `/dev/hero`, 404 in production). The lesson tutor's rest spot now keeps his head clear of the back button on phones
+(at 360/375, all 3 tutors). TutorHero isn't used in production yet; #5 swaps it into the picker in `fix/ui-p3`.
+- **Checks:** tsc · vitest 347/347 · build · e2e 39/39 · production routes 200 · demo-check --no-gen 72/72 cached-v2.
+- **VoiceLab spend (Tashkent 28 Nov):** 876.5 = 242 (approved locked greetings, warm) + **634.5 from a real learner session**:
+  a Lola LLM lesson "Oddiy kasrlarni o'nli kasrlarga…" at 07:31 UTC, 12 lines on lison-v2 via the player's prefetch. A similar Lola
+  "fotosintez" session ran on 26 Nov. No agent made these calls; agents only use cached lines. Normal app use of non-demo lessons
+  generates voice. That's within caps (warn 15k / hard 60k), but worth knowing for the budget.
+- **#10 (games P3):** WIP only (`4a0b681` on `feat/games-p3`: shared sfx, +XP, full-body tutor, Blok minorasi building site). Its session
+  hit its usage limit. Not merged; Tezkor hisob, Juftini top, G5 and e2e are still open.

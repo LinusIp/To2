@@ -9,7 +9,7 @@ import { boardFocus, boardTip, tutorGate } from "@/lib/board/tip";
 import { mouth } from "@/lib/audio/lipsync";
 import { useLesson } from "@/lib/lesson/engine";
 import type { AnimInput, TutorAnimator } from "./anim/animator";
-import { restSpot, type Box } from "@/lib/board/tutorSpot";
+import { covered, restSpot, type Box } from "@/lib/board/tutorSpot";
 import { measure } from "@/lib/board/layout";
 import { SIDE_BOARD, type BoardState } from "@/lib/board/model";
 import { useA11y } from "@/lib/a11y/settings";
@@ -63,10 +63,63 @@ function boardBoxes(b: BoardState): Box[] {
   }
   return boxes;
 }
-// the talking spot is recomputed only when the board or the view changes
+// the talking spot is recomputed only when the board, the view or the controls over the stage change
 let spotBoard: BoardState | null = null;
 let spotKey = "";
 let spotX = NaN;
+
+/**
+ * Controls drawn OVER the stage (on phones: the back button top-left, the tools top-right), in stage
+ * coordinates. Measured from the DOM by the canvas (once a second + on resize), never hard-coded.
+ */
+let controls: Box[] = [];
+let controlsVer = 0;
+/** the tutor's head incl. hair, rig px relative to the feet (GLB tutors ~750 tall, head block ~240) */
+const HEAD = { halfW: 125, from: 500, to: 790 };
+const headHits = (x: number, s: number, cs: Box[]) => {
+  const l = x - HEAD.halfW * s;
+  const r = x + HEAD.halfW * s;
+  const t = FLOOR - HEAD.to * s;
+  const b = FLOOR - HEAD.from * s;
+  return cs.some((c) => c.x < r && c.x + c.w > l && c.y < b && c.y + c.h > t);
+};
+/**
+ * The rest spot, moved just far enough that the tutor's head is not under a control (the lesson's
+ * back button sat on the tutor's head on phones). Prefers a spot that still covers no writing.
+ */
+function clearOfControls(x0: number, boxes: Box[], view: TutorView): number {
+  if (!controls.length || !headHits(x0, view.s, controls)) return x0;
+  const hw = 210 * view.s; // tutorSpot's TUTOR_HALF_W
+  const lo = view.x0 + hw * 0.3;
+  const hi = view.x0 + view.w - hw;
+  let fallback = NaN;
+  for (let d = 8; d < view.w; d += 8)
+    for (const x of [x0 + d, x0 - d]) {
+      if (x < lo || x > hi || headHits(x, view.s, controls)) continue;
+      if (covered(x, boxes, view) === 0) return x;
+      if (Number.isNaN(fallback)) fallback = x;
+    }
+  return Number.isNaN(fallback) ? x0 : fallback;
+}
+/** Measure the links/buttons over the stage (`stage` = the stage element) into `controls`. */
+function measureControls(stage: Element, view: TutorView) {
+  const sr = stage.getBoundingClientRect();
+  if (sr.width < 1 || sr.height < 1) return;
+  const next: Box[] = [];
+  for (const el of document.querySelectorAll("a[href], button")) {
+    if (stage.contains(el)) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 1 || r.right <= sr.left || r.left >= sr.right || r.bottom <= sr.top || r.top >= sr.bottom) continue;
+    // stage coordinates, padded 6 css px
+    const k = view.w / sr.width;
+    next.push({ x: view.x0 + (r.left - 6 - sr.left) * k, y: view.y0 + (r.top - 6 - sr.top) * k, w: (r.width + 12) * k, h: (r.height + 12) * k });
+  }
+  const same = next.length === controls.length && next.every((b, i) => Math.abs(b.x - controls[i].x) < 2 && Math.abs(b.y - controls[i].y) < 2);
+  if (!same) {
+    controls = next;
+    controlsVer++;
+  }
+}
 
 /** Fill the animator input from the live lesson (the default driver). */
 function lessonDriver(inp: AnimInput, view: TutorView) {
@@ -85,13 +138,14 @@ function lessonDriver(inp: AnimInput, view: TutorView) {
   inp.focusX = boardFocus.x;
   inp.focusY = boardFocus.y;
   inp.praiseCount = st.celebrate;
-  const key = `${view.x0},${view.w},${view.s}`;
+  const key = `${view.x0},${view.w},${view.s},${controlsVer}`;
   if (st.board !== spotBoard || key !== spotKey) {
     spotBoard = st.board;
     spotKey = key;
-    spotX = restSpot(boardBoxes(st.board), view);
+    const bb = boardBoxes(st.board);
+    spotX = clearOfControls(restSpot(bb, view), bb, view);
   }
-  inp.restX = spotX; // while talking: at the board's left edge, never in front of writing
+  inp.restX = spotX; // while talking: at the board's left edge, never in front of writing or under a button
 }
 
 export default memo(function TutorCanvas({
@@ -199,13 +253,22 @@ export default memo(function TutorCanvas({
         ren.setSize(Math.max(1, r.width), Math.max(1, r.height), false);
       };
       fit();
-      const ro = new ResizeObserver(fit);
+      // lesson only: keep the tutor's head out from under the controls over the stage (measured, not hard-coded)
+      const stageEl = canvas.parentElement;
+      const ctl = driverRef.current === lessonDriver && stageEl ? () => measureControls(stageEl, viewRef.current) : null;
+      ctl?.();
+      const ctlTimer = ctl ? window.setInterval(ctl, 1000) : 0;
+      const ro = new ResizeObserver(() => {
+        fit();
+        ctl?.();
+      });
       ro.observe(canvas);
 
       const anim = new A.TutorAnimator(ch, characterId, viewRef.current);
       const inp = A.newInput();
       driverRef.current(inp, viewRef.current);
       anim.prime(inp);
+      if (Number.isFinite(inp.restX)) anim.x = inp.restX; // start where it will stand, no walk-in
       const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
       const onMq = () => (anim.reducedMotion = mq.matches || useA11y.getState().calm); // + the calm mode
       onMq();
@@ -265,6 +328,11 @@ export default memo(function TutorCanvas({
         mq.removeEventListener("change", onMq);
         offCalm();
         ro.disconnect();
+        clearInterval(ctlTimer);
+        if (ctl) {
+          controls = [];
+          controlsVer++;
+        }
         ch?.dispose();
         ren.dispose();
       };
