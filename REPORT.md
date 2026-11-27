@@ -1099,3 +1099,15 @@ From the 25 Nov problem report: the tutor's own logic costs little; the cost was
 - **Checks:** `pnpm vitest run` 333/333 (+8 pixel-ratio tests) · `tsc --noEmit` clean · `pnpm build` ok · e2e on my own
   mock server (:5199, no `.dev.vars`, 0 credits): **26/26 passed** (the a11y "presets" test failed once in the first run
   and passed on re-run: flaky, unrelated).
+
+## ♿ #11 To2-Access — typed board inside Board.tsx (27 Nov, branch `feat/typed-board` from `2cfde8f`; NOT deployed)
+- ✅ With `<html data-typed-board>` (typed-board option; dyslexia and vision profiles), board writing (`write`/`latex`) is clear Lexend `<text>` in place of handwriting.
+  - Placement: same position, cap height and baseline; fitted to the handwriting's width so it never overlaps; fades in while the chalk writes.
+  - Where: `src/components/board/typed.tsx` + `typedText.ts`. Board.tsx gets +11 lines in `Element`, so it works in both #4's "done" and "live" layers.
+  - Untouched: shapes, fraction bars, highlights, wipes and wipe timers, the stroke cache, the filter layers, the chalk tip / tutor IK, and ClassroomStage.
+- ✅ Off = byte-identical: `scripts/perf-lesson.mjs <base> shot` (seeded finished board) gives the same SHA-256 for main's Board.tsx and the new one (two runs each).
+- Tests:
+  - vitest 347 (+ `typed.test.ts`); tsc clean; build green.
+  - e2e: `inclusive2.spec` adds typed board ON at 360/375 (Lexend `<text>`, no overflow, screenshots `docs/screenshots/inclusive-2/typed-board-*.png`) and OFF (no `<text>`).
+  - 0 VoiceLab credits.
+- Note: the chalk filter group still applies to the typed text (Board's filter layers are #4's, left as they are). At these sizes it stays sharp; a filter-free typed layer would need a new layer in Board.tsx.

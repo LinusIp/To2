@@ -4,45 +4,11 @@
 // handwriting. Shapes, fraction bars, highlights, wipes, timing and the stroke cache are unchanged:
 // Board.tsx still computes the strokes (the chalk tip and the tutor's arm follow them), it only swaps
 // what a write/latex element paints. Off = Board renders exactly as before.
-import { useSyncExternalStore } from "react";
 import type { BoardEl } from "@/lib/board/model";
 import { FONT_PX, LINE_GAP } from "@/lib/board/model";
+import { plainMath } from "./typedText";
 
-const ATTR = "data-typed-board";
-const subs = new Set<() => void>();
-let observer: MutationObserver | null = null;
-
-function subscribe(cb: () => void) {
-  subs.add(cb);
-  if (!observer && typeof document !== "undefined") {
-    observer = new MutationObserver(() => subs.forEach((f) => f()));
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: [ATTR] });
-  }
-  return () => {
-    subs.delete(cb);
-  };
-}
-const isTyped = () => typeof document !== "undefined" && document.documentElement.hasAttribute(ATTR);
-
-/** true while the typed-board option is on (live: toggling it re-renders only board elements) */
-export const useTypedBoard = () => useSyncExternalStore(subscribe, isTyped, () => false);
-
-/** elements that are writing (the rest — shapes, bars, plots — stay as chalk strokes) */
-export const isTypedOp = (el: BoardEl) => el.cmd.op === "write" || el.cmd.op === "latex";
-
-/** latex → plain readable math ("\frac{1}{2} \cdot 3" → "1/2 · 3") */
-export function plainMath(tex: string): string {
-  return tex
-    .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, "$1/$2")
-    .replace(/\\sqrt\{([^}]*)\}/g, "√$1")
-    .replace(/\\(cdot|times)/g, "·")
-    .replace(/\\pi/g, "π")
-    .replace(/\^\{?2\}?/g, "²")
-    .replace(/\^\{?3\}?/g, "³")
-    .replace(/[{}\\]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+export { isTypedOp, plainMath, useTypedBoard } from "./typedText";
 
 // Lexend: cap height ≈ 0.70 em, average advance ≈ 0.56 em (Latin text + digits)
 const CAP_EM = 0.7;
