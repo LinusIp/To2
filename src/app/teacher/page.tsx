@@ -1,6 +1,7 @@
 "use client";
 // Task #4 (teacher assistant) — B2B story. Class weak-point heatmap on SAMPLE data + one-click practice set.
 // TODO(team): connect to a real class (teacher accounts + class codes) after the hackathon.
+import { uzDecimal } from "@/lib/format/uzNum";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Printer, Sparkles } from "lucide-react";
@@ -111,14 +112,14 @@ export default function TeacherPage() {
           </h2>
           <ol className="mt-3 flex flex-col gap-2 pl-6 text-[16px] font-bold">
             {set.map((p) => (
-              <li key={p.key}>{p.q}</li>
+              <li key={p.key}>{uzDecimal(p.q)}</li>
             ))}
           </ol>
           <details className="mt-3">
             <summary className="cursor-pointer text-[14px] font-extrabold">Javoblar (o&apos;qituvchi uchun)</summary>
             <ol className="mt-2 pl-6 text-[14px] font-bold">
               {set.map((p) => (
-                <li key={p.key}>{p.expect.answer}</li>
+                <li key={p.key}>{uzDecimal(p.expect.answer)}</li>
               ))}
             </ol>
           </details>

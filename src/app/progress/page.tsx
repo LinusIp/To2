@@ -76,7 +76,7 @@ export default function ProgressPage() {
             </div>
           </div>
           <div className="px-4 pt-4 pb-4">
-            <Progress value={user.xpInLevel} max={user.xpPerLevel} label="XP" color="linear-gradient(90deg,#ffc42e,#f59e0b)" height={14} />
+            <Progress value={user.xpInLevel} max={user.xpPerLevel} label="XP" color="#f5b10a" height={14} />
             <div className="t-small mt-2 flex justify-between text-mut">
               <span className="font-black text-ink">
                 <CountUp value={user.xpInLevel} /> / {user.xpPerLevel} XP

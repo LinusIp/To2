@@ -1,4 +1,5 @@
 "use client";
+import { uzDecimal } from "@/lib/format/uzNum";
 import { useEffect, useRef, useState } from "react";
 import type { Expect } from "@/lib/ai/schema";
 import { t } from "@/i18n/uz";
@@ -44,7 +45,7 @@ export default function AnswerInput({
               onClick={() => setPick(c)}
             >
               <i>{LETTERS[i]}</i>
-              <span className="font-chalk text-[20px]">{c}</span>
+              <span className="font-chalk text-[20px]">{uzDecimal(c)}</span>
             </button>
           ))}
         </div>
@@ -69,7 +70,7 @@ export default function AnswerInput({
       }}
     >
       <div className="flex items-center gap-3">
-        {before && <label htmlFor="ans" className="font-chalk text-[24px] whitespace-nowrap">{before}</label>}
+        {before && <label htmlFor="ans" className="font-chalk text-[24px] whitespace-nowrap">{uzDecimal(before)}</label>}
         <input
           ref={ref}
           id="ans"
@@ -82,7 +83,7 @@ export default function AnswerInput({
           aria-label={t.lesson.answer}
           className={`field min-w-0 flex-1 text-center font-chalk text-[24px] ${wrong ? "border-red" : ""}`}
         />
-        {after && <span className="font-chalk text-[24px] whitespace-nowrap">{after}</span>}
+        {after && <span className="font-chalk text-[24px] whitespace-nowrap">{uzDecimal(after)}</span>}
       </div>
       <button type="submit" disabled={disabled || !v.trim()} className="btn btn-primary w-full">
         {t.lesson.check}
