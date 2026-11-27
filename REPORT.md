@@ -1146,3 +1146,49 @@ card can now be tapped to say hello (still not selectable), and greet() no longe
   lison, 54/44/60/54/30 per tutor. All 8 greetings are now cached, and all 8 static files return 200.
 - **Checks:** tsc · vitest 345/345 · build · e2e 35/36 + the a11y "presets" test passed 3/3 on rerun (flaky, unrelated) ·
   demo-check --no-gen ×3: 72/72 cached-v2.
+## 💡 M6 — tutor lighting / tone mapping (#4 To2-Tutor · 2026-11-27, branch `fix/tutor-light`)
+**Perf re-check on the new models first** (To2-3D's re-export: ~30k triangles each, was 234k–250k). Same paired A/B as
+above (`scripts/perf-lesson.mjs`, 390 px, CPU 4×, software GL, 4 pairs, median; baseline = the 3 stage files at `adeebb3`):
+
+| fps, new models | baseline files | current (`2cfde8f`) |
+|---|---|---|
+| with tutor | 16.3 | **29.1** |
+| no tutor | 27.7 | **42.1** |
+
+With the tutor, the same code went from 12.0 fps (old 240k-triangle models) to 29.1. The machine was busy again (absolute numbers
+lower than on a quiet machine), but every pair favoured the current code.
+
+**The problem:** the baked textures already contain painted shading, and three.js added a strong warm key + hemisphere through
+ACES on top, so the shading looked doubled, skin went washed-out yellow and dark clothes went flat.
+
+**The change (`TutorCanvas.tsx` only; `voxel.ts addLights` is untouched, the makeChar portraits still use it):**
+- The lesson gets its own light rig, with the same directions (window key from the left, cool fill from the right, rim from behind).
+- **Neutral tone mapping** (was ACES), exposure 1.18.
+- **Raised hemisphere** 1.45π (was 0.95π), with near-white colours instead of the warm ones: sky `#f7f6f3`, ground `#8a8580`.
+- **Softer key** 0.6π (was 1.25π) in a neutral-warm `#fff3e4` (was `#ffe0b5`). Fill 0.32π, rim 0.4π.
+- Dev only: `?light=aces|neutral|agx` switches presets (`aces` = the old rig). Production always uses `neutral`.
+
+**Choice, at 375×812 in the lesson, compared with the Blender portraits (AgX "Medium High Contrast")** —
+`docs/screenshots/tutor-light/`:
+- `aces-<id>.png` = before, `neutral-<id>.png` = after.
+- `sheet.png`: columns before | after | Blender portrait.
+- `sheet-presets.png`: ACES | Neutral (an earlier, cooler tuning) | AgX | portrait.
+
+Findings:
+- **ACES:** yellow, washed-out skin; the black hoodie goes greyish; doubled shading on the sleeves.
+- **three.js AgX:** it is the base look without "Medium High Contrast", so everything turns grey and desaturated — the same
+  thing the portrait pipeline saw.
+- **Neutral + the soft rig** is the closest match: peach skin, Lola's pinks and Ziyo's green like the portraits, and a black
+  hoodie that keeps its folds.
+- The first Neutral tuning (cool sky) tinted the black hoodie blue, so the final rig uses near-white light. The portraits are
+  still a touch lighter overall.
+
+Screenshots: `node scripts/tutor-shots.mjs <dev base> <dir> [preset]` freezes the animation clock after the model settles, so
+every preset shows the same pose. `node scripts/tutor-sheet.mjs` builds the sheet.
+
+**Checks:** `pnpm vitest run` 345/345 · `tsc --noEmit` clean · `pnpm build` ok · e2e on my own mock server (:5199, 0 credits):
+34/36 in the full run.
+- The a11y quiz contrast test then passed on re-run (it flakes when it catches the colour mid fade-in).
+- ⚠️ `a11y.spec.ts` "presets switch the app modes on" **fails consistently** on `2cfde8f`: after the vision + focus presets,
+  three of the expected `<html data-*>` flags are missing. It never opens the lesson or the 3D tutor, and this branch only
+  changes the tutor's lights, so it comes from the inclusive-2 merge. 🔑 For #11.
