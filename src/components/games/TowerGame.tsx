@@ -7,7 +7,7 @@
 // 10 questions; height = score. Keys 1–4 / voice "javob n" answer (Choices → GameVoice); calm = no motion.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { t } from "@/i18n/uz";
-import { GameFrame, Chip, Choices, EndCard, FullTutor, Bubble } from "@/components/games/GameKit";
+import { GameFrame, Choices, EndCard, FullTutor, Bubble } from "@/components/games/GameKit";
 import { useRound } from "@/components/games/useRound";
 import { fetchQuestions, reportQuestion, saveBest, useGameSettings, type GameSettings } from "@/lib/games/client";
 import { TOWER_QUESTIONS, comboMultiplier, towerAnswer, towerStart, type TowerState } from "@/lib/games/scoring";
@@ -72,9 +72,9 @@ function Site({ blocks, height, pending, falling, calm, tutor, act }: { blocks: 
           <rect key={i} x={-600 + i * 40 + (i % 3) * 7} y={GROUND + 18 + (i % 4) * 12} width={10} height={8} fill="#6e4520" />
         ))}
         {/* goal line */}
-        <path d={`M${TX - 90} ${goalY}H${TX + 140}`} stroke="#c2410c" strokeWidth={3} strokeDasharray="8 6" />
-        <rect x={TX + 96} y={goalY - 22} width={70} height={18} rx={4} fill="#c2410c" />
-        <text x={TX + 131} y={goalY - 9} textAnchor="middle" fontSize={11} fontWeight={900} fill="#fff">
+        <path d={`M${TX - BW / 2 - 100} ${goalY}H${TX + 120}`} stroke="#c2410c" strokeWidth={3} strokeDasharray="8 6" />
+        <rect x={TX - BW / 2 - 100} y={goalY - 22} width={92} height={18} rx={4} fill="#c2410c" />
+        <text x={TX - BW / 2 - 54} y={goalY - 9} textAnchor="middle" fontSize={11} fontWeight={900} fill="#fff">
           {t.games.tower.goal(GOAL)}
         </text>
         {/* scaffold behind the tower */}
@@ -101,6 +101,10 @@ function Site({ blocks, height, pending, falling, calm, tutor, act }: { blocks: 
           return <Voxel key={i} x={TX - BW / 2} y={y} w={BW} h={m * BLOCK - 2} color={m === 3 ? GOLD3 : m === 2 ? GOLD : COLORS[i % COLORS.length]} label={m > 1 ? `×${m}` : undefined} className={isNew && !calm ? "vx-g-drop" : undefined} />;
         })}
         {falling != null && <Voxel key={`f-${falling}`} x={TX - BW / 2} y={top - BLOCK} w={BW} h={BLOCK - 2} color="#8a90a8" label={falling} className="vx-g-fall" />}
+        <rect x={TX + BW / 2 + 14} y={GROUND + 14} width={62} height={20} rx={5} fill="#5b3a1a" />
+        <text x={TX + BW / 2 + 45} y={GROUND + 28} textAnchor="middle" fontSize={12} fontWeight={900} fill="#ffe7a3" data-testid="tower-height">
+          {t.games.tower.blocks(height)}
+        </text>
         {/* the tutor stands on the ground (full-body render) */}
         <foreignObject x={6} y={GROUND - 168} width={120} height={170}>
           <FullTutor id={tutor.id} pose={tutor.pose} act={calm ? null : act} className="h-[170px] w-[120px]" />
@@ -221,7 +225,7 @@ export default function TowerGame({ settings }: { settings?: GameSettings }) {
   const pending = !s.done && q ? (picked == null ? "?" : null) : null;
 
   return (
-    <GameFrame bleed title={t.games.tower.name} calm={calm} announce={announce} testId="game-tower" xp={xp} xpFly={fly} chip={<Chip>{t.games.tower.height(s.height)}</Chip>}>
+    <GameFrame bleed title={t.games.tower.name} calm={calm} announce={announce} testId="game-tower" xp={xp} xpFly={fly}>
       <div ref={scene} className="tower-scene">
         <Site blocks={s.blocks} height={s.height} pending={pending} falling={falling} calm={calm} tutor={{ id: characterId, pose }} act={act} />
         {/* the question on the site's chalk sign */}

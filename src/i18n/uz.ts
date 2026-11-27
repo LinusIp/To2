@@ -345,6 +345,7 @@ export const t = {
       done: (n: number) => `Minorangiz ${n} blok balandlikda!`,
       fell: "Blok tushib ketdi — maslahatni o'qing.",
       goal: (n: number) => `Maqsad: ${n} blok`,
+      blocks: (n: number) => `${n} blok`,
       goalReached: "Maqsadga yetdingiz!",
       placed: (m: number) => (m > 1 ? `Blok qo'yildi, kombo ×${m}!` : "Blok qo'yildi!"),
     },
