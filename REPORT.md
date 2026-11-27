@@ -1337,3 +1337,16 @@ and `after-home-guest-360.png`.
 - **Spend (Tashkent 28 Nov):** 1083.5 = 242 approved warm + learner sessions on production (Lola LLM lessons: 634.5 at 07:31 UTC,
   207 at 10:09 UTC, all prefetch on lison-v2). No agent generated audio.
 - **Open:** #10's game redesign (`feat/games-p3`, resumed 28 Nov, game by game).
+
+
+## 🚀 Release 9fbd1e1 (orchestrator, 28 Nov) — games P3 part 1: Blok minorasi + Tezkor hisob
+**LIVE: `9fbd1e1`.** Merged `feat/games-p3` up to `05ed9e4` (#10), not the branch tip:
+- **Shared kit:** Web Audio cues with a sound toggle, +XP that flies to the counter, a full-body tutor on the ground, choice trays.
+- **Blok minorasi:** a building site with a crane, scaffold and a goal line at 10. Blocks land or fall; the tutor reacts.
+- **Tezkor hisob:** a race track; the runner boosts and stumbles, and the finish flag is your record. Untimed mode works.
+- **Conflict:** globals.css (#5's `.chalk-card` + #10's game block; I closed the chalk-card rule by hand).
+- **Checks:** tsc · vitest 355/355 · build · e2e 39/39 incl. a11y axe (#10 can't run axe in its worktree) · phone check of all 4 games
+  at 375 (no overflow) · production routes 200 · demo-check --no-gen 72/72 cached-v2 · spend unchanged (1083.5 today).
+- **Release note:** the first release.mjs run failed in its clean-checkout tests on `src/lib/anim/anim.test.ts`, a randomized blink
+  statistics test that is old and unchanged. It passed 5/5 locally and the second run deployed. Flaky test: make it seeded (#4).
+- **Open:** Juftini top desk cards + G5 in the games (#10).
