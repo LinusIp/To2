@@ -358,6 +358,13 @@ export const t = {
       score: (n: number) => `Ball: ${n}`,
       done: (n: number, c: number) => `${n} ball · ${c} ta to'g'ri javob`,
       start: "Boshlash",
+      ready: "Startga tayyor!",
+      meters: (n: number) => `${n} m`,
+      seconds: "soniya",
+      untimedShort: "savol",
+      record: (n: number) => `Rekord ${n} m`,
+      finish: (n: number) => `Marra ${n} m`,
+      boost: "Tezlashdik!",
     },
     mission: {
       name: "Kasb sinovi",

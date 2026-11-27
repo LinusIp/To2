@@ -3,7 +3,7 @@ import { seeded } from "@/data/problems";
 import { SKILLS } from "@/data/skills";
 import { checkAnswer } from "@/lib/learning/checker";
 import { pickQuestions, toChoiceQuestion } from "./questions";
-import { comboMultiplier, memoryScore, speedAnswer, speedStart, towerAnswer, towerStart, betterScore } from "./scoring";
+import { comboMultiplier, raceGoal, racePos, memoryScore, speedAnswer, speedStart, towerAnswer, towerStart, betterScore } from "./scoring";
 import { deal, flip, memoryDone, memoryStart, PAIRS } from "./memory";
 import { gameAnswer, GAME_MAX_P, type GameAnswerDeps } from "./answer";
 import { MASTERED } from "@/lib/learning/mastery";
@@ -31,6 +31,13 @@ describe("combo + scoring", () => {
     expect(s.answered).toBe(5);
     expect(betterScore(40, 30)).toBe(40);
     expect(betterScore(null, 30)).toBe(30);
+  });
+  it("race: the flag stands at the record (100 m at least), the runner stops at the flag", () => {
+    expect(raceGoal(0)).toBe(100);
+    expect(raceGoal(240)).toBe(240);
+    expect(racePos(50, 100)).toBe(0.5);
+    expect(racePos(300, 240)).toBe(1);
+    expect(racePos(0, 0)).toBe(0);
   });
   it("memory score: perfect 1000, fewer for extra flips, never below 100", () => {
     expect(memoryScore(6, 6)).toBe(1000);
