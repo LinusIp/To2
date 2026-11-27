@@ -828,6 +828,8 @@ html[data-dyslexia] .typed-board { font-family: Lexend, Verdana, system-ui, sans
 .slate-back { background: #253a30; border: 4px solid #6e4520; box-shadow: 0 5px 0 rgba(0, 0, 0, 0.3); }
 .slate-front { background: #2c463a; border: 4px solid #d9a35a; color: #f3f0e6; font-family: var(--font-chalk); box-shadow: 0 5px 0 rgba(0, 0, 0, 0.3); }
 .mem-card[data-done="1"] .slate-front { border-color: #7ee0a0; background: #2f5240; }
+.mem-card.mem-slate { aspect-ratio: auto; }
+.desk-scene { display: flex; flex-direction: column; }
 /* calm mode / reduced motion: nothing drops, falls, runs or flies */
 .game-calm .ft-place, .game-calm .ft-cheer, .game-calm .ft-wobble, .game-calm .ft-run, .game-calm .vx-g-drop, .game-calm .race-lines, .game-calm .race-boost, .game-calm .race-stumble, .game-calm .xp-bump { animation: none !important; }
 .game-calm .vx-g-fall, .game-calm .race-boost { animation: none !important; opacity: 0; }
