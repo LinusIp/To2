@@ -3,7 +3,7 @@
 // Locked tutors are silhouettes with their unlock condition. Tapping a tutor (or "Ovozini eshit") plays its
 // greeting; the words are always shown in a speech bubble (captions-only when muted or without audio).
 import { useEffect, useRef, useState } from "react";
-import { CHARACTERS, getCharacter, isUnlocked, lockText, type CharacterId } from "@/config/characters";
+import { CHARACTERS, CHARACTER_BY_ID, getCharacter, isUnlocked, lockText, type CharacterId } from "@/config/characters";
 import { speak, unlockAudio, type Speech } from "@/lib/audio/player";
 import { greetingApiAllowed, greetingClip } from "@/lib/audio/greetings";
 import { readPref } from "@/lib/client/prefs";
@@ -29,7 +29,8 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
 
   /** Say tutor `id`'s greeting. Called from a tap, so audio is allowed; a newer tap stops the older one. */
   const greet = (id: CharacterId) => {
-    const c = getCharacter(id);
+    // CHARACTER_BY_ID, not getCharacter(): that one falls back to Blokbek for "Tez orada" tutors
+    const c = CHARACTER_BY_ID[id] ?? getCharacter(id);
     unlockAudio();
     current.current?.stop();
     current.current = null;
@@ -97,12 +98,15 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
               type="button"
               role="radio"
               aria-checked={on}
-              disabled={soon}
+              aria-disabled={!open || undefined}
               aria-label={open ? `${c.name}, ${c.tag}` : `${secret ? t.tutors.secret : c.name}, yopiq: ${lockText(c, xp)}`}
               onClick={() => {
                 if (!open) {
+                  // locked / "Tez orada": can't be picked, but says hello (static file or captions only —
+                  // greet() never asks /api/tts for a tutor whose line isn't cached)
                   setShake(c.id);
                   setTimeout(() => setShake(null), 350);
+                  greet(c.id);
                   return;
                 }
                 onChange(c.id);
@@ -122,6 +126,11 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
                 className="absolute top-0.5 left-1/2 h-[150px] w-[150px] -translate-x-1/2"
                 style={soon ? { opacity: 0.5, filter: "saturate(.6)" } : undefined}
               />
+              {saying?.id === c.id && !on && (
+                <span aria-live="polite" className="bounce-in absolute inset-x-1.5 top-11 z-10 rounded-xl bg-white px-2 py-1.5 text-center text-[12px] leading-snug font-extrabold text-ink shadow-[0_3px_0_rgba(0,0,0,.1),0_8px_18px_rgba(20,26,58,.2)]" data-testid="card-greeting-bubble">
+                  {saying.text}
+                </span>
+              )}
               {soon && <span className="absolute top-2.5 left-2.5 rounded-full bg-ink px-2.5 py-1 text-[11px] font-black text-white">{t.tutors.soon}</span>}
               <div className="relative w-full px-1.5 pt-7 pb-2.5 text-center" style={{ background: "linear-gradient(to top,#fff 62%,rgba(255,255,255,0))" }}>
                 <b className="block text-[16px] font-black">{secret ? "???" : c.name}</b>

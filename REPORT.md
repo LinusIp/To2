@@ -1117,3 +1117,23 @@ From the 25 Nov problem report: the tutor's own logic costs little; the cost was
 - **VoiceLab credits:** 0. The 5 locked tutors' greetings (~242 credits) are still captions-only and wait for the user's number.
 - **Next:** #4 M6 lighting on the new models (`fix/tutor-light`) · #11 typed board in Board.tsx (`feat/typed-board`) ·
   P3 on hold: #5 (C5–C7, U3, U4, U6, comma) and #10 (G1–G7).
+
+## 🔊 Locked tutors' greetings (#5 To2-UI, branch `fix/greetings-locked`, 27 Nov) — not deployed
+**Budget:** the user approved 242 VoiceLab credits for this one job (orchestrator relay, confirmed by the user in the #5
+session: "Yes, spend 242").
+- **Fresh dry run** (`check=1`, text from `characters.ts`, `emotion=happy`, as the picker asks): Agent Shox 54 · Sardor 44 ·
+  Ravshan 60 · Diyorbek 54 · Shadow 30 = **242**, all `lison`, all uncached.
+- **Generated** once each through production `/api/tts` (`wait=long&src=warm`): all 5 `200 miss lison` on the first attempt
+  (1.7–2.8 s), no retries. Production `/dev/credits` afterwards: **today 242 credits, 10 clips, source `warm`, model `lison`, only
+  these 5 tutors** (54/44/60/54/30 per line).
+- **Exported** with `scripts/export-greetings.mjs` (whole-line cache hits, 0 credits; spend still 242 after):
+  `agent-shox.wav` 257 KB · `sardor.wav` 183 KB · `ravshan.wav` 174 KB · `diyorbek.wav` 205 KB · `shadow.wav` 103 KB.
+  `src/config/greetingAudio.json` now lists all 8 tutors.
+- **Picker:** locked / "Tez orada" cards are tappable now (`aria-disabled` instead of `disabled`): the card shakes (still not
+  selectable) and the tutor says its greeting from the static file, with a small bubble on that card. `/api/tts` is still
+  only allowed for Blokbek/Lola/Ziyo, so an uncached line can never be generated from the picker; no file → captions only.
+- Bug found while testing: `greet()` used `getCharacter()`, which falls back to Blokbek for non-playable tutors (every locked
+  tap played Blokbek). Now it uses `CHARACTER_BY_ID`.
+- Verified (Playwright, 360×740, mock server): each of the 5 locked cards → its own bubble, its own `<id>.wav`, `play()` ok,
+  not selected, **0 `/api/tts` requests**. Screenshot `docs/screenshots/ui-p1/locked-greeting-360.png`.
+- Checks: vitest 345/345 · tsc clean · build ok · e2e 36/36 on my own mock server (:5211, no `.dev.vars`).
