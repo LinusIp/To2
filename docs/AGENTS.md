@@ -1,7 +1,7 @@
 # Agents working on Buddy (formerly Ilmobod / To2)
 
 Snapshot: **2026-11-25**. Written by the current orchestrator from each session's last turns, its branch and its diff.
-Production: **https://to2.locallabs-io.workers.dev**, live commit **`8bf833a`** (the 18 Nov integration release).
+Production: **https://to2.locallabs-io.workers.dev**, live commit **`2cfde8f`** (27 Nov release: problem-report P1 + P2 part 1; before that `8bf833a`).
 `main` is at `d287dfe` and later; the commits after `8bf833a` are docs, the pitch deck PDF and README only, so nothing is waiting to deploy.
 
 > **Name check:** the pitch deck (`buddy-pitch-deck.pdf`) and the README link say **Buddy**. The app itself still says **Ilmobod**
@@ -63,7 +63,7 @@ At this snapshot **no session is running** except the current orchestrator, and 
 | 11 | Inklyuziv rejim: To2 accessibility → **To2-Access · inclusive mode** | `local_c07e1fd4…` | `feat/inclusive` · `worktrees/to2-inclusive-accessibility-bc99f9` | done |
 | 12 | Ilmobod pitch update → **To2-Pitch · story & docs** | `local_ccdd7d76…` | `docs/pitch-numbers` · `worktrees/ilmobod-pitch-update-fecf04` (local branch `pitch-ilmobod`) | done |
 | 13 | Restore chats from folder → **To2-Ops · chat restore** | `local_99ee1f0f…` | `claude/restore-chats-folder-8b734a` (no code changes) | done |
-| 14 | *(new 25 Nov)* → **To2-3D · tutor re-export** | `local_c0055ed5…` | `fix/3d-reexport` · own worktree | active |
+| 14 | *(new 25 Nov)* → **To2-3D · tutor re-export** | `local_c0055ed5…` | `fix/3d-reexport` · own worktree | done |
 
 ### 1 · Orchestrator · integration & release *(current)*
 - **Responsible for:** merging the feature branches, the cross-feature wiring, the single release, production checks, and this file.
@@ -205,12 +205,12 @@ Every agent works on a **new branch from `main` (`8061293`)** in its own worktre
 
 | Session | Fix ids | Branch | Priority / status |
 |---|---|---|---|
-| #14 To2-3D · tutor re-export | M1–M5, M8, then M7 (portrait re-light) — Blender job; writes `docs/3d/reexport-steps.md` if Blender isn't reachable | `fix/3d-reexport` | P1 — steps doc pushed (`d3f9b3b`); Blender now running, rebuild in progress |
-| #5 To2-UI · design system & brand | U1 (5 tabs, Mukofotlar → Profil), U2 + C8 (shared bottom padding), C1 (greet on tap), C2 (bubble fallback + static greeting files, **no generation**), C3 (warm/export scripts read `characters.ts`) | `fix/ui-p1` | P1 — ✅ merged to main `fb02fb8` (not deployed yet; ships with the 3D re-export) |
+| #14 To2-3D · tutor re-export | M1–M5, M8, then M7 (portrait re-light) — Blender job; writes `docs/3d/reexport-steps.md` if Blender isn't reachable | `fix/3d-reexport` | P1 — ✅ released in `2cfde8f` (3 tutors ~30k tris, 0 non-manifold, 54 AgX portraits) |
+| #5 To2-UI · design system & brand | U1 (5 tabs, Mukofotlar → Profil), U2 + C8 (shared bottom padding), C1 (greet on tap), C2 (bubble fallback + static greeting files, **no generation**), C3 (warm/export scripts read `characters.ts`) | `fix/ui-p1` | P1 — ✅ released in `2cfde8f` |
 | #5 (second batch) | C6, U3, U4, U6, G5/U7 (decimal comma outside games), C5 + C7 (page side) | `fix/ui-p3` | P3 — on hold until the orchestrator sends the go |
-| #4 To2-Tutor · animation | M6 (lighting / tone mapping), lesson smoothness (memo stage, stroke cache, isolated chalk filter, adaptive pixel ratio), C4 (3D tutor driver for the picker) | `fix/tutor-render` (needs a worktree — it used the main checkout before) | P2 — smoothness started 25 Nov; M6 waits for #14's models |
-| #10 To2-Games · arena & careers | Kasb sinovi scenes + ≥ 2 more jobs per subject (P2); G1–G4, G6, G7, G5 inside games (P3) | `feat/games-scenes` | P2 — started 25 Nov (scenes + ≥ 2 jobs per subject; G1–G7 stay P3) |
-| #11 To2-Access · inclusive mode | real text scaling, voice-first + hands-free in games, motor → untimed, typed board, self-hosted Lexend, profile-card UI | `feat/inclusive-2` | P2 — started 25 Nov (narration via the device engine, 0 credits; typed board last, after #4) |
+| #4 To2-Tutor · animation | M6 (lighting / tone mapping), lesson smoothness (memo stage, stroke cache, isolated chalk filter, adaptive pixel ratio), C4 (3D tutor driver for the picker) | `fix/tutor-render` (needs a worktree — it used the main checkout before) | P2 — smoothness ✅ released in `2cfde8f`; M6 started 27 Nov on `fix/tutor-light` |
+| #10 To2-Games · arena & careers | Kasb sinovi scenes + ≥ 2 more jobs per subject (P2); G1–G4, G6, G7, G5 inside games (P3) | `feat/games-scenes` | P2 — ✅ released in `2cfde8f`; G1–G7 (P3) on hold |
+| #11 To2-Access · inclusive mode | real text scaling, voice-first + hands-free in games, motor → untimed, typed board, self-hosted Lexend, profile-card UI | `feat/inclusive-2` | P2 — ✅ released in `2cfde8f`; typed board got the go 27 Nov (`feat/typed-board`) |
 
 **Ownership rules for this round:**
 - `AppShell.tsx` belongs to #5 only.

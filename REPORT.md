@@ -1099,3 +1099,21 @@ From the 25 Nov problem report: the tutor's own logic costs little; the cost was
 - **Checks:** `pnpm vitest run` 333/333 (+8 pixel-ratio tests) · `tsc --noEmit` clean · `pnpm build` ok · e2e on my own
   mock server (:5199, no `.dev.vars`, 0 credits): **26/26 passed** (the a11y "presets" test failed once in the first run
   and passed on re-run: flaky, unrelated).
+
+
+## 🚀 Release 2cfde8f (orchestrator, 27 Nov) — 25 Nov problem report, P1 + P2 part 1
+**LIVE: https://to2.locallabs-io.workers.dev — `2cfde8f`** (clean build via scripts/release.mjs; previous `8bf833a`).
+- **Merged:** `fix/ui-p1` (#5: 5 tabs, shared bottom padding, greet on tap + bubble, static greeting files, C2 player race fix),
+  `feat/games-scenes` (#10: chalk scene per Kasb sinovi step, finished building, 3 jobs per subject, decimal comma),
+  `feat/inclusive-2` (#11: real text scaling, voice in games via the device engine, motor → untimed, self-hosted Lexend,
+  new profile cards), `fix/3d-reexport` (#14: 3 tutors ~30k tris / ~0.3 MB / 0 non-manifold, 54 AgX portraits),
+  `fix/tutor-render` (#4: memo stage, stroke cache, isolated chalk filter, adaptive pixel ratio, ghost wipe-out fix).
+- **Merge conflicts:** REPORT.md (kept both); `MissionGame.tsx` (#10's scene layout + #11's `question` prop on `<Choices>`).
+- **Checks:** tsc clean · vitest 345/345 · build · e2e 36/36 on a mock server. The ECONNREFUSED failures were first tests hitting a
+  cold dev server, and "bug 2" was the old flake (#4 fixed its cause); both passed on rerun.
+- **Production:** `/version` = 2cfde8f, dirty false. 12 routes/assets return 200 (new lola.glb 355 KB, greetings/lola.wav, Lexend OFL).
+  `demo-check --no-gen` ×3 tutors: lesson=demo, question=pinned, 72/72 cached-v2, 0 generated. A first-run 7.5 s cold start
+  for Blokbek was 1.5 s on rerun.
+- **VoiceLab credits:** 0. The 5 locked tutors' greetings (~242 credits) are still captions-only and wait for the user's number.
+- **Next:** #4 M6 lighting on the new models (`fix/tutor-light`) · #11 typed board in Board.tsx (`feat/typed-board`) ·
+  P3 on hold: #5 (C5–C7, U3, U4, U6, comma) and #10 (G1–G7).
