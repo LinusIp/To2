@@ -1,6 +1,7 @@
 "use client";
 // Diagnostic = the first expedition (CLAUDE.md §7): every answer adds a block to the bridge.
 // No timer, no lives, no red errors; "Bilmayman" is always there. Quiz layout from the prototype.
+import { uzDecimal } from "@/lib/format/uzNum";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -127,7 +128,7 @@ export default function Diagnostic() {
         <div className="flex flex-col gap-3">
           <div className="card p-5">
             <div className="text-[13px] font-extrabold text-mut">{p.skillTitle}</div>
-            <div className="mt-2 text-center font-chalk text-[26px] leading-snug">{p.q}</div>
+            <div className="mt-2 text-center font-chalk text-[26px] leading-snug">{uzDecimal(p.q)}</div>
           </div>
           <AnswerInput key={p.index} expect={expect} disabled={busy} onSubmit={(v) => void send(v)} />
           <QuizA11y questionKey={String(p.index)} question={p.q} choices={expect.kind === "choice" ? expect.choices : undefined} voice={ch.id} busy={busy} skipQuestion onAnswer={(v) => void send(v)} />

@@ -1,5 +1,6 @@
 "use client";
 // Onboarding: pick a tutor → grade → (optional) nickname. Defaults are pre-filled: ONE tap to continue.
+import { GUEST_NAME } from "@/config/brand";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,7 +24,7 @@ export default function Onboarding() {
   useEffect(() => {
     void load().then((u) => {
       if (u) {
-        setNick(u.nickname);
+        setNick(u.nickname === GUEST_NAME ? "" : u.nickname); // a guest gets an empty field, not "Mehmon"
         setGrade(u.grade);
         setCh(getCharacter(u.characterId).id);
       }
@@ -37,7 +38,7 @@ export default function Onboarding() {
       const r = await fetch("/api/user", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ nickname: nick.trim() || "Mehmon", grade, characterId: ch }),
+        body: JSON.stringify({ nickname: nick.trim() || GUEST_NAME, grade, characterId: ch }),
       });
       if (!r.ok) throw new Error();
       const j = (await r.json()) as { user: PublicUser };

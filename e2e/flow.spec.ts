@@ -32,7 +32,9 @@ async function answer(page: Page, answers: Ans[], right: boolean) {
   if (e.kind === "choice" && e.choices?.length) {
     const pick = right ? e.answer : (e.choices.find((c) => c !== e.answer) ?? "0");
     // options are radios named "A 6", "B 7"…: pick the one whose text is exactly the answer
-    await page.getByRole("radio").filter({ has: page.getByText(pick, { exact: true }) }).first().click();
+    // decimals are shown with the Uzbek comma ("0,5"); the API answer keeps the dot
+    const shown = pick.replace(/(\d)\.(?=\d)/g, "$1,");
+    await page.getByRole("radio").filter({ has: page.getByText(shown, { exact: true }) }).first().click();
     await page.getByRole("button", { name: "Tekshir" }).click();
   } else {
     await page.getByLabel("Javobing").fill(right ? e.answer : "99999");

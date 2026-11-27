@@ -8,5 +8,9 @@ export const brand = {
   tagline: "Har bir fan — bir shahar. Har bir topshiriq — bir bino.",
   /** header of the towns picker (feat/roadmap reads it on merge) */
   townsHeader: "Ilmobod — shaharni o'qib quring!",
+  /** nickname stored when the learner leaves it empty (never shown as "Salom, Mehmon!") */
+  guestName: "Mehmon",
   themeColor: "#2563eb",
 } as const;
+
+export const GUEST_NAME = brand.guestName;

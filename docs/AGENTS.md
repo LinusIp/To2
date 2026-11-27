@@ -1,7 +1,7 @@
 # Agents working on Buddy (formerly Ilmobod / To2)
 
 Snapshot: **2026-11-25**. Written by the current orchestrator from each session's last turns, its branch and its diff.
-Production: **https://to2.locallabs-io.workers.dev**, live commit **`8c87d18`** (27 Nov: P1 + P2 complete in `2cfde8f`/`5334c0e`/`4d3f272`, then P3 part 1 TutorHero + back button; before that `8bf833a`).
+Production: **https://to2.locallabs-io.workers.dev**, live commit **`9fbd1e1`** (P1 + P2 complete; P3: TutorHero `8c87d18`, UI clean-up `56a9ee0`, games part 1 `9fbd1e1`; Juftini top + G5 still open).
 `main` is at `d287dfe` and later; the commits after `8bf833a` are docs, the pitch deck PDF and README only, so nothing is waiting to deploy.
 
 > **Name check:** the pitch deck (`buddy-pitch-deck.pdf`) and the README link say **Buddy**. The app itself still says **Ilmobod**
@@ -207,9 +207,9 @@ Every agent works on a **new branch from `main` (`8061293`)** in its own worktre
 |---|---|---|---|
 | #14 To2-3D · tutor re-export | M1–M5, M8, then M7 (portrait re-light) — Blender job; writes `docs/3d/reexport-steps.md` if Blender isn't reachable | `fix/3d-reexport` | P1 — ✅ released in `2cfde8f` (3 tutors ~30k tris, 0 non-manifold, 54 AgX portraits) |
 | #5 To2-UI · design system & brand | U1 (5 tabs, Mukofotlar → Profil), U2 + C8 (shared bottom padding), C1 (greet on tap), C2 (bubble fallback + static greeting files, **no generation**), C3 (warm/export scripts read `characters.ts`) | `fix/ui-p1` | P1 — ✅ released in `2cfde8f` |
-| #5 (second batch) | C6, U3, U4, U6, G5/U7 (decimal comma outside games), C5 + C7 (page side) | `fix/ui-p3` | P3 — started 27 Nov (C5–C7 with a portrait hero, then swap in #4's TutorHero; U3, U4, U6, comma outside games) |
+| #5 (second batch) | C6, U3, U4, U6, G5/U7 (decimal comma outside games), C5 + C7 (page side) | `fix/ui-p3` | P3 — ✅ released in `56a9ee0` |
 | #4 To2-Tutor · animation | M6 (lighting / tone mapping), lesson smoothness (memo stage, stroke cache, isolated chalk filter, adaptive pixel ratio), C4 (3D tutor driver for the picker) | `fix/tutor-render` (needs a worktree — it used the main checkout before) | P2 ✅ · P3 ✅ released in `8c87d18` (TutorHero component, back button over the head) |
-| #10 To2-Games · arena & careers | Kasb sinovi scenes + ≥ 2 more jobs per subject (P2); G1–G4, G6, G7, G5 inside games (P3) | `feat/games-scenes` | P2 ✅ · P3 ⏸ WIP `4a0b681` on `feat/games-p3` (Blok minorasi + shared pieces done); session hit its usage limit; not merged |
+| #10 To2-Games · arena & careers | Kasb sinovi scenes + ≥ 2 more jobs per subject (P2); G1–G4, G6, G7, G5 inside games (P3) | `feat/games-scenes` | P2 ✅ · P3 part 1 ✅ released in `9fbd1e1` (tower + race); Juftini top + G5 in progress on `feat/games-p3` |
 | #11 To2-Access · inclusive mode | real text scaling, voice-first + hands-free in games, motor → untimed, typed board, self-hosted Lexend, profile-card UI | `feat/inclusive-2` | P2 — ✅ released (`2cfde8f`), typed board released in `4d3f272` |
 
 **Ownership rules for P3 (27 Nov):**

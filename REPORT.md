@@ -1310,3 +1310,73 @@ demo at `/dev/hero`, 404 in production). The lesson tutor's rest spot now keeps 
   generates voice. That's within caps (warn 15k / hard 60k), but worth knowing for the budget.
 - **#10 (games P3):** WIP only (`4a0b681` on `feat/games-p3`: shared sfx, +XP, full-body tutor, Blok minorasi building site). Its session
   hit its usage limit. Not merged; Tezkor hisob, Juftini top, G5 and e2e are still open.
+
+## 🎨 P3 — picker, flat cards, greeting, settings, decimal comma (#5 To2-UI, branch `fix/ui-p3`, 28 Nov) — not deployed
+Fix ids from the 25 Nov report: **C5, C6, C7, U3, U4, U6, G5/U7 (outside games)**, plus #4's `TutorHero` swapped in. 0 VoiceLab credits.
+
+**Picker (`TutorPicker.tsx`, used by `/tutors` and `/onboarding`):**
+- **C7 hero:** a flat classroom (wall · chalkboard with the tutor's name and tag in chalk · wood floor), no gradient wash or dots.
+  The tutor is **#4's live 3D `TutorHero`** (full body, idle, `wave` bumped only on select, `speaking` = the greeting's
+  `Speech`, so the mouth follows the voice). Until the model draws, or if WebGL fails, it shows the full-body portrait.
+  The greeting **bubble sits left of the tutor at head height, with its tail pointing at the head**, never over the face
+  (measured at 360 px: bubble ends at x 218, the tutor's head starts right of it).
+- **C5:** the selected tutor is only the hero; the grid ("Ustozlar") shows the other selectable tutors.
+- **C6:** locked tutors are a small **"Tez orada" row** (104×132 cards, dimmed). A tap shakes the card and plays its greeting
+  (static file / captions only, never `/api/tts`); the line shows under the row. They are plain buttons now (not disabled
+  radios), so taps reach them.
+- One canvas on the page (the hero); the grid and row are static portraits.
+
+**U3, gradient washes removed:**
+- Home "Bugungi dars" is a **flat chalkboard card** (`.chalk-card`: slate in a wood frame, title in chalk, yellow progress).
+- Home subject tiles are flat, filled with `aaFill(subject colour)` (`src/lib/format/color.ts`, tested): the subject's own
+  hue, darkened only until white text reaches AA. `subjects.ts` is untouched. "Istalgan" is flat purple.
+- The game-card icon, `.card-head`, `.icon-tile`, `.btn-primary`/`.btn-green`, the splash (`#1d4ed8`), the "A'lo!" success
+  screen and the progress XP bar are flat.
+- ⚠️ The old gradients hid AA failures: axe can't measure contrast on gradients, so flat fills exposed tiles at 2.5–4.49:1.
+  All fixed (splash link, tiles, "Beta" pill → dark overlay). a11y axe e2e passes.
+
+**U4:** a learner without a nickname (empty or the stored default `brand.guestName` = "Mehmon") sees **"Salom!" + the tutor's
+line** on Home, never "Salom, Mehmon!". Onboarding shows such a learner an empty nickname field instead of "Mehmon".
+
+**U6:** the gear on Home is gone; settings live only under the **Profil** tab (and the sidebar on desktop).
+
+**G5/U7, decimal comma (display only):** `uzDecimal()` (`src/lib/format/uzNum.ts`, tested) turns a dot between digits into a
+comma. It's used in practice and diagnostic question text, `AnswerInput` options and prompts, and the teacher page sample
+problems. Values sent to the checker are unchanged (it accepts both). The e2e quiz helper picks the option by its
+comma-formatted text. **Not covered (rules):** LessonPlayer captions and the board (`LessonPlayer.tsx`/`Board.tsx` are
+off-limits); games are #10's.
+
+**Checks:** vitest 354/354 (new: decimal-comma and colour tests) · tsc clean · build ok · **e2e 39/39 incl. a11y axe** on my own
+mock server (:5211, no `.dev.vars`). Live 3D hero verified with Playwright (SwiftShader): 1 canvas, the model draws, picking
+Lola swaps the model and plays her file, 0 `/api/tts` calls, no page errors.
+
+Screenshots `docs/screenshots/ui-p3/`: `before-*` / `after-*` for /home /tutors /onboarding /settings /progress at 375 and 360
+(full page; the fixed tab bar shows mid-page in full-page captures), plus `after-tutors-360-{bubble,lola,locked,hero3d}.png`
+and `after-home-guest-360.png`.
+
+
+## 🚀 Release 56a9ee0 (orchestrator, 27–28 Nov) — P3 part 2: UI clean-up + 3D picker hero
+**LIVE: `56a9ee0`.** Merged `fix/ui-p3` (#5):
+- C7: picker hero = flat classroom with a live 3D TutorHero (wave on select, lip-sync on the greeting), and the bubble beside the head.
+- C5/C6: no duplicate selected card; locked tutors in a small "Tez orada" row.
+- U3: gradient washes removed. The flat colours exposed hidden AA contrast failures, which are now fixed.
+- U4: no more "Salom, Mehmon!". U6: one settings entry.
+- G5/U7: the decimal comma outside games, display only. Checker values are unchanged; `AnswerInput` still submits the original value.
+- **Checks:** tsc · vitest 354/354 · build · e2e 39/39 · 360 px no overflow, one canvas on /tutors · production routes 200 ·
+  demo-check --no-gen 72/72 cached-v2.
+- **Spend (Tashkent 28 Nov):** 1083.5 = 242 approved warm + learner sessions on production (Lola LLM lessons: 634.5 at 07:31 UTC,
+  207 at 10:09 UTC, all prefetch on lison-v2). No agent generated audio.
+- **Open:** #10's game redesign (`feat/games-p3`, resumed 28 Nov, game by game).
+
+
+## 🚀 Release 9fbd1e1 (orchestrator, 28 Nov) — games P3 part 1: Blok minorasi + Tezkor hisob
+**LIVE: `9fbd1e1`.** Merged `feat/games-p3` up to `05ed9e4` (#10), not the branch tip:
+- **Shared kit:** Web Audio cues with a sound toggle, +XP that flies to the counter, a full-body tutor on the ground, choice trays.
+- **Blok minorasi:** a building site with a crane, scaffold and a goal line at 10. Blocks land or fall; the tutor reacts.
+- **Tezkor hisob:** a race track; the runner boosts and stumbles, and the finish flag is your record. Untimed mode works.
+- **Conflict:** globals.css (#5's `.chalk-card` + #10's game block; I closed the chalk-card rule by hand).
+- **Checks:** tsc · vitest 355/355 · build · e2e 39/39 incl. a11y axe (#10 can't run axe in its worktree) · phone check of all 4 games
+  at 375 (no overflow) · production routes 200 · demo-check --no-gen 72/72 cached-v2 · spend unchanged (1083.5 today).
+- **Release note:** the first release.mjs run failed in its clean-checkout tests on `src/lib/anim/anim.test.ts`, a randomized blink
+  statistics test that is old and unchanged. It passed 5/5 locally and the second run deployed. Flaky test: make it seeded (#4).
+- **Open:** Juftini top desk cards + G5 in the games (#10).
