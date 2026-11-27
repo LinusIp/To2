@@ -2,7 +2,8 @@
 // "Qahramonlar" (prototype screen 4), 25 Nov report C5–C7:
 // - hero = the selected tutor, FULL BODY, in a flat classroom (wall · chalkboard with the name in chalk · wood floor);
 //   no gradient wash. The greeting bubble sits BESIDE the tutor's head (left of it), never over the face.
-//   The hero's tutor slot is <HeroTutor/>: today a full-body portrait; #4's live 3D TutorHero swaps in there.
+//   The hero's tutor is #4's live 3D <TutorHero/> (idle · waves on select · lip-sync to the greeting); it shows
+//   the full-body portrait until the model draws or if WebGL fails. Only the hero has a canvas: grid = portraits.
 // - "Ustozlar": the other selectable tutors (the selected one is not repeated — it is the hero).
 // - "Tez orada": locked tutors as a small row; a tap shakes the card and plays its greeting (static file or
 //   captions only — greet() never asks /api/tts for a line that isn't cached), the words shown under the row.
@@ -13,17 +14,10 @@ import { greetingApiAllowed, greetingClip } from "@/lib/audio/greetings";
 import { readPref } from "@/lib/client/prefs";
 import { t } from "@/i18n/uz";
 import TutorPortrait from "./TutorPortrait";
+import TutorHero from "./TutorHero";
 import { LockIcon, SpeakerIcon } from "@/components/ui/icons";
 import { Burst } from "@/components/ui/Celebrate";
 
-/** The tutor in the hero. Swap point for #4's live 3D TutorHero (idle · wave on select · lip-sync). */
-function HeroTutor({ id, waveKey }: { id: CharacterId; waveKey: number }) {
-  return (
-    <div key={`${id}-${waveKey}`} className="bounce-in absolute right-[-14px] bottom-[8px] h-[272px] w-[204px]" data-testid="hero-tutor">
-      <TutorPortrait id={id} pose={waveKey ? "wave" : "idle"} frame="full" className="h-full w-full" style={{ objectFit: "contain", objectPosition: "50% 100%" }} />
-    </div>
-  );
-}
 
 export default function TutorPicker({ value, onChange, xp, streak }: { value: CharacterId; onChange: (id: CharacterId) => void; xp: number; streak: number }) {
   const sel = getCharacter(value);
@@ -31,6 +25,8 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
   const [bump, setBump] = useState(0);
   /** the greeting being said now (shown in a bubble until it ends) */
   const [saying, setSaying] = useState<{ id: string; text: string } | null>(null);
+  /** the Speech of the greeting playing now — the hero's mouth follows it */
+  const [speech, setSpeech] = useState<{ id: string; s: Speech } | null>(null);
   const current = useRef<Speech | null>(null);
   const turn = useRef(0);
 
@@ -47,13 +43,17 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
     unlockAudio();
     current.current?.stop();
     current.current = null;
+    setSpeech(null);
     const my = ++turn.current;
     setSaying({ id: c.id, text: c.hi });
     const start = (s: Speech) => {
       if (my !== turn.current) return s.stop();
       current.current = s;
+      setSpeech({ id: c.id, s });
       void s.ended.then(() => {
-        if (my === turn.current) setSaying(null);
+        if (my !== turn.current) return;
+        setSaying(null);
+        setSpeech(null);
       });
     };
     if (readPref("sound", "1") === "0") return start(speak(c.hi, c.id, { muted: true }));
@@ -96,7 +96,9 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
         {/* wood floor */}
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-[64px] border-t-4 border-[#a87442] bg-[#c08a55]" />
         <Burst fire={bump} count={14} />
-        <HeroTutor id={value} waveKey={bump} />
+        <div className="absolute right-[-14px] bottom-[8px] h-[272px] w-[204px]" data-testid="hero-tutor">
+          <TutorHero id={value} speaking={speech?.id === sel.id ? speech.s : null} wave={bump} className="h-full w-full" />
+        </div>
         <h2 className="sr-only">{`${sel.name} — ${sel.tag}`}</h2>
         <div aria-live="polite" className="absolute top-3 left-3 w-[58%]">
           {bubble && (

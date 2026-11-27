@@ -13,7 +13,7 @@ export default function Landing() {
   return (
     <main className="bg-ph">
       {/* 1 · splash */}
-      <section className="relative flex min-h-dvh flex-col items-center overflow-hidden text-white" style={{ background: "#2358dc" }}>
+      <section className="relative flex min-h-dvh flex-col items-center overflow-hidden text-white" style={{ background: "#1d4ed8" }}>
         <div aria-hidden className="pointer-events-none absolute inset-0 font-black text-white/90">
           <span className="absolute left-[7%] top-[36%] text-[52px]">+</span>
           <span className="absolute right-[10%] top-[30%] text-[44px]">÷</span>

@@ -12,6 +12,7 @@ import { SUBJECTS } from "@/config/subjects";
 import TopicAsk from "@/components/home/TopicAsk";
 import { getCharacter } from "@/config/characters";
 import { GUEST_NAME } from "@/config/brand";
+import { aaFill } from "@/lib/format/color";
 import { useMe } from "@/lib/client/me";
 
 export default function HomePage() {
@@ -121,7 +122,7 @@ export default function HomePage() {
                 <b className={`${s.icon.length > 3 ? "text-[19px]" : "text-[26px]"} leading-none font-black`}>{s.icon}</b>
                 <span className="px-1 text-center leading-tight">{s.name}</span>
                 {s.status !== "live" && (
-                  <span className={`rounded-full px-2 py-[1px] text-[10px] font-black ${s.status === "beta" ? "bg-white/25 text-white" : "bg-white text-[#5f6787]"}`}>
+                  <span className={`rounded-full px-2 py-[1px] text-[10px] font-black ${s.status === "beta" ? "bg-black/25 text-white" : "bg-white text-[#5f6787]"}`}>
                     {s.status === "beta" ? t.home.beta : t.home.soon}
                   </span>
                 )}
@@ -140,7 +141,7 @@ export default function HomePage() {
                 href={s.href ?? "#istalgan-mavzu"}
                 onClick={s.href ? undefined : () => setTimeout(() => document.getElementById("topic-input")?.focus(), 50)}
                 className={`${cls} text-white shadow-[inset_0_-4px_0_rgba(0,0,0,.12)]`}
-                style={{ background: s.to }}
+                style={{ background: aaFill(s.to) }}
               >
                 {body}
               </Link>
