@@ -1,5 +1,5 @@
 "use client";
-// "A'lo!" success screen (prototype screen 7): blue gradient, star pop, cheering tutor, confetti.
+// "A'lo!" success screen (prototype screen 7): flat blue, star pop, cheering tutor, confetti.
 import Link from "next/link";
 import { useMemo } from "react";
 import TutorPortrait from "@/components/characters/TutorPortrait";
@@ -45,7 +45,7 @@ export default function SuccessScreen({
     );
   // mockup v2 (screen s6): deep blue-violet sky, twinkling stars, the cheering tutor, a white card
   return (
-    <div role="status" className="anim-in fixed inset-0 z-50 overflow-hidden" style={{ background: "radial-gradient(120% 70% at 50% 18%,#6d79d8 0%,#4b55b8 45%,#353d93 100%)" }}>
+    <div role="status" className="anim-in fixed inset-0 z-50 overflow-hidden" style={{ background: "#2358dc" }}>
       <div aria-hidden className="pointer-events-none absolute inset-0">
         {conf.map((c, i) => (
           <div key={i} className="conf" style={{ left: `${c.left}%`, top: -20, background: c.c, animationDelay: `${c.delay}s`, transform: `rotate(${c.rot}deg)`, borderRadius: c.round ? "50%" : 3 }} />

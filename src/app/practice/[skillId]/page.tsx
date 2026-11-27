@@ -7,6 +7,7 @@
 //   • pass → "Keyingi dars" = next open lesson (src/lib/learning/access.ts), else the roadmap
 // ?mode=review = the quick review (REVIEW_LEN easier questions from the prerequisites);
 // ?from=lesson = we came from the lesson page, so "back to the lesson" is a history step (no duplicates).
+import { uzDecimal } from "@/lib/format/uzNum";
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { t } from "@/i18n/uz";
@@ -156,7 +157,7 @@ export default function QuizPage({ params }: { params: Promise<{ skillId: string
           <div className="card p-5">
             <div className="text-[19px] font-black">{p?.expect.kind === "choice" ? "To'g'ri javobni tanlang:" : "Misolni yeching:"}</div>
             <div className="mt-2.5 text-center font-chalk text-[26px] leading-snug" data-testid="quiz-question" data-key={p?.key ?? ""}>
-              {p ? p.q : t.common.loading}
+              {p ? uzDecimal(p.q) : t.common.loading}
             </div>
             {flash && <div className="mt-2 text-center text-[16px] font-black text-green">{t.lesson.correct}</div>}
           </div>

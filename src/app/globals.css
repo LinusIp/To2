@@ -128,12 +128,10 @@
     transform: translateY(2px) scale(0.99);
     box-shadow: 0 1px 0 rgba(31, 54, 120, 0.06), 0 2px 8px rgba(31, 54, 120, 0.08);
   }
-  /* soft gradient header strip for a card (set --hd to the accent colour) */
+  /* flat header strip for a card (set --hd to the accent colour) — no gradient washes (CLAUDE.md §10, U3) */
   .card-head {
     --hd: var(--color-blue);
-    background:
-      radial-gradient(120% 140% at 100% 0%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 55%),
-      linear-gradient(135deg, color-mix(in srgb, var(--hd) 90%, #fff), color-mix(in srgb, var(--hd) 88%, #000));
+    background: var(--hd);
     color: #fff;
   }
   /* consistent icon tile: rounded square, accent fill, 3D bottom edge */
@@ -147,7 +145,7 @@
     border-radius: var(--radius-sm);
     color: #fff;
     font-weight: 900;
-    background: linear-gradient(160deg, color-mix(in srgb, var(--tile) 82%, #fff), var(--tile));
+    background: var(--tile);
     box-shadow: 0 3px 0 color-mix(in srgb, var(--tile) 70%, #000), inset 0 1px 0 rgba(255, 255, 255, 0.35);
   }
 
@@ -193,7 +191,7 @@
   .btn-primary {
     --edge: var(--color-blue-800);
     border-color: transparent;
-    background: linear-gradient(180deg, #2f6af0, var(--color-blue-600));
+    background: var(--color-blue-600);
     color: #fff;
     min-height: 58px;
     font-size: 18px;
@@ -232,7 +230,7 @@
   .btn-green {
     --edge: var(--color-green-dark);
     border-color: transparent;
-    background: linear-gradient(180deg, #168a3f, var(--color-green-btn));
+    background: var(--color-green-btn);
     color: #fff;
     box-shadow: 0 5px 0 var(--edge), 0 12px 22px rgba(22, 137, 63, 0.25);
   }
@@ -761,3 +759,11 @@ html[data-dyslexia] .typed-board { font-family: Lexend, Verdana, system-ui, sans
 @utility pb-tabbar { padding-bottom: calc(var(--tabbar-h, 84px) + 16px); }
 /* pages without a tab bar: clear the home indicator / gesture bar too */
 @utility pb-safe { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+
+/* ── chalkboard card (U3): flat slate in a wood frame — the classroom motif instead of gradient washes ── */
+.chalk-card {
+  border-radius: var(--radius-md);
+  background: var(--color-chalkboard);
+  border: 6px solid #8a5a2c;
+  box-shadow: 0 4px 0 #5e3c1c, 0 10px 24px rgba(31, 54, 120, 0.16);
+}

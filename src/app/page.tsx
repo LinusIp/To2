@@ -13,7 +13,7 @@ export default function Landing() {
   return (
     <main className="bg-ph">
       {/* 1 · splash */}
-      <section className="relative flex min-h-dvh flex-col items-center overflow-hidden text-white" style={{ background: "radial-gradient(120% 70% at 50% 0%, #4f86f7 0%, rgba(79,134,247,0) 60%), linear-gradient(170deg,#2f6ef0 0%,#2358dc 55%,#1d47b8 100%)" }}>
+      <section className="relative flex min-h-dvh flex-col items-center overflow-hidden text-white" style={{ background: "#2358dc" }}>
         <div aria-hidden className="pointer-events-none absolute inset-0 font-black text-white/90">
           <span className="absolute left-[7%] top-[36%] text-[52px]">+</span>
           <span className="absolute right-[10%] top-[30%] text-[44px]">÷</span>
@@ -79,7 +79,7 @@ export default function Landing() {
           <h2 className="t-h1 m-0 mb-5">{t.landing.charactersTitle}</h2>
           <div className="no-scrollbar stagger -mx-5 flex gap-4 overflow-x-auto px-5 pt-1 pb-3" tabIndex={0} role="region" aria-label={t.landing.charactersTitle}>
             {CHARACTERS.map((c) => (
-              <div key={c.id} className="card card-press relative flex h-[210px] w-[160px] flex-none flex-col items-center justify-end overflow-hidden" style={{ background: "linear-gradient(180deg,#e4ecff 0%,#fff 70%)" }}>
+              <div key={c.id} className="card card-press relative flex h-[210px] w-[160px] flex-none flex-col items-center justify-end overflow-hidden" style={{ background: "#eef3ff" }}>
                 <TutorPortrait id={c.id} pose="sig" frame="half" alt={c.name} className="absolute top-0 left-1/2 h-[160px] w-[160px] -translate-x-1/2" style={c.status === "soon" ? { opacity: 0.5 } : undefined} />
                 <div className="relative w-full px-2 pt-6 pb-3 text-center" style={{ background: "linear-gradient(to top,#fff 62%,rgba(255,255,255,0))" }}>
                   <b className="block text-[16px] font-black">{c.name}</b>

@@ -1,22 +1,35 @@
 "use client";
-// "Qahramonlar" (prototype screen 4): big hero card for the selected tutor + 2-column grid.
-// Locked tutors are silhouettes with their unlock condition. Tapping a tutor (or "Ovozini eshit") plays its
-// greeting; the words are always shown in a speech bubble (captions-only when muted or without audio).
+// "Qahramonlar" (prototype screen 4), 25 Nov report C5–C7:
+// - hero = the selected tutor, FULL BODY, in a flat classroom (wall · chalkboard with the name in chalk · wood floor);
+//   no gradient wash. The greeting bubble sits BESIDE the tutor's head (left of it), never over the face.
+//   The hero's tutor slot is <HeroTutor/>: today a full-body portrait; #4's live 3D TutorHero swaps in there.
+// - "Ustozlar": the other selectable tutors (the selected one is not repeated — it is the hero).
+// - "Tez orada": locked tutors as a small row; a tap shakes the card and plays its greeting (static file or
+//   captions only — greet() never asks /api/tts for a line that isn't cached), the words shown under the row.
 import { useEffect, useRef, useState } from "react";
-import { CHARACTERS, CHARACTER_BY_ID, getCharacter, isUnlocked, lockText, type CharacterId } from "@/config/characters";
+import { CHARACTERS, CHARACTER_BY_ID, getCharacter, isUnlocked, lockText, type CharacterConfig, type CharacterId } from "@/config/characters";
 import { speak, unlockAudio, type Speech } from "@/lib/audio/player";
 import { greetingApiAllowed, greetingClip } from "@/lib/audio/greetings";
 import { readPref } from "@/lib/client/prefs";
 import { t } from "@/i18n/uz";
 import TutorPortrait from "./TutorPortrait";
-import { CheckIcon, LockIcon, SpeakerIcon } from "@/components/ui/icons";
+import { LockIcon, SpeakerIcon } from "@/components/ui/icons";
 import { Burst } from "@/components/ui/Celebrate";
+
+/** The tutor in the hero. Swap point for #4's live 3D TutorHero (idle · wave on select · lip-sync). */
+function HeroTutor({ id, waveKey }: { id: CharacterId; waveKey: number }) {
+  return (
+    <div key={`${id}-${waveKey}`} className="bounce-in absolute right-[-14px] bottom-[8px] h-[272px] w-[204px]" data-testid="hero-tutor">
+      <TutorPortrait id={id} pose={waveKey ? "wave" : "idle"} frame="full" className="h-full w-full" style={{ objectFit: "contain", objectPosition: "50% 100%" }} />
+    </div>
+  );
+}
 
 export default function TutorPicker({ value, onChange, xp, streak }: { value: CharacterId; onChange: (id: CharacterId) => void; xp: number; streak: number }) {
   const sel = getCharacter(value);
   const [shake, setShake] = useState<string | null>(null);
   const [bump, setBump] = useState(0);
-  /** the greeting being said now (shown in the bubble until it ends) */
+  /** the greeting being said now (shown in a bubble until it ends) */
   const [saying, setSaying] = useState<{ id: string; text: string } | null>(null);
   const current = useRef<Speech | null>(null);
   const turn = useRef(0);
@@ -51,25 +64,45 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
       else start(speak(c.hi, c.id, { muted: true })); // uncached voice: captions only, never generate here
     });
   };
-  const talking = saying !== null;
-  const bubble = saying && saying.id === sel.id ? saying.text : null;
+  const talking = saying !== null && saying.id === sel.id;
+  const bubble = talking ? saying.text : null;
+
+  const open = CHARACTERS.filter((c) => c.status !== "soon" && isUnlocked(c.id, xp, streak));
+  const others = open.filter((c) => c.id !== sel.id);
+  const locked = CHARACTERS.filter((c) => !open.includes(c));
+  const lockedSaying = saying && locked.some((c) => c.id === saying.id) ? CHARACTER_BY_ID[saying.id as CharacterId] : null;
+  const nameOf = (c: CharacterConfig) => (c.status !== "soon" && c.unlock === "streak" && !isUnlocked(c.id, xp, streak) ? "???" : c.name);
+
+  const pick = (id: CharacterId) => {
+    onChange(id);
+    setBump((b) => b + 1);
+    greet(id);
+  };
+  const tapLocked = (id: CharacterId) => {
+    setShake(id);
+    setTimeout(() => setShake(null), 350);
+    greet(id);
+  };
 
   return (
     <div>
-      <div className="relative h-[260px] overflow-hidden rounded-[32px] shadow-[0_6px_0_var(--color-blue-800),0_16px_32px_rgba(37,99,235,.3)]" style={{ background: "radial-gradient(90% 70% at 50% 30%, #8fb6ff 0%, rgba(143,182,255,0) 70%), linear-gradient(160deg,#5b8cff,#2563eb)" }}>
-        <div aria-hidden className="absolute inset-0 opacity-[.12]" style={{ backgroundImage: "radial-gradient(#fff 1.5px, transparent 1.5px)", backgroundSize: "18px 18px" }} />
+      {/* hero: flat classroom, full-body tutor on the right, bubble beside the head */}
+      <section aria-label={`${t.tutors.title}: ${sel.name}`} className="relative h-[300px] overflow-hidden rounded-[32px] bg-[#e7edf9] shadow-[0_4px_0_#c9d3ea,0_12px_28px_rgba(31,54,120,.14)]" data-testid="tutor-hero">
+        {/* chalkboard with the tutor's name in chalk */}
+        <div aria-hidden className="absolute top-3 left-3 h-[150px] w-[58%] rounded-[14px] border-[5px] border-[#8a5a2c] bg-chalkboard px-3 pt-2.5 shadow-[0_3px_0_#5e3c1c]">
+          <div className="font-chalk text-[30px] leading-none text-chalk">{sel.name}</div>
+          <div className="mt-1.5 font-chalk text-[17px] leading-tight text-chalk-yellow">{sel.tag}</div>
+        </div>
+        {/* wood floor */}
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-[64px] border-t-4 border-[#a87442] bg-[#c08a55]" />
         <Burst fire={bump} count={14} />
-        <div key={`${value}-${bump}`} className="bounce-in absolute top-3 left-1/2 -translate-x-1/2">
-          <TutorPortrait id={value} pose="sig" frame="half" className="h-[250px] w-[250px]" />
-        </div>
-        <div className="absolute inset-x-0 bottom-0 px-3.5 pt-8 pb-3.5 text-center text-white" style={{ background: "linear-gradient(to top, rgba(29,78,216,.97) 55%, rgba(29,78,216,0))" }}>
-          <div className="t-h2">{sel.name}</div>
-          <div className="t-small opacity-95">{sel.tag}</div>
-        </div>
-        <div aria-live="polite" className="absolute inset-x-3 bottom-[76px] flex justify-center">
+        <HeroTutor id={value} waveKey={bump} />
+        <h2 className="sr-only">{`${sel.name} — ${sel.tag}`}</h2>
+        <div aria-live="polite" className="absolute top-3 left-3 w-[58%]">
           {bubble && (
-            <p key={bubble} className="bounce-in relative m-0 max-w-[300px] rounded-2xl bg-white px-4 py-2.5 text-center text-[15px] leading-snug font-extrabold text-ink shadow-[0_4px_0_rgba(0,0,0,.12),0_10px_22px_rgba(20,26,58,.22)]" data-testid="greeting-bubble">
-              <span aria-hidden className="absolute -top-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 rounded-[3px] bg-white" />
+            <p key={bubble} className="bounce-in relative m-0 rounded-2xl bg-white px-3.5 py-2.5 text-[15px] leading-snug font-extrabold text-ink shadow-[0_4px_0_rgba(0,0,0,.12),0_10px_22px_rgba(20,26,58,.22)]" data-testid="greeting-bubble">
+              {/* tail points right, at the tutor's head */}
+              <span aria-hidden className="absolute top-5 -right-2 h-4 w-4 rotate-45 rounded-[3px] bg-white" />
               <span className="relative">{bubble}</span>
             </p>
           )}
@@ -77,82 +110,73 @@ export default function TutorPicker({ value, onChange, xp, streak }: { value: Ch
         <button
           type="button"
           onClick={() => greet(sel.id)}
-          className="absolute top-3 right-3 flex h-12 items-center gap-2 rounded-full bg-white px-4 text-[14px] font-black text-blue-800 shadow-[0_4px_0_#b9c6ea] transition-transform duration-100 active:translate-y-[4px] active:shadow-none"
+          className="absolute bottom-3 left-3 flex h-12 items-center gap-2 rounded-full bg-white px-4 text-[14px] font-black text-blue-800 shadow-[0_4px_0_#8a5a2c] transition-transform duration-100 active:translate-y-[4px] active:shadow-none"
         >
           <SpeakerIcon size={16} /> {talking ? "…" : t.tutors.hear}
         </button>
-        <div key={`ok-${value}`} className="bounce-in absolute right-4 bottom-[22px] grid h-[32px] w-[32px] place-items-center rounded-full bg-white shadow-[0_3px_0_rgba(0,0,0,.18)]">
-          <CheckIcon color="#2563eb" />
-        </div>
-      </div>
+      </section>
 
-      <div className="stagger mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4" role="radiogroup" aria-label={t.tutors.title}>
-        {CHARACTERS.map((c) => {
-          const soon = c.status === "soon";
-          const open = isUnlocked(c.id, xp, streak);
-          const secret = !soon && c.unlock === "streak" && !open;
-          const on = c.id === value;
-          return (
+      {/* the other selectable tutors (the hero is the selected one) */}
+      {others.length > 0 && (
+        <div className="stagger mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4" role="radiogroup" aria-label={t.tutors.title} data-testid="tutor-grid">
+          {others.map((c) => (
             <button
               key={c.id}
               type="button"
               role="radio"
-              aria-checked={on}
-              aria-disabled={!open || undefined}
-              aria-label={open ? `${c.name}, ${c.tag}` : `${secret ? t.tutors.secret : c.name}, yopiq: ${lockText(c, xp)}`}
-              onClick={() => {
-                if (!open) {
-                  // locked / "Tez orada": can't be picked, but says hello (static file or captions only —
-                  // greet() never asks /api/tts for a tutor whose line isn't cached)
-                  setShake(c.id);
-                  setTimeout(() => setShake(null), 350);
-                  greet(c.id);
-                  return;
-                }
-                onChange(c.id);
-                setBump((b) => b + 1);
-                greet(c.id);
-              }}
-              className={`card-press relative flex h-[190px] flex-col items-center justify-end overflow-hidden rounded-[24px] ${on ? "shadow-[0_0_0_3px_var(--color-blue),0_4px_0_3px_var(--color-blue-800),0_10px_22px_rgba(37,99,235,.25)]" : "shadow-[var(--shadow-1)]"}`}
-              style={{ background: open || soon ? "linear-gradient(180deg,#e4ecff 0%,#fff 72%)" : "linear-gradient(180deg,#e7e9f2 0%,#fff 72%)", ...(shake === c.id ? { animation: "shake .35s" } : {}) }}
+              aria-checked={false}
+              aria-label={`${c.name}, ${c.tag}`}
+              onClick={() => pick(c.id)}
+              className="card-press relative flex h-[176px] flex-col items-center justify-end overflow-hidden rounded-[24px] bg-[#eef3ff] shadow-[var(--shadow-1)]"
             >
-              {/* "sig" art = the cut-outs that match the 3D models; MVP "soon" tutors keep their colours, dimmed */}
-              <TutorPortrait
-                id={c.id}
-                pose="sig"
-                frame="half"
-                alt={c.name}
-                locked={!open && !soon}
-                className="absolute top-0.5 left-1/2 h-[150px] w-[150px] -translate-x-1/2"
-                style={soon ? { opacity: 0.5, filter: "saturate(.6)" } : undefined}
-              />
-              {saying?.id === c.id && !on && (
-                <span aria-live="polite" className="bounce-in absolute inset-x-1.5 top-11 z-10 rounded-xl bg-white px-2 py-1.5 text-center text-[12px] leading-snug font-extrabold text-ink shadow-[0_3px_0_rgba(0,0,0,.1),0_8px_18px_rgba(20,26,58,.2)]" data-testid="card-greeting-bubble">
-                  {saying.text}
-                </span>
-              )}
-              {soon && <span className="absolute top-2.5 left-2.5 rounded-full bg-ink px-2.5 py-1 text-[11px] font-black text-white">{t.tutors.soon}</span>}
-              <div className="relative w-full px-1.5 pt-7 pb-2.5 text-center" style={{ background: "linear-gradient(to top,#fff 62%,rgba(255,255,255,0))" }}>
-                <b className="block text-[16px] font-black">{secret ? "???" : c.name}</b>
-                <span className="t-caption inline-flex items-center gap-1 text-mut">
-                  {open ? (
-                    c.tag
-                  ) : (
-                    <>
-                      <LockIcon size={11} /> {lockText(c, xp)}
-                    </>
-                  )}
-                </span>
+              <TutorPortrait id={c.id} pose="sig" frame="half" alt={c.name} className="absolute top-0.5 left-1/2 h-[140px] w-[140px] -translate-x-1/2" />
+              <div className="relative w-full bg-white px-1.5 pt-1.5 pb-2.5 text-center">
+                <b className="block text-[16px] font-black">{c.name}</b>
+                <span className="t-caption text-mut">{c.tag}</span>
               </div>
-              {on && (
-                <span className="bounce-in absolute top-2.5 right-2.5 grid h-7 w-7 place-items-center rounded-full bg-blue text-white shadow-[0_2px_0_var(--color-blue-800)]">
-                  <CheckIcon size={14} />
-                </span>
-              )}
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {/* locked tutors: a small row, tap = shake + greeting */}
+      {locked.length > 0 && (
+        <div className="mt-5">
+          <h2 className="t-h3 m-0 mb-2.5 flex items-center gap-2">
+            <LockIcon size={14} /> {t.tutors.soon}
+          </h2>
+          <div className="no-scrollbar -mx-[18px] flex gap-2.5 overflow-x-auto px-[18px] pb-2 md:mx-0 md:px-0" data-testid="tutor-locked">
+            {locked.map((c) => {
+              const name = nameOf(c);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  aria-label={`${name}, yopiq: ${lockText(c, xp)}. Salomini eshitish`}
+                  onClick={() => tapLocked(c.id)}
+                  className={`relative flex h-[132px] w-[104px] flex-none flex-col items-center justify-end overflow-hidden rounded-[20px] bg-[#eceff6] ${saying?.id === c.id ? "shadow-[0_0_0_3px_var(--color-blue)]" : "shadow-[var(--shadow-1)]"}`}
+                  style={shake === c.id ? { animation: "shake .35s" } : undefined}
+                >
+                  <TutorPortrait id={c.id} pose="sig" frame="half" alt="" className="absolute top-0 left-1/2 h-[96px] w-[96px] -translate-x-1/2" style={{ opacity: 0.55, filter: "saturate(.5)" }} />
+                  <div className="relative w-full bg-white px-1 pt-1 pb-1.5 text-center">
+                    <b className="block truncate text-[13px] font-black">{name}</b>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-mut">
+                      <LockIcon size={9} /> {lockText(c, xp)}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <div aria-live="polite" className="min-h-[24px]">
+            {lockedSaying && (
+              <p key={lockedSaying.id} className="bounce-in m-0 rounded-2xl bg-white px-3.5 py-2.5 text-[14px] leading-snug font-extrabold text-ink shadow-[var(--shadow-1)]" data-testid="card-greeting-bubble">
+                <span className="text-blue-700">{nameOf(lockedSaying)}:</span> {lockedSaying.hi}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
