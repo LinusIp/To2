@@ -26,6 +26,34 @@ export interface TutorView {
 
 const FLOOR = 860;
 
+/**
+ * Lesson light presets (intensities ×π, like voxel.ts addLights). "aces" is the rig before M6, kept
+ * for comparison. The portraits are rendered in Blender with AgX "Medium High Contrast", a soft key
+ * and a front fill; three.js has no MHC look, so Neutral + a soft rig is the closest match.
+ */
+type LightName = "aces" | "neutral" | "agx";
+interface LightPreset {
+  tone: LightName;
+  exposure: number;
+  /** hemisphere sky / ground colour and intensity */
+  sky: number;
+  ground: number;
+  hemi: number;
+  keyColor: number;
+  key: number;
+  fill: number;
+  rim: number;
+}
+const WARM = { sky: 0xfff1dc, ground: 0x6a5440, keyColor: 0xffe0b5 }; // the pre-M6 colours
+const LESSON_LIGHT: Record<LightName, LightPreset> = {
+  aces: { tone: "aces", exposure: 1.05, ...WARM, hemi: 0.95, key: 1.25, fill: 0.32, rim: 0.35 },
+  // like the Blender portraits: a near-white, slightly cool ambient (world 0.9/0.92/1.0), a soft
+  // key that only shapes the blocks, and no extra warmth (the classroom overlay already adds it)
+  neutral: { tone: "neutral", exposure: 1.18, sky: 0xf7f6f3, ground: 0x8a8580, hemi: 1.45, keyColor: 0xfff3e4, key: 0.6, fill: 0.32, rim: 0.4 },
+  agx: { tone: "agx", exposure: 1.3, sky: 0xf4f5ff, ground: 0x8c8278, hemi: 1.45, keyColor: 0xfff3e4, key: 0.6, fill: 0.32, rim: 0.4 },
+};
+const DEFAULT_LIGHT: LightName = "neutral";
+
 /** What is written on the board right now (main, notes and the side slate) — the tutor must not cover it. */
 function boardBoxes(b: BoardState): Box[] {
   const boxes: Box[] = b.els.map((e) => measure(e.cmd));
@@ -105,8 +133,13 @@ export default memo(function TutorCanvas({
       } catch {
         return; // no WebGL: the board + captions still work
       }
-      ren.toneMapping = THREE.ACESFilmicToneMapping;
-      ren.toneMappingExposure = 1.05;
+      // M6 light: the baked textures already carry painted shading, so the lesson uses a soft rig
+      // (raised hemisphere, softer key) and Neutral tone mapping instead of ACES on top of it.
+      // Dev only: `?light=aces|neutral|agx` switches presets for side-by-side checks.
+      const pick = process.env.NODE_ENV !== "production" ? new URLSearchParams(location.search).get("light") : null;
+      const L = LESSON_LIGHT[pick as LightName] ?? LESSON_LIGHT[DEFAULT_LIGHT];
+      ren.toneMapping = L.tone === "aces" ? THREE.ACESFilmicToneMapping : L.tone === "agx" ? THREE.AgXToneMapping : THREE.NeutralToneMapping;
+      ren.toneMappingExposure = L.exposure;
       const cam = new THREE.OrthographicCamera(0, 1600, 900, 0, -3000, 3000);
       cam.position.set(0, 0, 1000);
       let cx0 = NaN, cy0 = NaN, cw = NaN, chh = NaN;
@@ -125,7 +158,17 @@ export default memo(function TutorCanvas({
         cam.updateProjectionMatrix();
       };
       const scene = new THREE.Scene();
-      V.addLights(scene);
+      // same light directions as before (warm window key from the left, cool fill from the right, rim
+      // from behind — they match the classroom's painted light), only the balance changed
+      const PI = Math.PI;
+      scene.add(new THREE.HemisphereLight(L.sky, L.ground, L.hemi * PI));
+      const key = new THREE.DirectionalLight(L.keyColor, L.key * PI);
+      key.position.set(-700, 900, 900);
+      const fill = new THREE.DirectionalLight(0x9fc3ff, L.fill * PI);
+      fill.position.set(900, 200, 600);
+      const rim = new THREE.DirectionalLight(0xffffff, L.rim * PI);
+      rim.position.set(300, 600, -900);
+      scene.add(key, fill, rim);
       A.setFaceUpdater(V.updateFace);
 
       // real hinged 3D model (public/models/tripo/<id>.glb) when it exists, else the box-built
