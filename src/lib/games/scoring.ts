@@ -68,6 +68,11 @@ export function speedAnswer(s: SpeedState, right: boolean): SpeedState {
   };
 }
 
+/** Tezkor hisob race: the finish flag stands at your record (or 100 m the first time); 1 point = 1 m. */
+export const raceGoal = (best: number) => Math.max(100, best);
+/** runner position on the track, 0…1 */
+export const racePos = (score: number, goal: number) => Math.max(0, Math.min(1, score / Math.max(1, goal)));
+
 /** Best score kept per learner + game (the larger one wins). */
 export const betterScore = (prev: number | null | undefined, next: number) => Math.max(prev ?? 0, next);
 
