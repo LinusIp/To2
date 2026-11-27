@@ -1323,3 +1323,17 @@ Lola swaps the model and plays her file, 0 `/api/tts` calls, no page errors.
 Screenshots `docs/screenshots/ui-p3/`: `before-*` / `after-*` for /home /tutors /onboarding /settings /progress at 375 and 360
 (full page; the fixed tab bar shows mid-page in full-page captures), plus `after-tutors-360-{bubble,lola,locked,hero3d}.png`
 and `after-home-guest-360.png`.
+
+
+## 🚀 Release 56a9ee0 (orchestrator, 27–28 Nov) — P3 part 2: UI clean-up + 3D picker hero
+**LIVE: `56a9ee0`.** Merged `fix/ui-p3` (#5):
+- C7: picker hero = flat classroom with a live 3D TutorHero (wave on select, lip-sync on the greeting), and the bubble beside the head.
+- C5/C6: no duplicate selected card; locked tutors in a small "Tez orada" row.
+- U3: gradient washes removed. The flat colours exposed hidden AA contrast failures, which are now fixed.
+- U4: no more "Salom, Mehmon!". U6: one settings entry.
+- G5/U7: the decimal comma outside games, display only. Checker values are unchanged; `AnswerInput` still submits the original value.
+- **Checks:** tsc · vitest 354/354 · build · e2e 39/39 · 360 px no overflow, one canvas on /tutors · production routes 200 ·
+  demo-check --no-gen 72/72 cached-v2.
+- **Spend (Tashkent 28 Nov):** 1083.5 = 242 approved warm + learner sessions on production (Lola LLM lessons: 634.5 at 07:31 UTC,
+  207 at 10:09 UTC, all prefetch on lison-v2). No agent generated audio.
+- **Open:** #10's game redesign (`feat/games-p3`, resumed 28 Nov, game by game).
