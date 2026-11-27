@@ -27,6 +27,36 @@
 6. Same URL on tablet/laptop.
 - Before the demo: run `node scripts/warm-tts.mjs` once (idempotent) and do a dry run on the demo phone (mic permission prompt!).
 
+## 🎨 Games redesign P3 (G1–G7) — branch `feat/games-p3` (2026-11-28, not deployed, 0 credits)
+From the 25 Nov report (agent #10). Commits, oldest first: `4a0b681` shared kit + tower WIP · `896209d` merge origin/main · `3e5f37b` Blok minorasi · `05ed9e4` Tezkor hisob · `1fde080` Juftini top · `e5748fb` G5 comma.
+- **Shared (G3/G4/G6):** `GameFrame bleed` puts the scene edge to edge. The answers sit in a bottom tray (`.game-tray`) with no empty gap. The top bar has an XP counter that the **+XP flies into** (`xpFly`) and a **sound toggle**. The sound cues are a Web Audio synth (`src/lib/games/sfx.ts`: place, fall, right, wrong, combo, boost, stumble, flip, match, win, tick). There are no files and no VoiceLab calls, and the setting is remembered per device. `FullTutor` is the full-body render (`*_full`, poses idle/cheer/point/thumbs/wave only), standing on the scene's ground and reacting (`place`, `wobble`, `cheer`, `run`). `Bubble` is an in-scene caption. `EndCard` shows the full-body tutor (or none with `hideTutor` when the scene already shows it).
+- **Choices:** the new looks are `variant="blocks"` (voxel answer blocks) and `"lanes"` (race pads). The markup is unchanged: `data-testid="game-choice"`, `data-state`, `aria-label "n: …"`, keys 1–4, and `<GameVoice question>` mounted (#11's hook).
+- **G1/G2 Blok minorasi:** a building site.
+  - The question is on a chalk sign. A crane holds the next block ("?"), and the tower grows toward the goal line ("Maqsad: 10 blok") inside a scaffold, with the height label on the ground. The view zooms out around the tower's foot as it gets taller.
+  - A right answer lowers the block (thud) and the tutor points or cheers. A combo gives a taller gold ×2/×3 block plus an arpeggio.
+  - A wrong answer: the block lands, wobbles and falls off, the tutor wobbles, the hint shows in a bubble, and "Keyingi" appears in the tray.
+- **G7 Tezkor hisob:** a stadium with a chalk-lined track.
+  - The tutor runs toward the finish flag, which stands at **your record** (100 m the first time; 1 point = 1 m).
+  - A right answer is a boost (speed lines, sound, +XP from the runner). A wrong one is a stumble, with the right answer in a bubble.
+  - The question and the clock (or n/20 when untimed) are on chalk scoreboards. Untimed mode is unchanged: the `speed-untimed` checkbox, plus `<html data-untimed>` from the motor profile.
+- **G7 Juftini top:** 12 chalk slates on the classroom desk.
+  - The back of each slate is a chalk "?" with the card number. Fractions are drawn as hatched chalk bars.
+  - The wall chalkboard shows pairs found (n/6) and moves, and writes each found pair. The tutor stands at the desk.
+  - The "karta N" voice hook is unchanged; checked: `to2:voice {command:"card", n:5}` opens card 5.
+- **G5:** `pickQuestions` shows questions, hints and choices with the decimal comma (2,5). The bank's `expect` is untouched, so the server still accepts the right choice. Memory faces use the comma too. The tests fail on any dot decimal; checked by removing the conversion, which fails 2 tests.
+- **Calm mode / reduced motion:** nothing drops, falls, runs, wobbles or flies. Blocks just appear, a wrong block disappears, and +XP shows by the counter. Sound plays softer.
+- **Checks:**
+  - vitest 351/351, tsc clean (app code), `vite build` green.
+  - e2e on my own server :5197 (no .dev.vars): answers + flow + inclusive2 + stream **25/25**.
+  - Browser runs (Playwright) of all three games at 375, 360 and calm: no page errors, no horizontal overflow.
+  - ⚠️ `e2e/a11y.spec.ts` can't load in this worktree because `@axe-core/playwright` isn't in the shared node_modules. The orchestrator runs it.
+- **Screenshots:** `docs/screenshots/games-p3/` (375×812, 360×812 and calm).
+  - `tower-*`: start, right landing, wrong falling, wrong hint, mid combo, end.
+  - `speed-*`: ready, right boost, wrong stumble, mid race, end; untimed at 360; calm.
+  - `memory-*`: start, two open, match, miss, mid, end, voice karta 5; calm.
+- **Not used:** tutor voice lines (captions only, so no `/api/tts` calls at all), and the live 3D tutor (static full-body renders only).
+- Not touched: AppShell, LessonPlayer, Board, ClassroomStage, TutorCanvas.
+
 ## 🏗️ Kasb sinovi scenes + more jobs — branch `feat/games-scenes` (2026-11-25, P2, not deployed, 0 credits)
 From the 25 Nov problem report (agent #10). Branched from `origin/main` fb02fb8.
 - **Fact check:** on main the physics/English career items already used real skill ids (`fiz-…`, `en-…`); the report was wrong. New test `every careers skillId is a real skill of its course` reads `skills.uz.json`, `skills.fizika.uz.json` and `config/courses/english/skills.json` and fails on any unknown id.
