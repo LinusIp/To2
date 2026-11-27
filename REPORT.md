@@ -1203,3 +1203,16 @@ every preset shows the same pose. `node scripts/tutor-sheet.mjs` builds the shee
   - e2e: `inclusive2.spec` adds typed board ON at 360/375 (Lexend `<text>`, no overflow, screenshots `docs/screenshots/inclusive-2/typed-board-*.png`) and OFF (no `<text>`).
   - 0 VoiceLab credits.
 - Note: the chalk filter group still applies to the typed text (Board's filter layers are #4's, left as they are). At these sizes it stays sharp; a filter-free typed layer would need a new layer in Board.tsx.
+
+
+## 🚀 Release 4d3f272 (orchestrator, 27 Nov) — P2 complete: lesson lighting + typed board
+**LIVE: `4d3f272`.**
+- **Merged:** `fix/tutor-light` (#4, M6): Neutral tone mapping, raised near-white hemisphere, softer key; the lesson tutors now match
+  the AgX portraits, and the portraits' own lights are untouched. `feat/typed-board` (#11, gap 4): `<html data-typed-board>` → Lexend
+  text in the board's done/live layers, byte-identical when off. Both merges conflicted only in REPORT.md.
+- **Perf (#4's paired A/B, new models):** with tutor 16.3 → 29.1 fps; board only 27.7 → 42.1 fps (relative: software GL, CPU 4×).
+- **Checks:** tsc · vitest 347/347 · build · e2e 39/39 in one run (#11's hydration waits also fixed the "presets" flake) ·
+  production routes 200 · demo-check --no-gen 72/72 cached-v2 · credits today still 242.
+- **Seen, not fixed:** before a lesson starts, the back button sits over the tutor's head on phones (all 3 tutors). Candidate for P3.
+- **Problem-report status:** P1 and P2 done. P3 is waiting for the user's go: #5 (C5–C7, U3, U4, U6, comma outside games),
+  #10 (G1–G4, G6, G7, G5 in games), #4 (C4: 3D tutor on the picker).
