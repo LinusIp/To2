@@ -1267,3 +1267,16 @@ const [speech, setSpeech] = useState<Speech | null>(null);
 - Desktop and tablet have no overlay, so nothing changes there.
 - **Checks:** `pnpm vitest run` 347/347 · `tsc --noEmit` clean · `pnpm build` ok · e2e on my own mock server (:5199, no
   `.dev.vars`, 0 credits): **39/39 passed** in one run.
+
+
+## 🚀 Release 8c87d18 (orchestrator, 27 Nov) — P3 part 1: TutorHero + back button
+**LIVE: `8c87d18`.** Merged `feat/tutor-hero` (#4): `TutorHero` (a live 3D tutor for the picker: idle, wave, lip-sync, portrait fallback;
+demo at `/dev/hero`, 404 in production). The lesson tutor's rest spot now keeps his head clear of the back button on phones
+(at 360/375, all 3 tutors). TutorHero isn't used in production yet; #5 swaps it into the picker in `fix/ui-p3`.
+- **Checks:** tsc · vitest 347/347 · build · e2e 39/39 · production routes 200 · demo-check --no-gen 72/72 cached-v2.
+- **VoiceLab spend (Tashkent 28 Nov):** 876.5 = 242 (approved locked greetings, warm) + **634.5 from a real learner session**:
+  a Lola LLM lesson "Oddiy kasrlarni o'nli kasrlarga…" at 07:31 UTC, 12 lines on lison-v2 via the player's prefetch. A similar Lola
+  "fotosintez" session ran on 26 Nov. No agent made these calls; agents only use cached lines. Normal app use of non-demo lessons
+  generates voice. That's within caps (warn 15k / hard 60k), but worth knowing for the budget.
+- **#10 (games P3):** WIP only (`4a0b681` on `feat/games-p3`: shared sfx, +XP, full-body tutor, Blok minorasi building site). Its session
+  hit its usage limit. Not merged; Tezkor hisob, Juftini top, G5 and e2e are still open.
