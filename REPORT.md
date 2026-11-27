@@ -1137,3 +1137,12 @@ session: "Yes, spend 242").
 - Verified (Playwright, 360×740, mock server): each of the 5 locked cards → its own bubble, its own `<id>.wav`, `play()` ok,
   not selected, **0 `/api/tts` requests**. Screenshot `docs/screenshots/ui-p1/locked-greeting-360.png`.
 - Checks: vitest 345/345 · tsc clean · build ok · e2e 36/36 on my own mock server (:5211, no `.dev.vars`).
+
+
+## 🚀 Release 5334c0e (orchestrator, 27 Nov) — locked tutors' greetings
+**LIVE: `5334c0e`.** Merged `fix/greetings-locked` (#5): static greetings for agent-shox, sardor, ravshan, diyorbek and shadow. A locked
+card can now be tapped to say hello (still not selectable), and greet() no longer falls back to Blokbek for locked tutors.
+- **Credits (approved by the user: "Approve 242"):** 242 spent, checked on production `/dev/credits`. 10 clips, source warm, model
+  lison, 54/44/60/54/30 per tutor. All 8 greetings are now cached, and all 8 static files return 200.
+- **Checks:** tsc · vitest 345/345 · build · e2e 35/36 + the a11y "presets" test passed 3/3 on rerun (flaky, unrelated) ·
+  demo-check --no-gen ×3: 72/72 cached-v2.

@@ -1,7 +1,7 @@
 # Agents working on Buddy (formerly Ilmobod / To2)
 
 Snapshot: **2026-11-25**. Written by the current orchestrator from each session's last turns, its branch and its diff.
-Production: **https://to2.locallabs-io.workers.dev**, live commit **`2cfde8f`** (27 Nov release: problem-report P1 + P2 part 1; before that `8bf833a`).
+Production: **https://to2.locallabs-io.workers.dev**, live commit **`5334c0e`** (27 Nov: problem-report P1 + P2 part 1 in `2cfde8f`, then the locked tutors' greetings; before that `8bf833a`).
 `main` is at `d287dfe` and later; the commits after `8bf833a` are docs, the pitch deck PDF and README only, so nothing is waiting to deploy.
 
 > **Name check:** the pitch deck (`buddy-pitch-deck.pdf`) and the README link say **Buddy**. The app itself still says **Ilmobod**
@@ -223,7 +223,7 @@ Every agent works on a **new branch from `main` (`8061293`)** in its own worktre
 **Facts checked by the orchestrator:**
 - The Kasb sinovi skill ids are already the real ones on `main` (`fiz-*`, `en-*`; fixed 18 Nov). The report is wrong there. Only scenes and more jobs remain.
 - C2: the 3 selectable tutors' greetings ARE cached in production (`lison-v2`, 0 credits).
-- The 5 locked tutors' greetings are uncached: ≈ 242 credits on `lison`. **Waiting for the user's credit number. Nothing else in this round may spend VoiceLab credits.**
+- The 5 locked tutors' greetings: the user approved 242 credits; #5 spent exactly 242 (checked on `/dev/credits`) and they're live in `5334c0e`. **Nothing else in this round may spend VoiceLab credits.**
 
 ## Overlaps and conflicts
 
