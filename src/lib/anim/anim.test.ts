@@ -122,7 +122,18 @@ describe("mouth hysteresis", () => {
 });
 
 describe("blink", () => {
-  it("blinks every 2.5–5 s for 110 ms; doubles are rare", () => {
+  // Seeded (mulberry32): with Math.random the double-blink ratio (~160 blinks, p = 0.15) sat only
+  // ~2.5 σ inside the bounds and failed about 1 run in 100 (a release run on 9fbd1e1). Three fixed
+  // seeds keep it a real statistics check, but deterministic.
+  const seeded = (seed: number) => () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let x = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+
+  it.each([1, 7, 42])("blinks every 2.5–5 s for 110 ms; doubles are rare (seed %i)", (seed) => {
+    const rand = seeded(seed);
     const b = newBlink();
     let starts = 0;
     let doubles = 0;
@@ -131,7 +142,7 @@ describe("blink", () => {
     let lastStart = -1;
     const gaps: number[] = [];
     for (let t = 0; t < 600_000; t += 10) {
-      const c = stepBlink(b, t);
+      const c = stepBlink(b, t, rand);
       if (c) closedMs += 10;
       if (c && !prev) {
         // gaps are measured between the FIRST blinks of each pair
