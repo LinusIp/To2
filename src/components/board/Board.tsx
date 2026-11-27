@@ -8,6 +8,7 @@ import type { Color } from "@/lib/ai/schema";
 import { BOARD_H, BOARD_W, SIDE_BOARD, SIDE_PAD_X, bbox, type BoardEl, type BoardState } from "@/lib/board/model";
 import { boardFocus, boardTip } from "@/lib/board/tip";
 import { chalkEllipse, pathD, progressOf, rngFrom, strokesFor, type PlotFn, type Stroke } from "./handwriting";
+import { TypedText, isTypedOp, useTypedBoard } from "./typed"; // a11y-hook: typed board (inclusive mode)
 
 export type BoardTheme = "chalk";
 
@@ -124,6 +125,16 @@ const Strokes = memo(function Strokes({ ink, drawn }: { ink: Ink; drawn: number[
 /** One board element. Memoized: finished elements (p = 1, same el, same plotFn) never re-render. */
 const Element = memo(function Element({ el, p, plotFn }: { el: BoardEl; p: number; plotFn: PlotFn }) {
   const ink = inkFor(el, plotFn);
+  const typed = useTypedBoard() && isTypedOp(el); // a11y-hook: <html data-typed-board> → Lexend text, same place
+  if (typed) {
+    const c = el.cmd as { color?: Color };
+    return (
+      <g data-id={el.id} data-layer={el.layer}>
+        <TypedText el={el} color={CHALK[c.color ?? "ink"] ?? CHALK.ink} p={p} inkW={ink.box.w} />
+        {el.highlight && <Highlight el={el} />}
+      </g>
+    );
+  }
   const prog = p >= 1 ? null : progressOf(ink.strokes, p);
   return (
     <g data-id={el.id} data-layer={el.layer}>

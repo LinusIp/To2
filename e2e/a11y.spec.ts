@@ -67,10 +67,17 @@ for (const mode of ["off", "on"] as const) {
 test("presets switch the app modes on (<html data-*>)", async ({ page }) => {
   await guest(page);
   await page.goto("/qulaylik?next=/home");
-  await page.getByTestId("preset-vision").click();
-  await page.getByTestId("preset-focus").click();
-  const d = await page.evaluate(() => ({ ...document.documentElement.dataset }));
-  expect(d).toMatchObject({ contrast: "1", text: "150", big: "1", calm: "1", dyslexia: "1" });
+  // a click before React hydrates is lost: switch each preset on until it reports checked
+  for (const id of ["preset-vision", "preset-focus"]) {
+    const sw = page.getByTestId(id);
+    await expect(async () => {
+      if ((await sw.getAttribute("aria-checked")) !== "true") await sw.click();
+      await expect(sw).toHaveAttribute("aria-checked", "true", { timeout: 1500 });
+    }).toPass({ timeout: 20_000 });
+  }
+  await expect
+    .poll(() => page.evaluate(() => ({ ...document.documentElement.dataset })))
+    .toMatchObject({ contrast: "1", text: "150", big: "1", calm: "1", dyslexia: "1", typedBoard: "1" });
   await page.getByTestId("a11y-continue").click();
   await expect(page).toHaveURL(/\/home/);
 });

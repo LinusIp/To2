@@ -110,11 +110,42 @@ test("profile cards: switches, what was switched on, sample, device-only note", 
   const motor = page.getByTestId("preset-motor");
   await expect(motor).toHaveAttribute("role", "switch");
   await expect(motor).toHaveAttribute("aria-checked", "false");
-  await motor.click();
-  await expect(motor).toHaveAttribute("aria-checked", "true");
+  // a click before React hydrates is lost: retry until the switch reacts
+  await expect(async () => {
+    if ((await motor.getAttribute("aria-checked")) !== "true") await motor.click();
+    await expect(motor).toHaveAttribute("aria-checked", "true", { timeout: 1500 });
+  }).toPass({ timeout: 20_000 });
   await expect(page.getByTestId("preset-motor-enabled")).toContainText("ovozli buyruqlar");
   await expect(page.getByTestId("preset-motor-enabled")).toContainText("vaqt cheklovi yo'q");
   await expect(page.getByTestId("a11y-sample")).toBeVisible();
   await expect(page.getByTestId("a11y-device-only")).toContainText("faqat shu qurilmada");
   expect(await page.evaluate(() => document.documentElement.dataset.untimed)).toBe("1");
+});
+
+for (const width of [360, 375]) {
+  test(`typed board ON at ${width}px: the board's writing is Lexend text, shapes stay chalk`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await guest(page, { typedBoard: true, dyslexiaFont: true, presets: ["focus"] });
+    await page.goto(`/lesson/${SKILL}`);
+    // A11yRoot sets the attribute once it has hydrated
+    await expect.poll(() => page.evaluate(() => document.documentElement.hasAttribute("data-typed-board")), { timeout: 20_000 }).toBe(true);
+    await page.getByRole("button", { name: /Darsni boshlash/ }).first().click();
+    const typed = page.locator("svg text[data-typed]");
+    await expect(typed.first()).toBeAttached({ timeout: 30_000 });
+    await page.waitForTimeout(6000); // a few lines written
+    const texts = await typed.allTextContents();
+    expect(texts.join(" ")).toMatch(/\S/);
+    expect(await typed.first().getAttribute("font-family")).toContain("Lexend");
+    await page.locator("[data-a11y-stage]").first().screenshot({ path: `${SHOTS}/typed-board-${width}.png`, animations: "disabled" });
+    const o = await overflow(page);
+    expect(o.doc).toBeLessThanOrEqual(1);
+  });
+}
+
+test("typed board OFF: the board is handwriting only (no <text>)", async ({ page }) => {
+  await guest(page, {});
+  await page.goto(`/lesson/${SKILL}`);
+  await page.getByRole("button", { name: /Darsni boshlash/ }).first().click();
+  await page.waitForTimeout(5000);
+  expect(await page.locator("svg text[data-typed]").count()).toBe(0);
 });
